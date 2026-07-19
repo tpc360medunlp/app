@@ -9526,7 +9526,7 @@ async function renderCartelaView(containerId) {
 
   if (legajo) {
     const { data: visitaData } = await _supabase.from('cartelera_visitas')
-      .select('ultima_visita').eq('legajo', legajo).single().catch(() => ({ data: null }));
+      .select('ultima_visita').eq('legajo', legajo).single();
     if (visitaData?.ultima_visita) {
       ultimaVisita = new Date(visitaData.ultima_visita);
     }
