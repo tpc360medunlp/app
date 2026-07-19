@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1626,6 +1627,12 @@
 </div>
 
 <script>
+// ── SUPABASE ──────────────────────────────────────────────
+const SUPABASE_URL = 'https://dbrhpbhueiwednrkkelb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_DXJBix7-l2HNcXnVXkk91g_fW3td2Uj';
+const { createClient } = supabase;
+const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ── BASE DE ALUMNOS INSCRIPTOS (demo) ─────────────────────
 // Clave: legajo normalizado (sin ceros adelante). Ej: "51064/9"
 const ENROLLED_STUDENTS = {
@@ -1994,8 +2001,42 @@ function verifyDni() {
   enterApp();
 }
 
+// ── AUTENTICACIÓN SUPABASE ────────────────────────────────
+
+// Escuchar cambios de sesión de Supabase
+_supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    googleEmail = session.user.email;
+    document.getElementById('step2-google-email').textContent = googleEmail;
+    document.getElementById('login-step1').style.display = 'none';
+    document.getElementById('login-step2').style.display = 'block';
+    updateStep2Labels();
+  }
+  if (event === 'SIGNED_OUT') {
+    googleEmail = '';
+  }
+});
+
+async function goToStep2() {
+  // Login real con Google via Supabase
+  const redirectTo = window.location.href.split('#')[0] + window.location.hash;
+  const { error } = await _supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + window.location.pathname
+    }
+  });
+  if (error) {
+    showRegError('❌ Error al conectar con Google. Intentá de nuevo.');
+  }
+}
+
+async function doLogoutSupabase() {
+  await _supabase.auth.signOut();
+}
+
 // email de Google capturado en el paso 1
-let googleEmail = 'mi.cuenta@gmail.com';
+let googleEmail = '';
 
 function doStudentLogin() { verifyDni(); }
 
@@ -2026,6 +2067,7 @@ function enterApp() {
 }
 
 function doLogout() {
+  _supabase.auth.signOut(); // cerrar sesión en Supabase
   googleEmail          = '';
   currentUser          = null;
   currentRole          = 'student';
