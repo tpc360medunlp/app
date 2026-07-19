@@ -608,24 +608,6 @@
 
 <!-- LOGIN -->
 <div id="screen-login" class="screen active">
-  <!-- Demo nav bar — solo visible en desarrollo -->
-  <div id="demo-nav" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);padding:8px 16px;display:flex;align-items:center;gap:10px;font-family:var(--font)">
-    <span style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.06em">Demo</span>
-    <span style="color:rgba(255,255,255,0.3);font-size:12px">·</span>
-    <span style="font-size:11px;color:rgba(255,255,255,0.5)">Ver como:</span>
-    <button onclick="setLoginRole('student')" id="demo-btn-student"
-      style="padding:4px 12px;font-size:11px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:transparent;color:white;cursor:pointer;font-family:var(--font);font-weight:500">
-      Estudiante
-    </button>
-    <button onclick="setLoginRole('teacher')" id="demo-btn-teacher"
-      style="padding:4px 12px;font-size:11px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:transparent;color:white;cursor:pointer;font-family:var(--font);font-weight:500">
-      Docente
-    </button>
-    <button onclick="setLoginRole('coordinator')" id="demo-btn-coordinator"
-      style="padding:4px 12px;font-size:11px;border-radius:20px;border:1.5px solid rgba(255,255,255,0.3);background:transparent;color:white;cursor:pointer;font-family:var(--font);font-weight:500">
-      Coordinación
-    </button>
-  </div>
 
   <div class="login-bg-lines">
     <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
@@ -2211,19 +2193,16 @@ function updateStep2Labels() {
     document.getElementById('step2-desc').textContent  = 'Ingresá tu número de legajo para verificar que estés inscripto en la carrera.';
     document.getElementById('step2-field-label').textContent = 'Número de legajo (Ej: 12345/6)';
     document.getElementById('reg-dni').placeholder = 'Ej: 12345/6';
-    document.getElementById('step2-demo-note').textContent = 'Legajo de prueba: 40123/4 · 41234/5 · 42345/6';
   } else if (currentRole === 'teacher') {
     document.getElementById('step2-title').textContent = 'Verificación docente';
     document.getElementById('step2-desc').textContent  = 'Ingresá tu DNI para verificar tu acceso como docente.';
     document.getElementById('step2-field-label').textContent = 'DNI (sin puntos)';
     document.getElementById('reg-dni').placeholder = 'Ej: 30111222';
-    document.getElementById('step2-demo-note').textContent = 'DNI de prueba: 30111222 · 31222333';
   } else {
     document.getElementById('step2-title').textContent = 'Verificación de coordinación';
     document.getElementById('step2-desc').textContent  = 'Ingresá tu DNI para verificar tu acceso como coordinador/a.';
     document.getElementById('step2-field-label').textContent = 'DNI (sin puntos)';
     document.getElementById('reg-dni').placeholder = 'Ej: 32527404';
-    document.getElementById('step2-demo-note').textContent = 'DNI de prueba: 32527404';
   }
 }
 
@@ -2238,19 +2217,16 @@ function goToStep2() {
     document.getElementById('step2-desc').textContent  = 'Ingresá tu número de legajo para verificar que estés inscripto en la carrera.';
     document.getElementById('step2-field-label').textContent = 'Número de legajo (Ej: 12345/6)';
     document.getElementById('reg-dni').placeholder = 'Ej: 12345/6';
-    document.getElementById('step2-demo-note').textContent = 'Legajo de prueba: 40123/4 · 41234/5 · 42345/6';
   } else if (currentRole === 'teacher') {
     document.getElementById('step2-title').textContent = 'Verificación docente';
     document.getElementById('step2-desc').textContent  = 'Ingresá tu DNI para verificar tu acceso como docente.';
     document.getElementById('step2-field-label').textContent = 'DNI (sin puntos)';
     document.getElementById('reg-dni').placeholder = 'Ej: 30111222';
-    document.getElementById('step2-demo-note').textContent = 'DNI de prueba: 30111222 · 31222333';
   } else {
     document.getElementById('step2-title').textContent = 'Verificación de coordinación';
     document.getElementById('step2-desc').textContent  = 'Ingresá tu DNI para verificar tu acceso como coordinador/a.';
     document.getElementById('step2-field-label').textContent = 'DNI (sin puntos)';
     document.getElementById('reg-dni').placeholder = 'Ej: 32527404';
-    document.getElementById('step2-demo-note').textContent = 'DNI de prueba: 32527404';
   }
 
   document.getElementById('login-step1').style.display = 'none';
@@ -8734,14 +8710,6 @@ function setLoginRole(role) {
   document.getElementById('step2-field-label').textContent = cfg.field;
   document.getElementById('step2-desc').textContent =
     `Ingresá tu ${cfg.field === 'Legajo' ? 'número de legajo' : 'DNI'} para verificar tu acceso al sistema.`;
-
-  // Highlight del botón demo activo
-  ['student','teacher','coordinator'].forEach(r => {
-    const btn = document.getElementById('demo-btn-' + r);
-    if (!btn) return;
-    btn.style.background = r === role ? 'rgba(255,255,255,0.2)' : 'transparent';
-    btn.style.borderColor = r === role ? 'white' : 'rgba(255,255,255,0.3)';
-  });
 }
 
 function initLoginScreen() {
