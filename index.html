@@ -2005,12 +2005,17 @@ function verifyDni() {
 
 // Escuchar cambios de sesión de Supabase
 _supabase.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && session) {
+  if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
     googleEmail = session.user.email;
-    document.getElementById('step2-google-email').textContent = googleEmail;
-    document.getElementById('login-step1').style.display = 'none';
-    document.getElementById('login-step2').style.display = 'block';
-    updateStep2Labels();
+    const emailEl = document.getElementById('step2-google-email');
+    if (emailEl) emailEl.textContent = googleEmail;
+    const step1 = document.getElementById('login-step1');
+    const step2 = document.getElementById('login-step2');
+    if (step1 && step2) {
+      step1.style.display = 'none';
+      step2.style.display = 'block';
+      updateStep2Labels();
+    }
   }
   if (event === 'SIGNED_OUT') {
     googleEmail = '';
