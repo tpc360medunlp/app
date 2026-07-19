@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "comision_id": "c1",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "41234/5",
+    "nota": 7,
+    "estado": "aprobado",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
+    "id": 2,
+    "comision_id": "c1",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "40123/4",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": false,
+    "fecha_examen": null
+  }
+]

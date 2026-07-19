@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "legajo": "40123/4",
+    "skill_id": "s1",
+    "status": "validated",
+    "fecha": "2026-07-19",
+    "teacher_dni": "30111222",
+    "obs": "hola",
+    "satisfaccion": 2,
+    "teacher_obs": ""
+  },
+  {
+    "id": 2,
+    "legajo": "40123/4",
+    "skill_id": "s5",
+    "status": "validated",
+    "fecha": "2026-07-19",
+    "teacher_dni": "30111222",
+    "obs": "holaaaa",
+    "satisfaccion": 4,
+    "teacher_obs": ""
+  }
+]

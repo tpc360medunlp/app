@@ -1,0 +1,38 @@
+[
+  {
+    "legajo": "42345/6",
+    "nombre": "Pedro",
+    "apellido": "López",
+    "email": "pedro.lopez@gmail.com",
+    "legajo_completo": "042345/6",
+    "dni": "42345678",
+    "cude": null,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  },
+  {
+    "legajo": "41234/5",
+    "nombre": "María",
+    "apellido": "García",
+    "email": "maria.garcia@gmail.com",
+    "legajo_completo": "041234/5",
+    "dni": "41234568",
+    "cude": null,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  },
+  {
+    "legajo": "40123/4",
+    "nombre": "Juan",
+    "apellido": "Pérez",
+    "email": "parolafranco@gmail.com",
+    "legajo_completo": "040123/4",
+    "dni": "41234567",
+    "cude": {
+      "activo": true,
+      "estado": "validado",
+      "archivo": "Disección Aórtica SAC.pdf",
+      "archivoUrl": "https://dbrhpbhueiwednrkkelb.supabase.co/storage/v1/object/sign/cude/cude_40123-4_1784428837481.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zYzVjMjdjNi0wNjFkLTQ4ZmYtYjE3OC0yYTNmNDU3ZDE0NjgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjdWRlL2N1ZGVfNDAxMjMtNF8xNzg0NDI4ODM3NDgxLnBkZiIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODQ0Mjg4MzgsImV4cCI6MTgxNTk2NDgzOH0.bs9wDvup-1Z298sF7VP9W2ud61L2wCa8qU6wvwWpuQU",
+      "vencimiento": "2026-12-20"
+    },
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "c1",
+    "materia_id": "m1",
+    "nombre": "Comisión A",
+    "docente_dni": "30111222",
+    "año": 2026,
+    "periodo": 1,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  },
+  {
+    "id": "c2",
+    "materia_id": "m1",
+    "nombre": "Comisión B",
+    "docente_dni": "31222333",
+    "año": 2026,
+    "periodo": 1,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  },
+  {
+    "id": "c3",
+    "materia_id": "m2",
+    "nombre": "Comisión A",
+    "docente_dni": "31222333",
+    "año": 2026,
+    "periodo": 1,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  },
+  {
+    "id": "c4",
+    "materia_id": "m1",
+    "nombre": "Comisión A",
+    "docente_dni": "30111222",
+    "año": 2025,
+    "periodo": 1,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  }
+]
