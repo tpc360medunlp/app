@@ -8787,8 +8787,7 @@ async function subirCudeAlumno(input) {
 
   const legajo = getLegajoByEmail(currentUser.email);
   if (!legajo) return;
-
-  showToast('Subiendo archivo...');
+  console.log('Subiendo CUdE para legajo:', legajo);
 
   // Subir a Supabase Storage
   const ext      = archivo.name.split('.').pop();
