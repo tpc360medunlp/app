@@ -2356,14 +2356,13 @@ async function cambiarCuentaGoogle() {
 }
 
 async function goToStep2() {
-  // Incluir el rol actual en la URL de retorno
-  const roleHash = currentRole === 'teacher' ? '#docente'
-                 : currentRole === 'coordinator' ? '#coordinacion'
-                 : '';
+  const roleParam = currentRole === 'teacher' ? '?rol=docente'
+                  : currentRole === 'coordinator' ? '?rol=coordinacion'
+                  : '';
   const { error } = await _supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'https://tpc360medunlp.github.io/app/' + roleHash
+      redirectTo: 'https://tpc360medunlp.github.io/app/' + roleParam
     }
   });
   if (error) {
@@ -8738,13 +8737,20 @@ function setLoginRole(role) {
 }
 
 function initLoginScreen() {
-  // Determinar rol según hash URL o sessionStorage (si viene de cambio de cuenta)
-  const savedRole = localStorage.getItem('tpc360_role');
+  // Determinar rol según query param, hash URL o localStorage
+  const params = new URLSearchParams(window.location.search);
+  const rolParam = params.get('rol');
   const hash = window.location.hash.replace('#','').toLowerCase();
-  const role = hash === 'docente' ? 'teacher'
-             : hash === 'coordinacion' ? 'coordinator'
-             : savedRole || 'student';
-  localStorage.removeItem('tpc360_role'); // limpiar después de usar
+  const savedRole = localStorage.getItem('tpc360_role');
+
+  let role = 'student';
+  if (rolParam === 'docente') role = 'teacher';
+  else if (rolParam === 'coordinacion') role = 'coordinator';
+  else if (hash === 'docente') role = 'teacher';
+  else if (hash === 'coordinacion') role = 'coordinator';
+  else if (savedRole) role = savedRole;
+
+  localStorage.removeItem('tpc360_role');
   setLoginRole(role);
 }
 
