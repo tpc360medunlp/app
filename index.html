@@ -676,6 +676,9 @@
         </div>
         <div style="font-size:13px;color:var(--gray-400);margin-bottom:2px">Conectado como</div>
         <div style="font-size:14px;font-weight:500;color:var(--navy)" id="step2-google-email"></div>
+        <button onclick="cambiarCuentaGoogle()" style="margin-top:8px;background:none;border:none;font-size:12px;color:var(--teal);cursor:pointer;font-family:var(--font);text-decoration:underline">
+          Usar otra cuenta
+        </button>
       </div>
       <h1 class="login-title" style="font-size:18px" id="step2-title">Verificación de identidad</h1>
       <p class="login-desc" id="step2-desc">Ingresá tu documento para verificar tu acceso al sistema.</p>
@@ -2333,6 +2336,15 @@ _supabase.auth.onAuthStateChange(async (event, session) => {
     googleEmail = '';
   }
 });
+
+async function cambiarCuentaGoogle() {
+  await _supabase.auth.signOut();
+  googleEmail = '';
+  document.getElementById('login-step1').style.display = 'block';
+  document.getElementById('login-step2').style.display = 'none';
+  document.getElementById('reg-dni').value = '';
+  document.getElementById('reg-error').style.display = 'none';
+}
 
 async function goToStep2() {
   const { error } = await _supabase.auth.signInWithOAuth({
