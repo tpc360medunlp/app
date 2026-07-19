@@ -8816,9 +8816,15 @@ async function subirCudeAlumno(input) {
   ENROLLED_STUDENTS[legajo].cude.archivo = archivo.name;
   ENROLLED_STUDENTS[legajo].cude.archivoUrl = archivoUrl;
 
-  await _supabase.from('alumnos')
+  const { error: updateError } = await _supabase.from('alumnos')
     .update({ cude: ENROLLED_STUDENTS[legajo].cude })
     .eq('legajo', legajo);
+
+  if (updateError) {
+    console.warn('Error actualizando CUdE en Supabase:', updateError);
+    showToast('Error al guardar en el sistema. El archivo se subió pero no se registró.', true);
+    return;
+  }
 
   actualizarBadgeCude();
   renderStudentCudeView();
