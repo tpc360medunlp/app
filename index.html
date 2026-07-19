@@ -2344,6 +2344,8 @@ async function cambiarCuentaGoogle() {
   document.getElementById('login-step2').style.display = 'none';
   document.getElementById('reg-dni').value = '';
   document.getElementById('reg-error').style.display = 'none';
+  // Mantener el rol actual en la pantalla
+  setLoginRole(currentRole || 'student');
 }
 
 async function goToStep2() {
