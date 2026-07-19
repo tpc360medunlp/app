@@ -9606,6 +9606,26 @@ async function renderCartelaView(containerId) {
     ${html}`;
 }
 
+// Helper para cargar membrete desde URL (Supabase Storage) o base64 (legado)
+async function loadMembreteBytes(membrete) {
+  if (!membrete) return null;
+  try {
+    if (membrete.startsWith('http')) {
+      // URL de Supabase Storage
+      const resp = await fetch(membrete);
+      const buf  = await resp.arrayBuffer();
+      return new Uint8Array(buf);
+    } else {
+      // Base64 legado
+      const base64 = membrete.split(',')[1] || membrete;
+      return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    }
+  } catch(e) {
+    console.warn('Error cargando membrete:', e);
+    return null;
+  }
+}
+
 // ── CONFIGURACIÓN DEL SISTEMA ─────────────────────────────
 let studentViewConfig = {
   portfolio:              { label: 'Portfolio',                       enabled: true  },
@@ -10070,24 +10090,40 @@ function guardarTextoBase(tab) {
   showToast('Texto base guardado');
 }
 
-function handleMembreteUpload(input, tab = 'parciales') {
+async function handleMembreteUpload(input, tab = 'parciales') {
   const file = input.files[0];
   if (!file || file.type !== 'application/pdf') {
     showToast('El archivo debe ser un PDF', true); return;
   }
-  const reader = new FileReader();
-  reader.onload = e => {
-    if (tab === 'parciales') certConfig.membrete = e.target.result;
-    else certFinalConfig.membrete = e.target.result;
-    // Guardar en Supabase
-    const clave = tab === 'parciales' ? 'certConfig' : 'certFinalConfig';
-    const valor = tab === 'parciales' ? certConfig : certFinalConfig;
-    _supabase.from('config_sistema').upsert({ clave, valor }, { onConflict: 'clave' })
-      .then(({ error }) => { if (error) console.warn('Error guardando membrete:', error); });
-    renderCertificadosCoordView(tab);
-    showToast('PDF membretado cargado correctamente');
-  };
-  reader.readAsDataURL(file);
+
+  showToast('Subiendo membrete...');
+
+  const fileName = `membrete_${tab}_${Date.now()}.pdf`;
+  const { error: uploadError } = await _supabase.storage
+    .from('membretes').upload(fileName, file, { upsert: true });
+
+  if (uploadError) {
+    showToast('Error al subir el membrete. Intentá de nuevo.', true);
+    console.warn('Error subiendo membrete:', uploadError);
+    return;
+  }
+
+  // Obtener URL firmada (1 año)
+  const { data: urlData } = await _supabase.storage
+    .from('membretes').createSignedUrl(fileName, 60 * 60 * 24 * 365);
+
+  const url = urlData?.signedUrl || null;
+
+  if (tab === 'parciales') certConfig.membrete = url;
+  else certFinalConfig.membrete = url;
+
+  // Guardar URL en config_sistema
+  const clave = tab === 'parciales' ? 'certConfig' : 'certFinalConfig';
+  const valor = tab === 'parciales' ? certConfig : certFinalConfig;
+  await _supabase.from('config_sistema').upsert({ clave, valor }, { onConflict: 'clave' });
+
+  renderCertificadosCoordView(tab);
+  showToast('PDF membretado cargado correctamente');
 }
 
 // renderStudentCertificadosView moved to bottom (with tabs support)
@@ -10121,9 +10157,9 @@ async function previsualizarCertificado(tab = 'parciales') {
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
     let pdfDoc;
     if (cfg.membrete) {
-      const base64 = cfg.membrete.split(',')[1];
-      const pdfBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      pdfDoc = await PDFDocument.load(pdfBytes);
+      const pdfBytes = await loadMembreteBytes(cfg.membrete);
+      pdfDoc = pdfBytes ? await PDFDocument.load(pdfBytes) : await PDFDocument.create();
+      if (!pdfBytes) pdfDoc.addPage([595.28, 841.89]);
     } else {
       pdfDoc = await PDFDocument.create();
       pdfDoc.addPage([595.28, 841.89]);
@@ -10264,14 +10300,12 @@ async function generarCertificado(comId, parcial, fechaParcial, email) {
     let pdfDoc;
 
     if (certConfig.membrete) {
-      // Cargar el PDF membretado como base
-      const base64 = certConfig.membrete.split(',')[1];
-      const pdfBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      pdfDoc = await PDFDocument.load(pdfBytes);
+      const pdfBytes = await loadMembreteBytes(certConfig.membrete);
+      pdfDoc = pdfBytes ? await PDFDocument.load(pdfBytes) : await PDFDocument.create();
+      if (!pdfBytes) pdfDoc.addPage([595.28, 841.89]);
     } else {
-      // Sin membrete: crear PDF en blanco A4
       pdfDoc = await PDFDocument.create();
-      pdfDoc.addPage([595.28, 841.89]); // A4 en puntos
+      pdfDoc.addPage([595.28, 841.89]);
     }
 
     const pages = pdfDoc.getPages();
@@ -11157,9 +11191,9 @@ async function descargarCertFinal(id) {
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
     let pdfDoc;
     if (certFinalConfig.membrete) {
-      const base64 = certFinalConfig.membrete.split(',')[1];
-      const pdfBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      pdfDoc = await PDFDocument.load(pdfBytes);
+      const pdfBytes = await loadMembreteBytes(certFinalConfig.membrete);
+      pdfDoc = pdfBytes ? await PDFDocument.load(pdfBytes) : await PDFDocument.create();
+      if (!pdfBytes) pdfDoc.addPage([595.28, 841.89]);
     } else {
       pdfDoc = await PDFDocument.create();
       pdfDoc.addPage([595.28, 841.89]);
