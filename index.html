@@ -6212,9 +6212,15 @@ function confirmReassign() {
   closeReassignModal();
   renderAccountsView();
   showToast('Cuenta reasignada correctamente');
-  // ⚠️ IMPORTANTE: si se agrega una nueva estructura de datos indexada por email
-  // (ej: módulo de finales, nuevas notificaciones, etc.), agregar la migración
-  // correspondiente en esta función antes de la línea closeReassignModal().
+
+  // Actualizar email en Supabase — solo en tabla alumnos
+  // Las demás tablas usan legajo y no necesitan actualización
+  _supabase.from('alumnos')
+    .update({ email: newEmail })
+    .eq('legajo', reassignLegajo)
+    .then(({ error }) => {
+      if (error) console.warn('Error actualizando email en Supabase:', error);
+    });
 }
 
 // close reassign modal on overlay click
