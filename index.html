@@ -2356,10 +2356,14 @@ async function cambiarCuentaGoogle() {
 }
 
 async function goToStep2() {
+  // Incluir el rol actual en la URL de retorno
+  const roleHash = currentRole === 'teacher' ? '#docente'
+                 : currentRole === 'coordinator' ? '#coordinacion'
+                 : '';
   const { error } = await _supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'https://tpc360medunlp.github.io/app/'
+      redirectTo: 'https://tpc360medunlp.github.io/app/' + roleHash
     }
   });
   if (error) {
