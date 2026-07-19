@@ -1989,6 +1989,30 @@ function selectRole(el) {
   currentRole = el.dataset.role;
 }
 
+function updateStep2Labels() {
+  document.getElementById('reg-dni').value = '';
+  document.getElementById('reg-error').style.display = 'none';
+  if (currentRole === 'student') {
+    document.getElementById('step2-title').textContent = 'Verificación de inscripción';
+    document.getElementById('step2-desc').textContent  = 'Ingresá tu número de legajo para verificar que estés inscripto en la carrera.';
+    document.getElementById('step2-field-label').textContent = 'Número de legajo (Ej: 12345/6)';
+    document.getElementById('reg-dni').placeholder = 'Ej: 12345/6';
+    document.getElementById('step2-demo-note').textContent = 'Legajo de prueba: 40123/4 · 41234/5 · 42345/6';
+  } else if (currentRole === 'teacher') {
+    document.getElementById('step2-title').textContent = 'Verificación docente';
+    document.getElementById('step2-desc').textContent  = 'Ingresá tu DNI para verificar tu acceso como docente.';
+    document.getElementById('step2-field-label').textContent = 'DNI (sin puntos)';
+    document.getElementById('reg-dni').placeholder = 'Ej: 30111222';
+    document.getElementById('step2-demo-note').textContent = 'DNI de prueba: 30111222 · 31222333';
+  } else {
+    document.getElementById('step2-title').textContent = 'Verificación de coordinación';
+    document.getElementById('step2-desc').textContent  = 'Ingresá tu DNI para verificar tu acceso como coordinador/a.';
+    document.getElementById('step2-field-label').textContent = 'DNI (sin puntos)';
+    document.getElementById('reg-dni').placeholder = 'Ej: 32527404';
+    document.getElementById('step2-demo-note').textContent = 'DNI de prueba: 32527404';
+  }
+}
+
 function goToStep2() {
   googleEmail = 'mi.cuenta@gmail.com'; // en producción: capturado del OAuth de Google
   document.getElementById('step2-google-email').textContent = googleEmail;
