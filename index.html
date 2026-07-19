@@ -1768,6 +1768,30 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar solicitudes certificados finales
+    const { data: certData } = await _supabase.from('solicitudes_cert_finales').select('*');
+    if (certData) {
+      solicitudesCertFinales.length = 0;
+      certData.forEach(s => {
+        const legajoNorm = normalizeLegajo(s.legajo);
+        const alumno = ENROLLED_STUDENTS[legajoNorm];
+        const hoy = new Date();
+        solicitudesCertFinales.push({
+          id:            s.id,
+          email:         alumno ? alumno.email : s.legajo,
+          apellido:      s.apellido,
+          nombre:        s.nombre,
+          dni:           s.dni,
+          materiaId:     s.materia_id,
+          fechaExamen:   s.fecha_examen,
+          fechaSolicitud: s.created_at ? new Date(s.created_at).toLocaleDateString('es-AR') : '',
+          estado:        s.estado,
+          docenteDni:    s.docente_dni,
+          motivo:        s.motivo || '',
+        });
+      });
+    }
+
     // Cargar historial cambios de comisión
     const { data: historialData } = await _supabase.from('historial_cambios_comision').select('*');
     if (historialData) {
@@ -10729,8 +10753,9 @@ function confirmarSolicitud() {
   const hoy = new Date();
   const fechaSolicitud = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
 
+  const id = 'scf_' + Date.now();
   solicitudesCertFinales.push({
-    id: 'scf_' + Date.now(),
+    id,
     email: currentUser.email,
     apellido, nombre, dni, materiaId,
     fechaExamen: fechaExamen.split('-').reverse().join('/'),
@@ -10739,6 +10764,18 @@ function confirmarSolicitud() {
     docenteDni: materia?.docenteDni || '',
     motivo: '',
   });
+
+  // Guardar en Supabase
+  const legajo = getLegajoByEmail(currentUser.email);
+  if (legajo) {
+    _supabase.from('solicitudes_cert_finales').insert({
+      id, legajo, apellido, nombre, dni,
+      materia_id: materiaId,
+      fecha_examen: fechaExamen.split('-').reverse().join('/'),
+      estado: 'pendiente',
+      docente_dni: materia?.docenteDni || '',
+    }).then(({ error }) => { if (error) console.warn('Error guardando solicitud cert:', error); });
+  }
 
   closeSolicitudModal();
   showToast('Solicitud enviada al docente');
@@ -10801,7 +10838,12 @@ function renderCertRequestsView() {
 
 function aprobarCertFinal(id) {
   const s = solicitudesCertFinales.find(s => s.id === id);
-  if (s) s.estado = 'aprobado';
+  if (s) {
+    s.estado = 'aprobado';
+    _supabase.from('solicitudes_cert_finales')
+      .update({ estado: 'aprobado' }).eq('id', id)
+      .then(({ error }) => { if (error) console.warn('Error aprobando cert:', error); });
+  }
   renderCertRequestsView();
   showToast('Certificado aprobado · el alumno ya puede descargarlo');
 }
@@ -10818,7 +10860,14 @@ function closeRechazarCertModal() {
 function confirmarRechazo() {
   const motivo = document.getElementById('field-rechazo-motivo').value.trim();
   const s = solicitudesCertFinales.find(s => s.id === rechazandoCertId);
-  if (s) { s.estado = 'rechazado'; s.motivo = motivo; }
+  if (s) {
+    s.estado = 'rechazado';
+    s.motivo = motivo;
+    _supabase.from('solicitudes_cert_finales')
+      .update({ estado: 'rechazado', motivo })
+      .eq('id', rechazandoCertId)
+      .then(({ error }) => { if (error) console.warn('Error rechazando cert:', error); });
+  }
   closeRechazarCertModal();
   renderCertRequestsView();
   showToast('Solicitud rechazada');
