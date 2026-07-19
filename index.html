@@ -1768,6 +1768,23 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar self reported finales
+    const { data: selfData } = await _supabase.from('self_reported_finales').select('*');
+    if (selfData) {
+      Object.keys(selfReportedFinales).forEach(k => delete selfReportedFinales[k]);
+      selfData.forEach(s => {
+        const legajoNorm = normalizeLegajo(s.legajo);
+        const alumno = ENROLLED_STUDENTS[legajoNorm];
+        const email = alumno ? alumno.email : s.legajo;
+        if (!selfReportedFinales[email]) selfReportedFinales[email] = {};
+        selfReportedFinales[email][s.materia_id] = {
+          mesaLabel: s.mesa_label,
+          estado:    s.estado,
+          nota:      s.nota,
+        };
+      });
+    }
+
     // Cargar solicitudes cambio de comisión
     const { data: solCambioData } = await _supabase.from('solicitudes_cambio_comision').select('*');
     if (solCambioData) {
@@ -3551,6 +3568,17 @@ function confirmarSelfReport() {
     nota: nota !== '' ? parseFloat(nota) : null,
   };
 
+  // Guardar en Supabase
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    _supabase.from('self_reported_finales').upsert({
+      legajo, materia_id: _srMateriaId,
+      mesa_label: mesa, estado,
+      nota: nota !== '' ? parseFloat(nota) : null,
+    }, { onConflict: 'legajo,materia_id' })
+      .then(({ error }) => { if (error) console.warn('Error guardando self-report:', error); });
+  }
+
   document.getElementById('modal-self-report').classList.remove('open');
   renderStudentFinalesView();
   showToast('Resultado guardado');
@@ -3560,6 +3588,13 @@ function borrarSelfReport(materiaId) {
   const email = currentUser.email;
   if (selfReportedFinales[email]) {
     delete selfReportedFinales[email][materiaId];
+  }
+  // Borrar en Supabase
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    _supabase.from('self_reported_finales')
+      .delete().eq('legajo', legajo).eq('materia_id', materiaId)
+      .then(({ error }) => { if (error) console.warn('Error borrando self-report:', error); });
   }
   renderStudentFinalesView();
   showToast('Resultado eliminado');
