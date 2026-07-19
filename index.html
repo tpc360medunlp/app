@@ -1711,6 +1711,17 @@ async function loadDataFromSupabase() {
     }
 
     console.log('✅ Datos cargados desde Supabase');
+
+    // Cargar asistencia
+    const { data: asistenciaData } = await _supabase.from('asistencia').select('*');
+    if (asistenciaData) {
+      Object.keys(asistencia).forEach(k => delete asistencia[k]);
+      asistenciaData.forEach(a => {
+        if (!asistencia[a.comision_id]) asistencia[a.comision_id] = {};
+        if (!asistencia[a.comision_id][a.fecha]) asistencia[a.comision_id][a.fecha] = {};
+        asistencia[a.comision_id][a.fecha][a.email] = a.estado;
+      });
+    }
   } catch(e) {
     console.warn('⚠️ Error cargando datos de Supabase, usando datos demo:', e);
   }
@@ -6378,7 +6389,16 @@ function iniciarRegistro(comId, fecha, tipo) {
   if (!asistencia[comId]) asistencia[comId] = {};
   asistencia[comId][fecha] = {};
   const comision = COMISIONES.find(c => c.id === comId);
-  (comision?.alumnos || []).forEach(e => { asistencia[comId][fecha][e] = 'presente'; });
+  const rows = [];
+  (comision?.alumnos || []).forEach(e => {
+    asistencia[comId][fecha][e] = 'presente';
+    rows.push({ comision_id: comId, fecha, email: e, estado: 'presente' });
+  });
+  // Guardar en Supabase
+  if (rows.length > 0) {
+    _supabase.from('asistencia').upsert(rows, { onConflict: 'comision_id,fecha,email' })
+      .then(({ error }) => { if (error) console.warn('Error guardando asistencia inicial:', error); });
+  }
   if (tipo === 'qr') {
     openQrModal(comId, fecha);
   } else {
@@ -6390,6 +6410,15 @@ function toggleAsistencia(comId, fecha, email, estado) {
   if (!asistencia[comId]) asistencia[comId] = {};
   if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
   asistencia[comId][fecha][email] = estado;
+  // Guardar en Supabase
+  _supabase.from('asistencia').upsert({
+    comision_id: comId,
+    fecha: fecha,
+    email: email,
+    estado: estado
+  }, { onConflict: 'comision_id,fecha,email' }).then(({ error }) => {
+    if (error) console.warn('Error guardando asistencia:', error);
+  });
   renderAttendanceView(comId, fecha, 'manual');
   showSavedIndicator();
 }
