@@ -1780,7 +1780,7 @@ async function loadDataFromSupabase() {
         studentRecords[email][r.skill_id] = {
           status:      r.status,
           date:        r.fecha,
-          teacher:     r.teacher_dni || '',
+          teacher:     r.teacher_dni ? (ENROLLED_STAFF[r.teacher_dni] ? `${ENROLLED_STAFF[r.teacher_dni].nombre} ${ENROLLED_STAFF[r.teacher_dni].apellido}` : r.teacher_dni) : '',
           docenteDni:  r.teacher_dni || '',
           obs:         r.obs || '',
           satisfaccion: r.satisfaccion || null,
