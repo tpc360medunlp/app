@@ -1633,7 +1633,15 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Cargar datos base desde Supabase
+// Obtener legajo desde email (para operaciones Supabase)
+async function getLegajoSupabase(email) {
+  // Primero buscar en memoria
+  const legajo = getLegajoByEmail(email);
+  if (legajo) return legajo;
+  // Si no está en memoria, buscar en Supabase
+  const { data } = await _supabase.from('alumnos').select('legajo').eq('email', email).single();
+  return data?.legajo || null;
+}
 async function loadDataFromSupabase() {
   try {
     // Cargar materias
@@ -1676,8 +1684,14 @@ async function loadDataFromSupabase() {
     if (comisiones) {
       COMISIONES.length = 0;
       comisiones.forEach(c => {
+        // Convertir legajos a emails para compatibilidad con el frontend
         const alumnos = comAlumnos
-          ? comAlumnos.filter(ca => ca.comision_id === c.id).map(ca => ca.email)
+          ? comAlumnos.filter(ca => ca.comision_id === c.id).map(ca => {
+              // Buscar email por legajo
+              const legajoNorm = normalizeLegajo(ca.legajo);
+              const alumno = ENROLLED_STUDENTS[legajoNorm];
+              return alumno ? alumno.email : null;
+            }).filter(Boolean)
           : [];
         COMISIONES.push({
           id: c.id,
@@ -1705,21 +1719,25 @@ async function loadDataFromSupabase() {
           doc: a.dni,
           cude: a.cude || null,
         };
-        // Actualizar STUDENT_NAMES
         STUDENT_NAMES[a.email] = `${a.apellido}, ${a.nombre}`;
       });
     }
 
     console.log('✅ Datos cargados desde Supabase');
 
-    // Cargar asistencia
+    // Cargar asistencia (convertir legajo a email para el frontend)
     const { data: asistenciaData } = await _supabase.from('asistencia').select('*');
     if (asistenciaData) {
       Object.keys(asistencia).forEach(k => delete asistencia[k]);
       asistenciaData.forEach(a => {
+        // Buscar email por legajo
+        const legajoNorm = normalizeLegajo(a.legajo);
+        const alumno = ENROLLED_STUDENTS[legajoNorm];
+        const email = alumno ? alumno.email : a.legajo;
         if (!asistencia[a.comision_id]) asistencia[a.comision_id] = {};
-        if (!asistencia[a.comision_id][a.fecha]) asistencia[a.comision_id][a.fecha] = {};
-        asistencia[a.comision_id][a.fecha][a.email] = a.estado;
+        const fecha = typeof a.fecha === 'string' ? a.fecha : a.fecha.toISOString().slice(0,10);
+        if (!asistencia[a.comision_id][fecha]) asistencia[a.comision_id][fecha] = {};
+        asistencia[a.comision_id][fecha][email] = a.estado;
       });
     }
   } catch(e) {
@@ -6392,11 +6410,11 @@ function iniciarRegistro(comId, fecha, tipo) {
   const rows = [];
   (comision?.alumnos || []).forEach(e => {
     asistencia[comId][fecha][e] = 'presente';
-    rows.push({ comision_id: comId, fecha, email: e, estado: 'presente' });
+    const legajo = getLegajoByEmail(e);
+    if (legajo) rows.push({ comision_id: comId, fecha, legajo, estado: 'presente' });
   });
-  // Guardar en Supabase
   if (rows.length > 0) {
-    _supabase.from('asistencia').upsert(rows, { onConflict: 'comision_id,fecha,email' })
+    _supabase.from('asistencia').upsert(rows, { onConflict: 'comision_id,fecha,legajo' })
       .then(({ error }) => { if (error) console.warn('Error guardando asistencia inicial:', error); });
   }
   if (tipo === 'qr') {
@@ -6410,15 +6428,18 @@ function toggleAsistencia(comId, fecha, email, estado) {
   if (!asistencia[comId]) asistencia[comId] = {};
   if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
   asistencia[comId][fecha][email] = estado;
-  // Guardar en Supabase
-  _supabase.from('asistencia').upsert({
-    comision_id: comId,
-    fecha: fecha,
-    email: email,
-    estado: estado
-  }, { onConflict: 'comision_id,fecha,email' }).then(({ error }) => {
-    if (error) console.warn('Error guardando asistencia:', error);
-  });
+  // Guardar en Supabase usando legajo
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    _supabase.from('asistencia').upsert({
+      comision_id: comId,
+      fecha: fecha,
+      legajo: legajo,
+      estado: estado
+    }, { onConflict: 'comision_id,fecha,legajo' }).then(({ error }) => {
+      if (error) console.warn('Error guardando asistencia:', error);
+    });
+  }
   renderAttendanceView(comId, fecha, 'manual');
   showSavedIndicator();
 }
