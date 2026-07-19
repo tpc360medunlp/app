@@ -1768,12 +1768,32 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar portfolio (student_records)
+    const { data: recordsData } = await _supabase.from('student_records').select('*');
+    if (recordsData) {
+      Object.keys(studentRecords).forEach(k => delete studentRecords[k]);
+      recordsData.forEach(r => {
+        const legajoNorm = normalizeLegajo(r.legajo);
+        const alumno = ENROLLED_STUDENTS[legajoNorm];
+        const email = alumno ? alumno.email : r.legajo;
+        if (!studentRecords[email]) studentRecords[email] = {};
+        studentRecords[email][r.skill_id] = {
+          status:      r.status,
+          date:        r.fecha,
+          teacher:     r.teacher_dni || '',
+          docenteDni:  r.teacher_dni || '',
+          obs:         r.obs || '',
+          satisfaccion: r.satisfaccion || null,
+          teacherObs:  r.teacher_obs || '',
+          historial:   [],
+        };
+      });
+    }
+
   } catch(e) {
     console.warn('⚠️ Error cargando datos de Supabase, usando datos demo:', e);
   }
 }
-
-// ── BASE DE ALUMNOS INSCRIPTOS (demo) ─────────────────────
 // Clave: legajo normalizado (sin ceros adelante). Ej: "51064/9"
 const ENROLLED_STUDENTS = {
   "40123/4": { nombre: "Juan",  apellido: "Pérez",  email: "juan.perez@gmail.com",  legajo: "040123/4", doc: "41234567",
@@ -4034,7 +4054,6 @@ function submitPractica() {
   const d   = new Date(fecha);
   const fmt = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
-  // Preservar historial previo si existe (reenvío tras devolución)
   const prevRec  = studentRecords[email][selectedSkillId] || {};
   const historial = prevRec.historial || [];
 
@@ -4044,6 +4063,19 @@ function submitPractica() {
     satisfaccion: selectedEvalValue || null,
     historial,
   };
+
+  // Guardar en Supabase
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    _supabase.from('student_records').upsert({
+      legajo, skill_id: selectedSkillId,
+      status: 'pending', fecha: new Date().toISOString().slice(0,10),
+      teacher_dni: docenteDni, obs,
+      satisfaccion: selectedEvalValue || null,
+    }, { onConflict: 'legajo,skill_id' })
+      .then(({ error }) => { if (error) console.warn('Error guardando portfolio:', error); });
+  }
+
   closeModal();
   showToast('Práctica enviada · pendiente de validación');
   renderStudentView();
@@ -4592,6 +4624,19 @@ function confirmApprove() {
   rec.status     = 'validated';
   rec.teacher    = currentUser.name;
   rec.teacherObs = obs;
+
+  // Guardar en Supabase
+  const legajo = getLegajoByEmail(item.email);
+  if (legajo) {
+    _supabase.from('student_records').upsert({
+      legajo, skill_id: item.skillId,
+      status: 'validated',
+      teacher_dni: getTeacherDni(),
+      teacher_obs: obs,
+    }, { onConflict: 'legajo,skill_id' })
+      .then(({ error }) => { if (error) console.warn('Error validando skill:', error); });
+  }
+
   closeApproveModal();
   const card = document.getElementById('vc-' + approvingPendingId);
   if (card) card.style.opacity = '0.4';
@@ -4626,6 +4671,18 @@ function confirmReject() {
     rec.status     = 'rejected';
     rec.teacherObs = obs;
     rec.teacher    = currentUser.name;
+
+    // Guardar en Supabase
+    const legajo = getLegajoByEmail(item.email);
+    if (legajo) {
+      _supabase.from('student_records').upsert({
+        legajo, skill_id: item.skillId,
+        status: 'rejected',
+        teacher_dni: getTeacherDni(),
+        teacher_obs: obs,
+      }, { onConflict: 'legajo,skill_id' })
+        .then(({ error }) => { if (error) console.warn('Error rechazando skill:', error); });
+    }
   }
   closeRejectModal();
   renderTeacherView();
