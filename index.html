@@ -1768,6 +1768,41 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar solicitudes cambio de comisión
+    const { data: solCambioData } = await _supabase.from('solicitudes_cambio_comision').select('*');
+    if (solCambioData) {
+      solicitudesCambioComision.length = 0;
+      solCambioData.forEach(s => {
+        const legajoNorm = normalizeLegajo(s.legajo);
+        const alumno = ENROLLED_STUDENTS[legajoNorm];
+        solicitudesCambioComision.push({
+          id:            s.id,
+          email:         alumno ? alumno.email : s.legajo,
+          materiaId:     s.materia_id,
+          deComId:       s.de_com_id,
+          aComId:        s.a_com_id,
+          motivo:        s.motivo || '',
+          estado:        s.estado,
+          motivoRechazo: s.motivo_rechazo || null,
+          fecha:         s.fecha,
+        });
+      });
+    }
+
+    // Cargar períodos cambio de comisión
+    const { data: periodosData } = await _supabase.from('periodos_cambio_comision').select('*');
+    if (periodosData) {
+      periodosCambioComision.length = 0;
+      periodosData.forEach(p => {
+        periodosCambioComision.push({
+          id:       p.id,
+          materias: p.materias,
+          apertura: p.apertura,
+          cierre:   p.cierre,
+        });
+      });
+    }
+
     // Cargar solicitudes certificados finales
     const { data: certData } = await _supabase.from('solicitudes_cert_finales').select('*');
     if (certData) {
@@ -8838,12 +8873,25 @@ function enviarSolicitudCambio(email) {
   if (!materiaId || !aComId) { showToast('Seleccioná una materia y comisión destino', true); return; }
   if (!motivo) { showToast('Ingresá el motivo del cambio', true); return; }
   const comActual = COMISIONES.find(c => c.materiaId === materiaId && c.alumnos.includes(email));
+  const id = 'sol' + Date.now();
+  const legajo = getLegajoByEmail(email);
   solicitudesCambioComision.push({
-    id: 'sol' + Date.now(), email, materiaId,
+    id, email, materiaId,
     deComId: comActual?.id || null, aComId, motivo,
     estado: 'pendiente', motivoRechazo: null,
     fecha: new Date().toISOString().slice(0,10)
   });
+  // Guardar en Supabase
+  if (legajo) {
+    _supabase.from('solicitudes_cambio_comision').insert({
+      id, legajo,
+      materia_id: materiaId,
+      de_com_id: comActual?.id || null,
+      a_com_id: aComId,
+      motivo, estado: 'pendiente',
+      fecha: new Date().toISOString().slice(0,10)
+    }).then(({ error }) => { if (error) console.warn('Error guardando solicitud cambio:', error); });
+  }
   actualizarBadgeCude();
   renderStudentCudeView();
   showToast('Solicitud enviada correctamente');
@@ -9059,7 +9107,11 @@ function guardarPeriodoCude() {
   if (materias.length === 0) { showToast('Seleccioná al menos una materia', true); return; }
   if (!apertura || !cierre)  { showToast('Ingresá las fechas del período', true); return; }
   if (apertura > cierre)     { showToast('La apertura no puede ser posterior al cierre', true); return; }
-  periodosCambioComision.push({ id: 'p' + Date.now(), materias, apertura, cierre });
+  const id = 'p' + Date.now();
+  periodosCambioComision.push({ id, materias, apertura, cierre });
+  // Guardar en Supabase
+  _supabase.from('periodos_cambio_comision').insert({ id, materias, apertura, cierre })
+    .then(({ error }) => { if (error) console.warn('Error guardando período:', error); });
   document.getElementById('modal-periodo-cude').classList.remove('open');
   renderCoordCudeView();
   showToast('Período guardado correctamente');
@@ -9067,6 +9119,8 @@ function guardarPeriodoCude() {
 
 function eliminarPeriodoCude(id) {
   periodosCambioComision = periodosCambioComision.filter(p => p.id !== id);
+  _supabase.from('periodos_cambio_comision').delete().eq('id', id)
+    .then(({ error }) => { if (error) console.warn('Error eliminando período:', error); });
   renderCoordCudeView();
   showToast('Período eliminado');
 }
@@ -9134,7 +9188,7 @@ function renderCoordCudeSolicitudes() {
 function aprobarSolicitudCambio(solId) {
   const sol = solicitudesCambioComision.find(s => s.id === solId);
   if (!sol) return;
-  // Ejecutar cambio automáticamente
+  // Ejecutar cambio en memoria
   if (sol.deComId) {
     const comOrig = COMISIONES.find(c => c.id === sol.deComId);
     if (comOrig) comOrig.alumnos = comOrig.alumnos.filter(e => e !== sol.email);
@@ -9145,6 +9199,21 @@ function aprobarSolicitudCambio(solId) {
   const legajo = getLegajoByEmail(sol.email);
   if (legajo) registrarCambioComision(sol.email, sol.deComId, sol.aComId);
   sol.estado = 'aprobada';
+  // Guardar en Supabase
+  _supabase.from('solicitudes_cambio_comision')
+    .update({ estado: 'aprobada' }).eq('id', solId)
+    .then(({ error }) => { if (error) console.warn('Error aprobando solicitud:', error); });
+  // Actualizar comision_alumnos en Supabase
+  if (legajo) {
+    if (sol.deComId) {
+      _supabase.from('comision_alumnos')
+        .delete().eq('comision_id', sol.deComId).eq('legajo', legajo)
+        .then(({ error }) => { if (error) console.warn('Error removiendo de comisión:', error); });
+    }
+    _supabase.from('comision_alumnos')
+      .upsert({ comision_id: sol.aComId, legajo }, { onConflict: 'comision_id,legajo' })
+      .then(({ error }) => { if (error) console.warn('Error agregando a comisión:', error); });
+  }
   actualizarBadgeCude();
   renderCoordCudeView();
   showToast('Cambio de comisión aprobado y ejecutado');
@@ -9157,6 +9226,10 @@ function rechazarSolicitudCambio(solId) {
   if (!sol) return;
   sol.estado = 'rechazada';
   sol.motivoRechazo = motivo || 'Sin motivo especificado';
+  // Guardar en Supabase
+  _supabase.from('solicitudes_cambio_comision')
+    .update({ estado: 'rechazada', motivo_rechazo: sol.motivoRechazo }).eq('id', solId)
+    .then(({ error }) => { if (error) console.warn('Error rechazando solicitud:', error); });
   actualizarBadgeCude();
   renderCoordCudeView();
   showToast('Solicitud rechazada');
