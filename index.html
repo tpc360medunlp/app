@@ -1633,6 +1633,89 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Cargar datos base desde Supabase
+async function loadDataFromSupabase() {
+  try {
+    // Cargar materias
+    const { data: materias } = await _supabase.from('materias').select('*');
+    if (materias) {
+      MATERIAS.length = 0;
+      materias.forEach(m => MATERIAS.push({
+        id: m.id,
+        nombre: m.nombre,
+        docenteDni: m.docente_dni,
+        añoCarrera: m.año_carrera,
+        regimen: m.regimen,
+        notaPromocion: m.nota_promocion,
+        criterioPromocion: m.criterio_promocion,
+        regimen_cursada: m.regimen_cursada || 'anual',
+        cronograma: m.cronograma || null,
+      }));
+    }
+
+    // Cargar staff
+    const { data: staff } = await _supabase.from('staff').select('*');
+    if (staff) {
+      Object.keys(ENROLLED_STAFF).forEach(k => delete ENROLLED_STAFF[k]);
+      staff.forEach(s => {
+        ENROLLED_STAFF[s.dni] = {
+          nombre: s.nombre,
+          apellido: s.apellido,
+          email: s.email,
+          roles: s.roles || [],
+          roleLabel: s.role_label || '',
+          cargo: s.cargo || '',
+          activo: s.activo !== false,
+        };
+      });
+    }
+
+    // Cargar comisiones
+    const { data: comisiones } = await _supabase.from('comisiones').select('*');
+    const { data: comAlumnos } = await _supabase.from('comision_alumnos').select('*');
+    if (comisiones) {
+      COMISIONES.length = 0;
+      comisiones.forEach(c => {
+        const alumnos = comAlumnos
+          ? comAlumnos.filter(ca => ca.comision_id === c.id).map(ca => ca.email)
+          : [];
+        COMISIONES.push({
+          id: c.id,
+          materiaId: c.materia_id,
+          nombre: c.nombre,
+          docenteDni: c.docente_dni,
+          año: c.año,
+          periodo: c.periodo || 1,
+          alumnos,
+        });
+      });
+    }
+
+    // Cargar alumnos
+    const { data: alumnos } = await _supabase.from('alumnos').select('*');
+    if (alumnos) {
+      Object.keys(ENROLLED_STUDENTS).forEach(k => delete ENROLLED_STUDENTS[k]);
+      alumnos.forEach(a => {
+        const legajoNorm = normalizeLegajo(a.legajo);
+        ENROLLED_STUDENTS[legajoNorm] = {
+          nombre: a.nombre,
+          apellido: a.apellido,
+          email: a.email,
+          legajo: a.legajo_completo || a.legajo,
+          doc: a.dni,
+          cude: a.cude || null,
+        };
+        // Actualizar STUDENT_NAMES
+        STUDENT_NAMES[a.email] = `${a.apellido}, ${a.nombre}`;
+      });
+    }
+
+    console.log('✅ Datos cargados desde Supabase');
+  } catch(e) {
+    console.warn('⚠️ Error cargando datos de Supabase, usando datos demo:', e);
+  }
+}
+
 // ── BASE DE ALUMNOS INSCRIPTOS (demo) ─────────────────────
 // Clave: legajo normalizado (sin ceros adelante). Ej: "51064/9"
 const ENROLLED_STUDENTS = {
@@ -2048,12 +2131,16 @@ function doLogin() {
   enterApp();
 }
 
-function enterApp() {
+async function enterApp() {
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
   document.getElementById('user-name-sidebar').textContent = currentUser.name;
   document.getElementById('user-role-sidebar').textContent = currentUser.role;
   document.getElementById('user-avatar-sidebar').textContent = currentUser.initials;
+
+  // Cargar datos desde Supabase antes de renderizar
+  await loadDataFromSupabase();
+
   renderSidebar();
   if (currentRole === 'student') {
     switchStudentView('student');
