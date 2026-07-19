@@ -1768,6 +1768,20 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar historial cambios de comisión
+    const { data: historialData } = await _supabase.from('historial_cambios_comision').select('*');
+    if (historialData) {
+      historialCambiosComision.length = 0;
+      historialData.forEach(h => {
+        historialCambiosComision.push({
+          legajo:  h.legajo,
+          deComId: h.de_com_id,
+          aComId:  h.a_com_id,
+          fecha:   h.fecha,
+        });
+      });
+    }
+
     // Cargar portfolio (student_records)
     const { data: recordsData } = await _supabase.from('student_records').select('*');
     if (recordsData) {
@@ -1876,10 +1890,12 @@ function getComisionOrigenNombre(email, comIdActual) {
 function registrarCambioComision(email, deComId, aComId) {
   const legajo = getLegajoByEmail(email);
   if (!legajo) return;
-  historialCambiosComision.push({
-    legajo, deComId, aComId,
-    fecha: new Date().toISOString().split('T')[0]
-  });
+  const fecha = new Date().toISOString().split('T')[0];
+  historialCambiosComision.push({ legajo, deComId, aComId, fecha });
+  // Guardar en Supabase
+  _supabase.from('historial_cambios_comision').insert({
+    legajo, de_com_id: deComId, a_com_id: aComId, fecha
+  }).then(({ error }) => { if (error) console.warn('Error guardando historial:', error); });
 }
 const ENROLLED_STAFF = {
   "30111222": { nombre: "Ana",    apellido: "Torres",  roles: ["teacher"],                 roleLabel: "Docente",       email: "a.torres@fcm.unlp.edu.ar",  cargo: "JTP" },
