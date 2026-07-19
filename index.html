@@ -10522,6 +10522,11 @@ function handleCronogramaUpload(input, materiaId, periodo = 1) {
         materia.cronograma = {};
       }
       materia.cronograma[periodo] = { filas, cargado: new Date().toLocaleDateString('es-AR') };
+      // Guardar en Supabase
+      _supabase.from('materias')
+        .update({ cronograma: materia.cronograma })
+        .eq('id', materiaId)
+        .then(({ error }) => { if (error) console.warn('Error guardando cronograma:', error); });
       renderAcademicView(materiaId);
       showToast(`Cronograma cargado: ${filas.length} filas`);
     } catch(err) {
@@ -10543,6 +10548,11 @@ function eliminarCronograma(materiaId, periodo = 1) {
   if (!materia) return;
   if (materia.cronograma) delete materia.cronograma[periodo];
   if (materia.cronograma && Object.keys(materia.cronograma).length === 0) materia.cronograma = null;
+  // Guardar en Supabase
+  _supabase.from('materias')
+    .update({ cronograma: materia.cronograma })
+    .eq('id', materiaId)
+    .then(({ error }) => { if (error) console.warn('Error eliminando cronograma:', error); });
   renderAcademicView(materiaId);
   showToast('Cronograma eliminado');
 }
