@@ -1768,6 +1768,29 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar configuración del sistema
+    const { data: configData } = await _supabase.from('config_sistema').select('*');
+    if (configData) {
+      configData.forEach(c => {
+        if (c.clave === 'studentViewConfig' && c.valor) {
+          Object.keys(c.valor).forEach(k => {
+            if (studentViewConfig[k]) studentViewConfig[k].enabled = c.valor[k].enabled;
+          });
+        }
+        if (c.clave === 'teacherViewConfig' && c.valor) {
+          Object.keys(c.valor).forEach(k => {
+            if (teacherViewConfig[k]) teacherViewConfig[k].enabled = c.valor[k].enabled;
+          });
+        }
+        if (c.clave === 'certConfig' && c.valor) {
+          Object.assign(certConfig, c.valor);
+        }
+        if (c.clave === 'certFinalConfig' && c.valor) {
+          Object.assign(certFinalConfig, c.valor);
+        }
+      });
+    }
+
     // Cargar mesas de examen
     const { data: mesasData } = await _supabase.from('mesas_examen').select('*, mesas_resultados(*)');
     if (mesasData) {
@@ -9606,6 +9629,11 @@ let teacherViewConfig = {
 
 function toggleStudentView(key) {
   studentViewConfig[key].enabled = !studentViewConfig[key].enabled;
+  // Guardar en Supabase
+  _supabase.from('config_sistema').upsert(
+    { clave: 'studentViewConfig', valor: studentViewConfig },
+    { onConflict: 'clave' }
+  ).then(({ error }) => { if (error) console.warn('Error guardando config alumno:', error); });
   renderSidebar();
   // Refrescar vista activa si corresponde
   const certContainer = document.getElementById('student-certificados-container');
@@ -9630,6 +9658,11 @@ function toggleStudentView(key) {
 
 function toggleTeacherView(key) {
   teacherViewConfig[key].enabled = !teacherViewConfig[key].enabled;
+  // Guardar en Supabase
+  _supabase.from('config_sistema').upsert(
+    { clave: 'teacherViewConfig', valor: teacherViewConfig },
+    { onConflict: 'clave' }
+  ).then(({ error }) => { if (error) console.warn('Error guardando config docente:', error); });
   renderSidebar();
   renderConfigView();
 }
@@ -10029,6 +10062,11 @@ function guardarTextoBase(tab) {
   const val = document.getElementById('field-texto-base').value;
   if (tab === 'parciales') certConfig.textoBase = val;
   else certFinalConfig.textoBase = val;
+  // Guardar en Supabase
+  const clave = tab === 'parciales' ? 'certConfig' : 'certFinalConfig';
+  const valor = tab === 'parciales' ? certConfig : certFinalConfig;
+  _supabase.from('config_sistema').upsert({ clave, valor }, { onConflict: 'clave' })
+    .then(({ error }) => { if (error) console.warn('Error guardando config cert:', error); });
   showToast('Texto base guardado');
 }
 
@@ -10041,6 +10079,11 @@ function handleMembreteUpload(input, tab = 'parciales') {
   reader.onload = e => {
     if (tab === 'parciales') certConfig.membrete = e.target.result;
     else certFinalConfig.membrete = e.target.result;
+    // Guardar en Supabase
+    const clave = tab === 'parciales' ? 'certConfig' : 'certFinalConfig';
+    const valor = tab === 'parciales' ? certConfig : certFinalConfig;
+    _supabase.from('config_sistema').upsert({ clave, valor }, { onConflict: 'clave' })
+      .then(({ error }) => { if (error) console.warn('Error guardando membrete:', error); });
     renderCertificadosCoordView(tab);
     showToast('PDF membretado cargado correctamente');
   };
