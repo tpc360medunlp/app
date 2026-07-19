@@ -2269,7 +2269,7 @@ function showRegError(msg) {
   el.style.display = 'block';
 }
 
-function verifyDni() {
+async function verifyDni() {
   const raw = document.getElementById('reg-dni').value.trim();
   document.getElementById('reg-error').style.display = 'none';
   if (!raw) { showRegError(currentRole === 'student' ? 'Ingresá tu número de legajo.' : 'Ingresá tu DNI.'); return; }
@@ -2285,10 +2285,24 @@ function verifyDni() {
       showRegError('❌ Tu legajo no figura en el padrón de inscriptos. Verificá el número o contactá a coordinación.');
       return;
     }
-    // En producción: verificar que googleEmail coincida con alumno.email
-    // En demo: usar el email ya registrado para que coincida con las comisiones
-    const email = alumno.email || googleEmail;
-    ENROLLED_STUDENTS[legajo].email = email;
+
+    if (!alumno.email) {
+      // Primer acceso — registrar email de Google en Supabase
+      const { error } = await _supabase.from('alumnos')
+        .update({ email: googleEmail })
+        .eq('legajo', legajo);
+      if (error) {
+        showRegError('❌ Error al registrar tu cuenta. Intentá de nuevo.');
+        return;
+      }
+      ENROLLED_STUDENTS[legajo].email = googleEmail;
+    } else if (alumno.email.toLowerCase() !== googleEmail.toLowerCase()) {
+      // Email no coincide
+      showRegError('❌ El email de Google no coincide con el registrado para este legajo. Contactá a coordinación.');
+      return;
+    }
+
+    const email = alumno.email;
     if (!studentRecords[email]) studentRecords[email] = {};
     if (!STUDENT_NAMES[email]) STUDENT_NAMES[email] = `${alumno.apellido}, ${alumno.nombre}`;
     currentUser = { name: `${alumno.nombre} ${alumno.apellido}`, email, role: 'Estudiante', initials: (alumno.nombre[0] + alumno.apellido[0]).toUpperCase() };
@@ -2306,17 +2320,18 @@ function verifyDni() {
       showRegError(`❌ Tu DNI no tiene acceso al rol seleccionado. Contactá a la coordinación.`);
       return;
     }
+    // Verificar email de Google vs email registrado en staff
+    if (persona.email && persona.email.toLowerCase() !== googleEmail.toLowerCase()) {
+      showRegError('❌ El email de Google no coincide con el registrado para este DNI. Contactá a la coordinación.');
+      return;
+    }
 
-    // Si tiene múltiples roles y el sistema detecta que podría usar otro,
-    // usar el rol que seleccionó en el paso 1
-    const effectiveEmail = persona.email || googleEmail;
     currentUser = {
       name: `${persona.nombre} ${persona.apellido}`,
-      email: effectiveEmail,
+      email: persona.email || googleEmail,
       role: currentRole === 'coordinator' ? 'Coordinación' : 'Docente',
       initials: (persona.nombre[0] + persona.apellido[0]).toUpperCase()
     };
-    // currentRole ya está seteado desde la selección del paso 1
   }
 
   enterApp();
