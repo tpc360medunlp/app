@@ -9403,21 +9403,23 @@ const CARTELERA_DEMO = [
 ];
 
 function openCartelaModal(pubId) {
-  const p = CARTELERA_DEMO.find(x => x.id === pubId);
+  const p = (window._carteleraCache || []).find(x => x.id === pubId)
+         || CARTELERA_DEMO.find(x => x.id === pubId);
   if (!p) return;
-  document.getElementById('modal-cartelera-catedra').textContent   = p.catedraNombre;
-  document.getElementById('modal-cartelera-titulo').textContent     = p.titulo;
+  document.getElementById('modal-cartelera-catedra').textContent   = p.catedraNombre || p.catedra_nombre || '';
+  document.getElementById('modal-cartelera-titulo').textContent     = p.titulo || '';
   document.getElementById('modal-cartelera-subtitulo').textContent  = p.subtitulo || '';
-  const fechaStr = p.fechaMod
-    ? `Publicado: ${p.fechaPub} · Modificado: ${p.fechaMod} hs`
-    : `Publicado: ${p.fechaPub}`;
+  const fechaMod = p.fechaMod || p.fecha_mod;
+  const fechaPub = p.fechaPub || p.fecha_pub;
+  const fechaStr = fechaMod
+    ? `Publicado: ${fechaPub} · Modificado: ${fechaMod} hs`
+    : `Publicado: ${fechaPub}`;
   document.getElementById('modal-cartelera-fecha').textContent = fechaStr;
 
   const contenidoEl = document.getElementById('modal-cartelera-contenido');
   const linkEl      = document.getElementById('modal-cartelera-link');
 
   if (p.contenido) {
-    // Detectar URLs en el contenido y convertirlas en links
     const withLinks = p.contenido.replace(
       /(https?:\/\/[^\s]+)/g,
       '<a href="$1" target="_blank" style="color:var(--teal);word-break:break-all">$1</a>'
@@ -9509,14 +9511,36 @@ async function renderCartelaView(containerId) {
     <div style="font-size:13px">Cargando anuncios...</div>
   </div>`;
 
-  // En producción: leer desde Google Sheets (actualizado por trigger Apps Script cada hora de 6:00 a 00:00)
-  // En demo: usar datos reales cargados estáticamente desde cartelera.med.unlp.edu.ar/catedra/15
-  await new Promise(r => setTimeout(r, 400)); // simular latencia
+  // Cargar publicaciones desde Supabase
+  let todas = [];
+  const { data: pubData, error } = await _supabase
+    .from('cartelera_publicaciones')
+    .select('*')
+    .order('updated_at', { ascending: false });
 
-  const todas = CARTELERA_DEMO.map(p => ({
-    ...p,
-    fechaOrden: parseFechaCartelera(p.fechaMod ? p.fechaMod.substring(0,10) : p.fechaPub),
-  }));
+  if (pubData && pubData.length > 0) {
+    todas = pubData.map(p => ({
+      id:           p.id,
+      titulo:       p.titulo,
+      subtitulo:    p.subtitulo,
+      url:          p.url,
+      fechaPub:     p.fecha_pub,
+      fechaMod:     p.fecha_mod,
+      catedraId:    p.catedra_id,
+      catedraNombre: p.catedra_nombre,
+      contenido:    p.contenido,
+      fechaOrden:   parseFechaCartelera(p.fecha_mod ? p.fecha_mod.substring(0,10) : p.fecha_pub),
+    }));
+  } else {
+    // Fallback a datos demo si Supabase no tiene datos
+    todas = CARTELERA_DEMO.map(p => ({
+      ...p,
+      fechaOrden: parseFechaCartelera(p.fechaMod ? p.fechaMod.substring(0,10) : p.fechaPub),
+    }));
+  }
+
+  // Guardar en cache para el modal
+  window._carteleraCache = todas;
 
   // Obtener última visita desde Supabase (fallback: localStorage)
   const lsKey = 'cartelera_ultima_visita';
@@ -9525,9 +9549,9 @@ async function renderCartelaView(containerId) {
     ? getLegajoByEmail(currentUser.email) : null;
 
   if (legajo) {
-    const { data: visitaData } = await _supabase.from('cartelera_visitas')
+    const { data: visitaData, error: visitaError } = await _supabase.from('cartelera_visitas')
       .select('ultima_visita').eq('legajo', legajo).single();
-    if (visitaData?.ultima_visita) {
+    if (!visitaError && visitaData?.ultima_visita) {
       ultimaVisita = new Date(visitaData.ultima_visita);
     }
   } else {
