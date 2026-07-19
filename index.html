@@ -1740,6 +1740,34 @@ async function loadDataFromSupabase() {
         asistencia[a.comision_id][fecha][email] = a.estado;
       });
     }
+    // Cargar parciales
+    const { data: parcialesData } = await _supabase.from('parciales').select('*');
+    if (parcialesData) {
+      Object.keys(parciales).forEach(k => delete parciales[k]);
+      parcialesData.forEach(p => {
+        if (!parciales[p.comision_id]) parciales[p.comision_id] = {};
+        if (!parciales[p.comision_id][p.parcial]) parciales[p.comision_id][p.parcial] = {};
+        if (!parciales[p.comision_id][p.parcial][p.fecha_parcial]) {
+          parciales[p.comision_id][p.parcial][p.fecha_parcial] = {
+            _publicado: false, _fechaExamen: null
+          };
+        }
+        // Marcar publicado y fecha examen
+        if (p.publicado) parciales[p.comision_id][p.parcial][p.fecha_parcial]._publicado = true;
+        if (p.fecha_examen) parciales[p.comision_id][p.parcial][p.fecha_parcial]._fechaExamen = p.fecha_examen;
+        // Buscar email por legajo
+        const legajoNorm = normalizeLegajo(p.legajo);
+        const alumno = ENROLLED_STUDENTS[legajoNorm];
+        const email = alumno ? alumno.email : p.legajo;
+        if (p.nota !== null || p.estado) {
+          parciales[p.comision_id][p.parcial][p.fecha_parcial][email] = {
+            nota: p.nota,
+            estado: p.estado
+          };
+        }
+      });
+    }
+
   } catch(e) {
     console.warn('⚠️ Error cargando datos de Supabase, usando datos demo:', e);
   }
@@ -3273,12 +3301,9 @@ function guardarNota(comId, parcial, fecha, email, valor) {
     if (materia?.regimen === 'promocion' && materia?.notaPromocion && nota >= materia.notaPromocion) {
       const criterio = materia.criterioPromocion || 'primera_fecha';
       const idxFecha = NOMBRES_FECHAS.indexOf(fecha);
-
       if (criterio === 'primera_fecha') {
-        // Debe ser la 1era fecha calendario (índice 0)
         if (idxFecha === 0) estado = 'promocion';
       } else {
-        // primera_presentacion: invalida si ya tuvo aprobado o desaprobado anterior (ausente no cuenta)
         const fechasAnteriores = NOMBRES_FECHAS.slice(0, idxFecha);
         const presentoAntes = fechasAnteriores.some(f => {
           const est = parciales[comId]?.[parcial]?.[f]?.[email]?.estado;
@@ -3289,6 +3314,20 @@ function guardarNota(comId, parcial, fecha, email, valor) {
     }
 
     parciales[comId][parcial][fecha][email].estado = estado;
+
+    // Guardar en Supabase
+    const legajo = getLegajoByEmail(email);
+    if (legajo) {
+      const fechaExamen = parciales[comId][parcial][fecha]._fechaExamen || null;
+      const publicado   = parciales[comId][parcial][fecha]._publicado || false;
+      _supabase.from('parciales').upsert({
+        comision_id: comId, parcial, fecha_parcial: fecha,
+        legajo, nota, estado, publicado,
+        fecha_examen: fechaExamen
+      }, { onConflict: 'comision_id,parcial,fecha_parcial,legajo' })
+        .then(({ error }) => { if (error) console.warn('Error guardando nota:', error); });
+    }
+
     renderNotasView(comId, parcial, fecha);
   }
   showNotasSaved();
@@ -3301,6 +3340,18 @@ function guardarEstado(comId, parcial, fecha, email, estado) {
   if (!parciales[comId][parcial][fecha][email]) parciales[comId][parcial][fecha][email] = {};
   parciales[comId][parcial][fecha][email].estado = estado;
   if (estado === 'ausente') parciales[comId][parcial][fecha][email].nota = null;
+  // Guardar en Supabase
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    const nota      = parciales[comId][parcial][fecha][email].nota;
+    const publicado = parciales[comId][parcial][fecha]._publicado || false;
+    const fechaExamen = parciales[comId][parcial][fecha]._fechaExamen || null;
+    _supabase.from('parciales').upsert({
+      comision_id: comId, parcial, fecha_parcial: fecha,
+      legajo, nota: estado === 'ausente' ? null : nota, estado, publicado, fecha_examen: fechaExamen
+    }, { onConflict: 'comision_id,parcial,fecha_parcial,legajo' })
+      .then(({ error }) => { if (error) console.warn('Error guardando estado:', error); });
+  }
   renderNotasView(comId, parcial, fecha);
   showNotasSaved();
 }
@@ -3326,6 +3377,18 @@ function publicarNotas(comId, parcial, fecha) {
     return;
   }
   parciales[comId][parcial][fecha]._publicado = true;
+  // Actualizar publicado en Supabase para todos los alumnos de esa fecha
+  const comision = COMISIONES.find(c => c.id === comId);
+  (comision?.alumnos || []).forEach(email => {
+    const legajo = getLegajoByEmail(email);
+    if (legajo) {
+      _supabase.from('parciales').upsert({
+        comision_id: comId, parcial, fecha_parcial: fecha,
+        legajo, publicado: true, fecha_examen: fechaExamen
+      }, { onConflict: 'comision_id,parcial,fecha_parcial,legajo' })
+        .then(({ error }) => { if (error) console.warn('Error publicando notas:', error); });
+    }
+  });
   renderNotasView(comId, parcial, fecha);
   showToast('Registro publicado · los alumnos ya pueden verlo');
 }
@@ -3333,6 +3396,18 @@ function publicarNotas(comId, parcial, fecha) {
 function despublicarNotas(comId, parcial, fecha) {
   if (!parciales[comId]?.[parcial]?.[fecha]) return;
   parciales[comId][parcial][fecha]._publicado = false;
+  // Actualizar en Supabase
+  const comision = COMISIONES.find(c => c.id === comId);
+  (comision?.alumnos || []).forEach(email => {
+    const legajo = getLegajoByEmail(email);
+    if (legajo) {
+      _supabase.from('parciales')
+        .update({ publicado: false })
+        .eq('comision_id', comId).eq('parcial', parcial)
+        .eq('fecha_parcial', fecha).eq('legajo', legajo)
+        .then(({ error }) => { if (error) console.warn('Error despublicando notas:', error); });
+    }
+  });
   renderNotasView(comId, parcial, fecha);
   showToast('Registro despublicado · los alumnos ya no pueden verlo');
 }
