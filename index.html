@@ -1768,6 +1768,28 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar mesas de examen
+    const { data: mesasData } = await _supabase.from('mesas_examen').select('*, mesas_resultados(*)');
+    if (mesasData) {
+      Object.keys(mesasExamen).forEach(k => delete mesasExamen[k]);
+      mesasData.forEach(m => {
+        if (!mesasExamen[m.materia_id]) mesasExamen[m.materia_id] = {};
+        if (!mesasExamen[m.materia_id][m.año]) mesasExamen[m.materia_id][m.año] = {};
+        mesasExamen[m.materia_id][m.año][m.mesa_id] = {
+          cargado:   m.cargado,
+          anulada:   m.anulada,
+          fecha:     m.fecha,
+          resultados: (m.mesas_resultados || []).map(r => ({
+            legajo:  r.legajo,
+            nombre:  r.nombre,
+            nota:    r.nota,
+            estado:  r.estado,
+            externo: r.externo,
+          })),
+        };
+      });
+    }
+
     // Cargar self reported finales
     const { data: selfData } = await _supabase.from('self_reported_finales').select('*');
     if (selfData) {
@@ -7877,6 +7899,43 @@ function setMesaData(materiaId, año, mesaId, data) {
   if (!mesasExamen[materiaId]) mesasExamen[materiaId] = {};
   if (!mesasExamen[materiaId][año]) mesasExamen[materiaId][año] = {};
   mesasExamen[materiaId][año][mesaId] = data;
+
+  // Guardar en Supabase
+  _supabase.from('mesas_examen').upsert({
+    materia_id: materiaId,
+    año: parseInt(año),
+    mesa_id: mesaId,
+    fecha: data.fecha || null,
+    cargado: data.cargado || false,
+    anulada: data.anulada || false,
+  }, { onConflict: 'materia_id,año,mesa_id' }).then(async ({ data: mesaRow, error }) => {
+    if (error) { console.warn('Error guardando mesa:', error); return; }
+
+    // Guardar resultados si hay
+    if (data.resultados && data.resultados.length > 0) {
+      // Obtener el id de la mesa recién guardada
+      const { data: mesaDb } = await _supabase.from('mesas_examen')
+        .select('id').eq('materia_id', materiaId).eq('año', parseInt(año)).eq('mesa_id', mesaId).single();
+      if (!mesaDb) return;
+
+      // Eliminar resultados anteriores
+      await _supabase.from('mesas_resultados').delete().eq('mesa_db_id', mesaDb.id);
+
+      // Insertar nuevos resultados
+      const rows = data.resultados.map(r => ({
+        mesa_db_id: mesaDb.id,
+        legajo:  r.legajo,
+        nombre:  r.nombre,
+        nota:    r.nota,
+        estado:  r.estado,
+        externo: r.externo || false,
+      }));
+      if (rows.length > 0) {
+        _supabase.from('mesas_resultados').insert(rows)
+          .then(({ error: e }) => { if (e) console.warn('Error guardando resultados mesa:', e); });
+      }
+    }
+  });
 }
 
 function buildMesaFilaHTML(m, añoMesa, mesa, pasada) {
