@@ -2018,12 +2018,10 @@ _supabase.auth.onAuthStateChange(async (event, session) => {
 });
 
 async function goToStep2() {
-  // Login real con Google via Supabase
-  const redirectTo = window.location.href.split('#')[0] + window.location.hash;
   const { error } = await _supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + window.location.pathname
+      redirectTo: 'https://tpc360medunlp.github.io/app/'
     }
   });
   if (error) {
