@@ -9111,7 +9111,10 @@ function guardarPeriodoCude() {
   periodosCambioComision.push({ id, materias, apertura, cierre });
   // Guardar en Supabase
   _supabase.from('periodos_cambio_comision').insert({ id, materias, apertura, cierre })
-    .then(({ error }) => { if (error) console.warn('Error guardando período:', error); });
+    .then(({ data, error }) => {
+      if (error) console.warn('Error guardando período:', error);
+      else console.log('Período guardado en Supabase:', data);
+    });
   document.getElementById('modal-periodo-cude').classList.remove('open');
   renderCoordCudeView();
   showToast('Período guardado correctamente');
