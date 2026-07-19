@@ -9655,20 +9655,30 @@ function enviarSolicitudAula() {
   const totalEst = parseInt(document.getElementById('aula-total-est').value) || 0;
   const tel = document.getElementById('aula-tel').value.trim();
 
-  if (!materiaId) { showToast('Seleccioná una materia', true); return; }
-  if (!docenteTitular) { showToast('Seleccioná el docente titular', true); return; }
-  if (!actividad) { showToast('Seleccioná la actividad', true); return; }
+  if (!materiaId)     { showToast('Seleccioná una materia', true); return; }
+  if (!docenteTitular){ showToast('Seleccioná el docente titular', true); return; }
+  if (!actividad)     { showToast('Seleccioná la actividad', true); return; }
   if (actividad === 'Otra' && !actividadOtra) { showToast('Describí la actividad', true); return; }
+  if (!totalEst || totalEst < 1) { showToast('Ingresá el total de estudiantes', true); return; }
+  if (!tel)           { showToast('Ingresá el teléfono de contacto', true); return; }
 
-  // Recolectar filas
+  // Recolectar filas y validar
   const filas = [];
   for (let i = 1; i <= _aulaFilaCount; i++) {
-    const fecha = document.getElementById(`aula-fecha-${i}`)?.value;
-    const desde = document.getElementById(`aula-desde-${i}`)?.value;
-    const hasta = document.getElementById(`aula-hasta-${i}`)?.value;
-    const aforo = document.getElementById(`aula-aforo-${i}`)?.value;
+    const el = document.getElementById(`fila-aula-${i}`);
+    if (!el) continue;
+    const fecha   = document.getElementById(`aula-fecha-${i}`)?.value;
+    const desde   = document.getElementById(`aula-desde-${i}`)?.value;
+    const hasta   = document.getElementById(`aula-hasta-${i}`)?.value;
+    const aforo   = document.getElementById(`aula-aforo-${i}`)?.value;
     const docente = document.getElementById(`aula-docente-${i}`)?.value;
-    if (fecha) filas.push({ fecha, desde, hasta, aforo, docente_act: docente, aula_otorgada: null });
+    if (!fecha && !desde && !hasta && !aforo && !docente) continue; // fila vacía, ignorar
+    if (!fecha)   { showToast(`Completá la fecha en la fila ${filas.length + 1}`, true); return; }
+    if (!desde)   { showToast(`Completá el horario de inicio en la fila ${filas.length + 1}`, true); return; }
+    if (!hasta)   { showToast(`Completá el horario de finalización en la fila ${filas.length + 1}`, true); return; }
+    if (!aforo)   { showToast(`Completá el aforo en la fila ${filas.length + 1}`, true); return; }
+    if (!docente) { showToast(`Seleccioná el docente a cargo en la fila ${filas.length + 1}`, true); return; }
+    filas.push({ fecha, desde, hasta, aforo, docente_act: docente, aula_otorgada: null });
   }
 
   if (filas.length === 0) { showToast('Completá al menos una fecha', true); return; }
