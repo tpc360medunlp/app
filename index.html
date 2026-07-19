@@ -992,6 +992,28 @@
         <div id="coord-cude-container"></div>
       </div>
 
+      <!-- TEACHER: SOLICITUD DE AULAS -->
+      <div id="view-teacher-aulas" class="page-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Solicitud de aulas</h1>
+            <p class="page-sub">Completá el formulario para solicitar aulas a coordinación</p>
+          </div>
+        </div>
+        <div id="teacher-aulas-container"></div>
+      </div>
+
+      <!-- COORDINATOR: SOLICITUD DE AULAS -->
+      <div id="view-coord-aulas" class="page-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Solicitud de aulas</h1>
+            <p class="page-sub">Gestión de solicitudes de aulas de los docentes</p>
+          </div>
+        </div>
+        <div id="coord-aulas-container"></div>
+      </div>
+
       <!-- STUDENT: CERTIFICADOS -->
       <div id="view-student-certificados" class="page-view">
         <div class="page-header">
@@ -1910,6 +1932,26 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar solicitudes de aulas
+    const { data: aulasData } = await _supabase.from('solicitudes_aulas').select('*');
+    if (aulasData) {
+      solicitudesAulas.length = 0;
+      aulasData.forEach(s => solicitudesAulas.push({
+        id:               s.id,
+        docente_dni:      s.docente_dni,
+        materia_id:       s.materia_id,
+        docente_titular:  s.docente_titular,
+        actividad:        s.actividad,
+        actividad_otra:   s.actividad_otra,
+        hibrida:          s.hibrida,
+        total_estudiantes: s.total_estudiantes,
+        tel_contacto:     s.tel_contacto,
+        filas:            s.filas || [],
+        estado:           s.estado,
+        created_at:       s.created_at,
+      }));
+    }
+
   } catch(e) {
     console.warn('⚠️ Error cargando datos de Supabase, usando datos demo:', e);
   }
@@ -2501,7 +2543,12 @@ function renderSidebar() {
       ${tcfg.cronograma?.enabled ? `<button class="nav-item" id="nav-teacher-cronograma" onclick="switchTeacherView('teacher-cronograma')">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Cronogramas</span>
-      </button>` : ''}`;
+      </button>` : ''}
+      <button class="nav-item" id="nav-teacher-aulas" onclick="switchTeacherView('teacher-aulas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Solicitud de aulas</span>
+        <span id="aulas-badge-teacher" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
+      </button>`;
   } else {
     html = `
       <div class="nav-section-label">Coordinación</div>
@@ -2542,6 +2589,11 @@ function renderSidebar() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         <span>CUdE</span>
         <span id="cude-badge-coord" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
+      </button>
+      <button class="nav-item" id="nav-coord-aulas" onclick="switchCoordView('aulas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Solicitud de aulas</span>
+        <span id="aulas-badge-coord" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
       </button>`;
   }
   nav.innerHTML = html;
@@ -2563,6 +2615,7 @@ function switchCoordView(section) {
   if (section === 'config')        renderConfigView();
   if (section === 'cartelera')     renderCartelaView('coord-cartelera-container');
   if (section === 'cude')          renderCoordCudeView();
+  if (section === 'aulas')         renderCoordAulasView();
 }
 
 function switchStudentView(view) {
@@ -3981,7 +4034,8 @@ function switchTeacherView(view) {
     attendance:           'nav-asistencia',
     notas:                'nav-notas',
     'cert-requests':      'nav-cert-requests',
-    'teacher-cronograma': 'nav-teacher-cronograma'
+    'teacher-cronograma': 'nav-teacher-cronograma',
+    'teacher-aulas':      'nav-teacher-aulas',
   };
   document.getElementById(navMap[view]).classList.add('active');
   if (view === 'teacher') {
@@ -3997,6 +4051,7 @@ function switchTeacherView(view) {
     if (dni) markTeacherAsSeen(dni);
   }
   if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
+  if (view === 'teacher-aulas')       renderTeacherAulasView();
 }
 
 // Obtener las materiaIds que puede validar el docente actual
@@ -9375,6 +9430,417 @@ function rechazarSolicitudCambio(solId) {
   actualizarBadgeCude();
   renderCoordCudeView();
   showToast('Solicitud rechazada');
+}
+
+// ── MÓDULO SOLICITUD DE AULAS ─────────────────────────────
+let solicitudesAulas = [];
+
+function getTeacherDni() {
+  return Object.keys(ENROLLED_STAFF).find(dni =>
+    ENROLLED_STAFF[dni].email === currentUser.email
+  ) || null;
+}
+
+function actualizarBadgeAulas() {
+  const pendientes = solicitudesAulas.filter(s => s.estado === 'pendiente').length;
+  const badgeCoord = document.getElementById('aulas-badge-coord');
+  if (badgeCoord) {
+    badgeCoord.style.display = pendientes > 0 ? 'inline' : 'none';
+    badgeCoord.textContent = pendientes > 9 ? '9+' : String(pendientes);
+  }
+  // Badge docente: solicitudes propias con respuesta nueva
+  const dni = getTeacherDni();
+  const confirmadas = solicitudesAulas.filter(s => s.docente_dni === dni && s.estado === 'confirmada').length;
+  const badgeTeacher = document.getElementById('aulas-badge-teacher');
+  if (badgeTeacher) {
+    badgeTeacher.style.display = confirmadas > 0 ? 'inline' : 'none';
+    badgeTeacher.textContent = confirmadas > 9 ? '9+' : String(confirmadas);
+  }
+}
+
+function renderTeacherAulasView() {
+  actualizarBadgeAulas();
+  const container = document.getElementById('teacher-aulas-container');
+  const dni = getTeacherDni();
+
+  // Mis solicitudes previas
+  const misSolicitudes = solicitudesAulas.filter(s => s.docente_dni === dni);
+
+  // Materias del docente
+  const misComisiones = COMISIONES.filter(c => c.docenteDni === dni);
+  const misMateriasIds = [...new Set(misComisiones.map(c => c.materiaId))];
+  const misMaterias = MATERIAS.filter(m => misMateriasIds.includes(m.id));
+
+  // Docentes de mis cátedras (mismo docenteDni o en comisiones de mismas materias)
+  const todosDocentesDni = [...new Set(
+    COMISIONES.filter(c => misMateriasIds.includes(c.materiaId)).map(c => c.docenteDni)
+  )].filter(Boolean);
+  const docentesOptions = todosDocentesDni
+    .map(d => ENROLLED_STAFF[d])
+    .filter(Boolean)
+    .map(d => `<option value="${d.apellido}, ${d.nombre}">${d.apellido}, ${d.nombre}</option>`)
+    .join('');
+
+  const actividades = ['Examen parcial oral','Examen parcial escrito','Examen final oral','Examen final escrito','Cursada','Otra'];
+
+  let html = '';
+
+  // Solicitudes previas
+  if (misSolicitudes.length > 0) {
+    html += `<div class="area-card" style="margin-bottom:1rem">
+      <div class="area-header"><span class="area-name">Mis solicitudes</span></div>
+      <div style="padding:1rem 1.5rem">`;
+    misSolicitudes.forEach(s => {
+      const materia = MATERIAS.find(m => m.id === s.materia_id);
+      const est = s.estado === 'pendiente'
+        ? { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' }
+        : { label: 'Confirmada', color: '#1a7a35', bg: 'var(--green-light)' };
+      html += `<div style="padding:10px 12px;border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</span>
+          <span style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;background:${est.bg};color:${est.color}">${est.label}</span>
+        </div>
+        <div style="font-size:12px;color:var(--gray-500)">Actividad: ${s.actividad === 'Otra' ? s.actividad_otra : s.actividad}</div>
+        ${s.estado === 'confirmada' ? `
+        <div style="margin-top:8px;padding:8px;background:var(--green-light);border-radius:var(--radius-md)">
+          <div style="font-size:12px;font-weight:600;color:#1a7a35;margin-bottom:4px">Aulas otorgadas:</div>
+          ${(s.filas || []).filter(f => f.fecha).map(f => `
+            <div style="font-size:12px;color:#1a7a35">
+              ${f.fecha} ${f.desde}-${f.hasta}: <strong>${f.aula_otorgada || 'Pendiente'}</strong>
+            </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // Formulario nueva solicitud
+  html += `<div class="area-card">
+    <div class="area-header"><span class="area-name">Nueva solicitud</span></div>
+    <div style="padding:1.25rem 1.5rem">
+
+      <div class="form-field">
+        <label class="form-label">Asignatura</label>
+        <select class="form-select" id="aula-materia">
+          <option value="">Seleccioná una materia</option>
+          ${misMaterias.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Profesor titular / Docente a cargo de la cátedra</label>
+        <select class="form-select" id="aula-docente-titular">
+          <option value="">Seleccioná un docente</option>
+          ${docentesOptions}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Actividad a realizar</label>
+        <select class="form-select" id="aula-actividad" onchange="toggleAulaOtra()">
+          <option value="">Seleccioná una actividad</option>
+          ${actividades.map(a => `<option value="${a}">${a}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-field" id="aula-otra-group" style="display:none">
+        <label class="form-label">Describí la actividad</label>
+        <input type="text" class="form-input" id="aula-actividad-otra" placeholder="Describí brevemente la actividad">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label class="form-label">Aula híbrida</label>
+          <select class="form-select" id="aula-hibrida">
+            <option value="no">No</option>
+            <option value="si">Sí</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Total de estudiantes</label>
+          <input type="number" class="form-input" id="aula-total-est" min="1" placeholder="Ej: 30">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Teléfono de contacto</label>
+        <input type="tel" class="form-input" id="aula-tel" placeholder="Ej: 2214567890">
+      </div>
+
+      <div style="margin:1rem 0 8px;font-size:13px;font-weight:600;color:var(--navy)">Fechas solicitadas</div>
+      <div id="aula-filas-container">
+        ${renderFilaAula(1)}
+      </div>
+      <button onclick="agregarFilaAula()"
+        style="margin-top:8px;padding:6px 14px;font-size:12px;background:var(--gray-100);color:var(--navy);border:1px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+        + Agregar fecha
+      </button>
+
+      <div style="margin-top:1.25rem">
+        <button onclick="enviarSolicitudAula()"
+          style="padding:10px 24px;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)">
+          Enviar solicitud
+        </button>
+      </div>
+    </div>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function renderFilaAula(n) {
+  const docentesDni = Object.keys(ENROLLED_STAFF);
+  const opts = docentesDni.map(d => {
+    const s = ENROLLED_STAFF[d];
+    return `<option value="${s.apellido}, ${s.nombre}">${s.apellido}, ${s.nombre}</option>`;
+  }).join('');
+  return `<div class="fila-aula" id="fila-aula-${n}" style="padding:10px;border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;font-weight:600;color:var(--gray-500)">Fecha ${n}</span>
+      ${n > 1 ? `<button onclick="eliminarFilaAula(${n})" style="font-size:11px;background:none;border:none;color:#b02030;cursor:pointer">✕ Eliminar</button>` : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <div>
+        <label class="form-label" style="font-size:11px">Fecha</label>
+        <input type="date" class="form-input" id="aula-fecha-${n}" style="font-size:12px;padding:6px 8px">
+      </div>
+      <div>
+        <label class="form-label" style="font-size:11px">Desde</label>
+        <input type="time" class="form-input" id="aula-desde-${n}" style="font-size:12px;padding:6px 8px">
+      </div>
+      <div>
+        <label class="form-label" style="font-size:11px">Hasta</label>
+        <input type="time" class="form-input" id="aula-hasta-${n}" style="font-size:12px;padding:6px 8px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">
+      <div>
+        <label class="form-label" style="font-size:11px">Aforo</label>
+        <input type="number" class="form-input" id="aula-aforo-${n}" min="1" placeholder="Nº" style="font-size:12px;padding:6px 8px">
+      </div>
+      <div>
+        <label class="form-label" style="font-size:11px">Docente a cargo</label>
+        <select class="form-select" id="aula-docente-${n}" style="font-size:12px;padding:6px 8px">
+          <option value="">Seleccioná</option>
+          ${opts}
+        </select>
+      </div>
+    </div>
+  </div>`;
+}
+
+let _aulaFilaCount = 1;
+
+function agregarFilaAula() {
+  if (_aulaFilaCount >= 6) { showToast('Máximo 6 fechas por solicitud', true); return; }
+  _aulaFilaCount++;
+  const container = document.getElementById('aula-filas-container');
+  container.insertAdjacentHTML('beforeend', renderFilaAula(_aulaFilaCount));
+}
+
+function eliminarFilaAula(n) {
+  document.getElementById(`fila-aula-${n}`)?.remove();
+}
+
+function toggleAulaOtra() {
+  const val = document.getElementById('aula-actividad').value;
+  document.getElementById('aula-otra-group').style.display = val === 'Otra' ? 'block' : 'none';
+}
+
+function enviarSolicitudAula() {
+  const materiaId = document.getElementById('aula-materia').value;
+  const docenteTitular = document.getElementById('aula-docente-titular').value;
+  const actividad = document.getElementById('aula-actividad').value;
+  const actividadOtra = document.getElementById('aula-actividad-otra')?.value || '';
+  const hibrida = document.getElementById('aula-hibrida').value === 'si';
+  const totalEst = parseInt(document.getElementById('aula-total-est').value) || 0;
+  const tel = document.getElementById('aula-tel').value.trim();
+
+  if (!materiaId) { showToast('Seleccioná una materia', true); return; }
+  if (!docenteTitular) { showToast('Seleccioná el docente titular', true); return; }
+  if (!actividad) { showToast('Seleccioná la actividad', true); return; }
+  if (actividad === 'Otra' && !actividadOtra) { showToast('Describí la actividad', true); return; }
+
+  // Recolectar filas
+  const filas = [];
+  for (let i = 1; i <= _aulaFilaCount; i++) {
+    const fecha = document.getElementById(`aula-fecha-${i}`)?.value;
+    const desde = document.getElementById(`aula-desde-${i}`)?.value;
+    const hasta = document.getElementById(`aula-hasta-${i}`)?.value;
+    const aforo = document.getElementById(`aula-aforo-${i}`)?.value;
+    const docente = document.getElementById(`aula-docente-${i}`)?.value;
+    if (fecha) filas.push({ fecha, desde, hasta, aforo, docente_act: docente, aula_otorgada: null });
+  }
+
+  if (filas.length === 0) { showToast('Completá al menos una fecha', true); return; }
+
+  const dni = getTeacherDni();
+  const id = 'sa_' + Date.now();
+  const sol = {
+    id, docente_dni: dni, materia_id: materiaId,
+    docente_titular: docenteTitular,
+    actividad, actividad_otra: actividadOtra,
+    hibrida, total_estudiantes: totalEst,
+    tel_contacto: tel, filas,
+    estado: 'pendiente',
+    created_at: new Date().toISOString()
+  };
+
+  solicitudesAulas.push(sol);
+
+  // Guardar en Supabase
+  _supabase.from('solicitudes_aulas').insert({
+    id, docente_dni: dni, materia_id: materiaId,
+    docente_titular: docenteTitular,
+    actividad, actividad_otra: actividadOtra,
+    hibrida, total_estudiantes: totalEst,
+    tel_contacto: tel, filas,
+    estado: 'pendiente'
+  }).then(({ error }) => { if (error) console.warn('Error guardando solicitud aula:', error); });
+
+  _aulaFilaCount = 1;
+  actualizarBadgeAulas();
+  renderTeacherAulasView();
+  showToast('Solicitud enviada a coordinación');
+}
+
+function renderCoordAulasView() {
+  actualizarBadgeAulas();
+  const container = document.getElementById('coord-aulas-container');
+  const pendientes  = solicitudesAulas.filter(s => s.estado === 'pendiente');
+  const confirmadas = solicitudesAulas.filter(s => s.estado === 'confirmada');
+
+  if (solicitudesAulas.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🏫</div><p>No hay solicitudes de aulas.</p></div>`;
+    return;
+  }
+
+  const renderSol = (s, conAcciones) => {
+    const materia = MATERIAS.find(m => m.id === s.materia_id);
+    const docente = ENROLLED_STAFF[s.docente_dni];
+    const est = s.estado === 'pendiente'
+      ? { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' }
+      : { label: 'Confirmada', color: '#1a7a35', bg: 'var(--green-light)' };
+
+    return `<div class="area-card" style="margin-bottom:.75rem">
+      <div style="padding:1rem 1.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</div>
+            <div style="font-size:12px;color:var(--gray-500)">Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : s.docente_dni}</div>
+            <div style="font-size:12px;color:var(--gray-500)">Actividad: ${s.actividad === 'Otra' ? s.actividad_otra : s.actividad}</div>
+            <div style="font-size:12px;color:var(--gray-500)">Aula híbrida: ${s.hibrida ? 'Sí' : 'No'} · Estudiantes: ${s.total_estudiantes || '-'} · Tel: ${s.tel_contacto || '-'}</div>
+          </div>
+          <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${est.bg};color:${est.color};white-space:nowrap">${est.label}</span>
+        </div>
+
+        <!-- Tabla de fechas -->
+        <div style="overflow-x:auto;margin-top:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--gray-50)">
+                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
+                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Horario</th>
+                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
+                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Docente a cargo</th>
+                ${conAcciones ? '<th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+              ${(s.filas || []).filter(f => f.fecha).map((f, idx) => `
+                <tr>
+                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.fecha.split('-').reverse().join('/')}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde || ''} - ${f.hasta || ''}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.aforo || ''}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.docente_act || ''}</td>
+                  ${conAcciones ? `<td style="padding:4px 6px;border:1px solid var(--gray-100)">
+                    <input type="text" value="${f.aula_otorgada || ''}"
+                      placeholder="Ej: Aula 5"
+                      id="aula-ot-${s.id}-${idx}"
+                      style="width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--gray-200);border-radius:4px;font-family:var(--font)">
+                  </td>` : `<td style="padding:6px 8px;border:1px solid var(--gray-100);color:#1a7a35;font-weight:500">${f.aula_otorgada || '-'}</td>`}
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${conAcciones ? `
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="descargarPlanillaAula('${s.id}')"
+            style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+            📄 Descargar planilla
+          </button>
+          <button onclick="confirmarSolicitudAula('${s.id}')"
+            style="padding:6px 14px;font-size:12px;font-weight:500;background:#1a7a35;color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+            ✓ Confirmar con aulas
+          </button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  };
+
+  let html = '';
+  if (pendientes.length > 0) {
+    html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Pendientes</div>`;
+    html += pendientes.map(s => renderSol(s, true)).join('');
+  }
+  if (confirmadas.length > 0) {
+    html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin:1rem 0 10px">Confirmadas</div>`;
+    html += confirmadas.map(s => renderSol(s, false)).join('');
+  }
+
+  container.innerHTML = html;
+}
+
+function confirmarSolicitudAula(id) {
+  const sol = solicitudesAulas.find(s => s.id === id);
+  if (!sol) return;
+
+  // Recolectar aulas otorgadas de los inputs
+  (sol.filas || []).forEach((f, idx) => {
+    const input = document.getElementById(`aula-ot-${id}-${idx}`);
+    if (input) f.aula_otorgada = input.value.trim() || null;
+  });
+
+  sol.estado = 'confirmada';
+
+  // Guardar en Supabase
+  _supabase.from('solicitudes_aulas')
+    .update({ estado: 'confirmada', filas: sol.filas })
+    .eq('id', id)
+    .then(({ error }) => { if (error) console.warn('Error confirmando solicitud:', error); });
+
+  actualizarBadgeAulas();
+  renderCoordAulasView();
+  showToast('Solicitud confirmada — el docente ya puede ver las aulas asignadas');
+}
+
+async function descargarPlanillaAula(id) {
+  const sol = solicitudesAulas.find(s => s.id === id);
+  if (!sol) return;
+  const materia = MATERIAS.find(m => m.id === sol.materia_id);
+
+  // Recolectar aulas otorgadas de los inputs antes de generar
+  (sol.filas || []).forEach((f, idx) => {
+    const input = document.getElementById(`aula-ot-${id}-${idx}`);
+    if (input) f.aula_otorgada = input.value.trim() || null;
+  });
+
+  showToast('Generando planilla...');
+
+  // Leer el template Word
+  try {
+    const response = await fetch('/app/Planilla-Solicitud-Aula.docx');
+    if (!response.ok) throw new Error('No se encontró la planilla');
+    const arrayBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    // Reemplazar marcadores en el XML
+    // Necesitamos PizZip + Docxtemplater (los cargamos dinámicamente)
+    showToast('La planilla se generará cuando estén disponibles las librerías. Por ahora descargá desde la URL.');
+  } catch(e) {
+    showToast('Error al generar la planilla. Verificá que el archivo esté en el servidor.', true);
+    console.warn(e);
+  }
 }
 
 // ── CARTELERA FCM ─────────────────────────────────────────
