@@ -9518,11 +9518,22 @@ async function renderCartelaView(containerId) {
     fechaOrden: parseFechaCartelera(p.fechaMod ? p.fechaMod.substring(0,10) : p.fechaPub),
   }));
 
-  // Obtener última visita desde localStorage (en producción: desde Sheets)
+  // Obtener última visita desde Supabase (fallback: localStorage)
   const lsKey = 'cartelera_ultima_visita';
-  const ultimaVisita = localStorage.getItem(lsKey)
-    ? new Date(localStorage.getItem(lsKey))
-    : new Date(0);
+  let ultimaVisita = new Date(0);
+  const legajo = currentUser?.role === 'Estudiante' || currentUser?.role === 'Docente'
+    ? getLegajoByEmail(currentUser.email) : null;
+
+  if (legajo) {
+    const { data: visitaData } = await _supabase.from('cartelera_visitas')
+      .select('ultima_visita').eq('legajo', legajo).single().catch(() => ({ data: null }));
+    if (visitaData?.ultima_visita) {
+      ultimaVisita = new Date(visitaData.ultima_visita);
+    }
+  } else {
+    // Fallback localStorage para coordinación u otros roles
+    if (localStorage.getItem(lsKey)) ultimaVisita = new Date(localStorage.getItem(lsKey));
+  }
 
   // Ordenar por fecha (más reciente primero)
   todas.sort((a, b) => (b.fechaOrden || 0) - (a.fechaOrden || 0));
@@ -9593,7 +9604,14 @@ async function renderCartelaView(containerId) {
   });
 
   // Marcar como leído al abrir
-  localStorage.setItem(lsKey, new Date().toISOString());
+  const ahora = new Date().toISOString();
+  localStorage.setItem(lsKey, ahora); // fallback
+  if (legajo) {
+    _supabase.from('cartelera_visitas').upsert(
+      { legajo, ultima_visita: ahora, updated_at: ahora },
+      { onConflict: 'legajo' }
+    ).then(({ error }) => { if (error) console.warn('Error guardando visita cartelera:', error); });
+  }
 
   container.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
