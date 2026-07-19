@@ -2323,10 +2323,10 @@ _supabase.auth.onAuthStateChange(async (event, session) => {
   if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
     googleEmail = session.user.email;
     // Recuperar rol guardado si viene de cambio de cuenta
-    const savedRole = sessionStorage.getItem('tpc360_role');
+    const savedRole = localStorage.getItem('tpc360_role');
     if (savedRole) {
       currentRole = savedRole;
-      sessionStorage.removeItem('tpc360_role');
+      localStorage.removeItem('tpc360_role');
     }
     const emailEl = document.getElementById('step2-google-email');
     if (emailEl) emailEl.textContent = googleEmail;
@@ -2345,7 +2345,7 @@ _supabase.auth.onAuthStateChange(async (event, session) => {
 
 async function cambiarCuentaGoogle() {
   // Guardar el rol actual antes de redirigir
-  sessionStorage.setItem('tpc360_role', currentRole || 'student');
+  localStorage.setItem('tpc360_role', currentRole || 'student');
   await _supabase.auth.signOut();
   googleEmail = '';
   document.getElementById('login-step1').style.display = 'block';
@@ -8735,12 +8735,12 @@ function setLoginRole(role) {
 
 function initLoginScreen() {
   // Determinar rol según hash URL o sessionStorage (si viene de cambio de cuenta)
-  const savedRole = sessionStorage.getItem('tpc360_role');
+  const savedRole = localStorage.getItem('tpc360_role');
   const hash = window.location.hash.replace('#','').toLowerCase();
   const role = hash === 'docente' ? 'teacher'
              : hash === 'coordinacion' ? 'coordinator'
              : savedRole || 'student';
-  sessionStorage.removeItem('tpc360_role'); // limpiar después de usar
+  localStorage.removeItem('tpc360_role'); // limpiar después de usar
   setLoginRole(role);
 }
 
