@@ -2,8 +2,11 @@ name: Backup Supabase
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # Todos los días a las 6:00 UTC (3:00 AM Argentina)
-  workflow_dispatch:       # También permite ejecutarlo manualmente
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   backup:
@@ -11,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -57,7 +62,6 @@ jobs:
               console.log(`✅ ${tabla}: ${data.length} registros`);
             }
 
-            // Mantener solo los últimos 30 días de backups
             const backups = fs.readdirSync('backups').sort();
             while (backups.length > 30) {
               const viejo = backups.shift();
