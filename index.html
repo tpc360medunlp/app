@@ -2322,12 +2322,18 @@ async function verifyDni() {
 _supabase.auth.onAuthStateChange(async (event, session) => {
   if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
     googleEmail = session.user.email;
-    // Recuperar rol guardado si viene de cambio de cuenta
+    // Determinar rol desde URL o localStorage
+    const params = new URLSearchParams(window.location.search);
+    const rolParam = params.get('rol');
+    const hash = window.location.hash.replace('#','').toLowerCase();
     const savedRole = localStorage.getItem('tpc360_role');
-    if (savedRole) {
-      currentRole = savedRole;
-      localStorage.removeItem('tpc360_role');
-    }
+    if (rolParam === 'docente') currentRole = 'teacher';
+    else if (rolParam === 'coordinacion') currentRole = 'coordinator';
+    else if (hash === 'docente') currentRole = 'teacher';
+    else if (hash === 'coordinacion') currentRole = 'coordinator';
+    else if (savedRole) { currentRole = savedRole; localStorage.removeItem('tpc360_role'); }
+    else currentRole = 'student';
+
     const emailEl = document.getElementById('step2-google-email');
     if (emailEl) emailEl.textContent = googleEmail;
     const step1 = document.getElementById('login-step1');
