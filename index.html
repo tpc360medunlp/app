@@ -12,6 +12,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.45.1/build/docxtemplater.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1794,6 +1796,9 @@ async function loadDataFromSupabase() {
         }
         if (c.clave === 'certFinalConfig' && c.valor) {
           Object.assign(certFinalConfig, c.valor);
+        }
+        if (c.clave === 'plantilla_aulas_url' && c.valor?.url) {
+          window._plantillaAulasUrl = c.valor.url;
         }
       });
     }
@@ -9850,8 +9855,24 @@ function renderCoordAulasView() {
   const pendientes  = solicitudesAulas.filter(s => s.estado === 'pendiente');
   const confirmadas = solicitudesAulas.filter(s => s.estado === 'confirmada');
 
+  // Sección configuración de plantilla
+  const plantillaUrl = window._plantillaAulasUrl || null;
+  let html = `<div class="area-card" style="margin-bottom:1rem">
+    <div class="area-header"><span class="area-name">Plantilla institucional</span></div>
+    <div style="padding:1rem 1.5rem;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="font-size:13px;color:${plantillaUrl ? '#1a7a35' : 'var(--gray-400)'}">
+        ${plantillaUrl ? '✅ Plantilla cargada' : '⚠️ No hay plantilla cargada aún'}
+      </div>
+      <label style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:12px;cursor:pointer;font-family:var(--font)">
+        📄 ${plantillaUrl ? 'Reemplazar plantilla' : 'Subir plantilla (.docx)'}
+        <input type="file" accept=".docx" onchange="subirPlantillaAulas(this)" style="display:none">
+      </label>
+    </div>
+  </div>`;
+
   if (solicitudesAulas.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🏫</div><p>No hay solicitudes de aulas.</p></div>`;
+    html += `<div class="empty-state"><div class="empty-icon">🏫</div><p>No hay solicitudes de aulas.</p></div>`;
+    container.innerHTML = html;
     return;
   }
 
@@ -9868,44 +9889,44 @@ function renderCoordAulasView() {
           <div>
             <div style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</div>
             <div style="font-size:12px;color:var(--gray-500)">Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : s.docente_dni}</div>
-            <div style="font-size:12px;color:var(--gray-500)">Actividad: ${s.actividad === 'Otra' ? s.actividad_otra : s.actividad}</div>
+            <div style="font-size:12px;color:var(--gray-500)">Titular: ${s.docente_titular || '-'} · Actividad: ${s.actividad === 'Otra' ? s.actividad_otra : s.actividad}</div>
             <div style="font-size:12px;color:var(--gray-500)">Aula híbrida: ${s.hibrida ? 'Sí' : 'No'} · Estudiantes: ${s.total_estudiantes || '-'} · Tel: ${s.tel_contacto || '-'}</div>
           </div>
           <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${est.bg};color:${est.color};white-space:nowrap">${est.label}</span>
         </div>
-
-        <!-- Tabla de fechas -->
         <div style="overflow-x:auto;margin-top:8px">
           <table style="width:100%;border-collapse:collapse;font-size:12px">
             <thead>
               <tr style="background:var(--gray-50)">
                 <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
-                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Horario</th>
+                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Desde</th>
+                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Hasta</th>
                 <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
                 <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Docente a cargo</th>
-                ${conAcciones ? '<th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>' : ''}
+                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>
               </tr>
             </thead>
             <tbody>
               ${(s.filas || []).filter(f => f.fecha).map((f, idx) => `
                 <tr>
                   <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.fecha.split('-').reverse().join('/')}</td>
-                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde || ''} - ${f.hasta || ''}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde || ''}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.hasta || ''}</td>
                   <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.aforo || ''}</td>
                   <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.docente_act || ''}</td>
-                  ${conAcciones ? `<td style="padding:4px 6px;border:1px solid var(--gray-100)">
-                    <input type="text" value="${f.aula_otorgada || ''}"
-                      placeholder="Ej: Aula 5"
-                      id="aula-ot-${s.id}-${idx}"
-                      style="width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--gray-200);border-radius:4px;font-family:var(--font)">
-                  </td>` : `<td style="padding:6px 8px;border:1px solid var(--gray-100);color:#1a7a35;font-weight:500">${f.aula_otorgada || '-'}</td>`}
+                  <td style="padding:${conAcciones ? '4px 6px' : '6px 8px'};border:1px solid var(--gray-100)">
+                    ${conAcciones
+                      ? `<input type="text" value="${f.aula_otorgada || ''}" placeholder="Ej: Aula 5"
+                          id="aula-ot-${s.id}-${idx}"
+                          style="width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--gray-200);border-radius:4px;font-family:var(--font)">`
+                      : `<span style="color:#1a7a35;font-weight:500">${f.aula_otorgada || '-'}</span>`}
+                  </td>
                 </tr>`).join('')}
             </tbody>
           </table>
         </div>
-
         ${conAcciones ? `
-        <div style="display:flex;gap:8px;margin-top:12px">
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
           <button onclick="descargarPlanillaAula('${s.id}')"
             style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
             📄 Descargar planilla
@@ -9919,7 +9940,6 @@ function renderCoordAulasView() {
     </div>`;
   };
 
-  let html = '';
   if (pendientes.length > 0) {
     html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Pendientes</div>`;
     html += pendientes.map(s => renderSol(s, true)).join('');
@@ -9930,6 +9950,113 @@ function renderCoordAulasView() {
   }
 
   container.innerHTML = html;
+}
+
+async function subirPlantillaAulas(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.name.endsWith('.docx')) {
+    showToast('El archivo debe ser un .docx', true);
+    input.value = '';
+    return;
+  }
+  showToast('Subiendo plantilla...');
+  const { error: uploadError } = await _supabase.storage
+    .from('solicitud-aulas')
+    .upload('plantilla.docx', file, { upsert: true });
+  if (uploadError) {
+    showToast('Error al subir la plantilla. Intentá de nuevo.', true);
+    console.warn('Error subiendo plantilla:', uploadError);
+    return;
+  }
+  // Obtener URL firmada
+  const { data: urlData } = await _supabase.storage
+    .from('solicitud-aulas')
+    .createSignedUrl('plantilla.docx', 60 * 60 * 24 * 365);
+  window._plantillaAulasUrl = urlData?.signedUrl || null;
+  // Guardar URL en config_sistema
+  _supabase.from('config_sistema').upsert(
+    { clave: 'plantilla_aulas_url', valor: { url: window._plantillaAulasUrl } },
+    { onConflict: 'clave' }
+  ).then(({ error }) => { if (error) console.warn('Error guardando URL plantilla:', error); });
+  renderCoordAulasView();
+  showToast('Plantilla cargada correctamente');
+}
+
+async function descargarPlanillaAula(id) {
+  const sol = solicitudesAulas.find(s => s.id === id);
+  if (!sol) return;
+
+  // Recolectar aulas otorgadas de los inputs
+  (sol.filas || []).forEach((f, idx) => {
+    const input = document.getElementById(`aula-ot-${id}-${idx}`);
+    if (input) f.aula_otorgada = input.value.trim() || null;
+  });
+
+  const plantillaUrl = window._plantillaAulasUrl;
+  if (!plantillaUrl) {
+    showToast('Primero subí la plantilla institucional en la sección de configuración arriba', true);
+    return;
+  }
+
+  showToast('Generando planilla...');
+
+  try {
+    // Descargar plantilla desde Supabase Storage
+    const resp = await fetch(plantillaUrl);
+    if (!resp.ok) throw new Error('No se pudo descargar la plantilla');
+    const arrayBuffer = await resp.arrayBuffer();
+
+    const materia = MATERIAS.find(m => m.id === sol.materia_id);
+
+    // Preparar datos para reemplazar marcadores
+    const filas = Array.from({ length: 6 }, (_, i) => {
+      const f = (sol.filas || [])[i];
+      return {
+        [`FECHA${i+1}`]:      f?.fecha ? f.fecha.split('-').reverse().join('/') : '',
+        [`HORARIO${i+1}`]:    f ? `${f.desde || ''} - ${f.hasta || ''}` : '',
+        [`AFORO${i+1}`]:      f?.aforo || '',
+        [`DOCENTE-ACT${i+1}`]: f?.docente_act || '',
+      };
+    });
+
+    const data = {
+      'ASIGNATURA':        materia?.nombre || '',
+      'DOCENTE-CATEDRA':   sol.docente_titular || '',
+      'ACTIVIDAD':         sol.actividad === 'Otra' ? sol.actividad_otra : sol.actividad,
+      'HIBRIDA':           sol.hibrida ? 'Sí' : 'No',
+      'TOTAL-ESTUDIANTES': String(sol.total_estudiantes || ''),
+      'TEL-CONTACTO':      sol.tel_contacto || '',
+      ...Object.assign({}, ...filas),
+    };
+
+    // Usar PizZip + docxtemplater para reemplazar marcadores
+    const zip  = new PizZip(arrayBuffer);
+    const doc  = new docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: { start: '{{', end: '}}' },
+    });
+    doc.render(data);
+
+    const output = doc.getZip().generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    // Descargar
+    const url = URL.createObjectURL(output);
+    const a   = document.createElement('a');
+    a.href    = url;
+    a.download = `Solicitud_Aula_${materia?.nombre || 'TPC'}_${new Date().toISOString().slice(0,10)}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Planilla descargada correctamente');
+
+  } catch(e) {
+    console.warn('Error generando planilla:', e);
+    showToast('Error al generar la planilla. Verificá que la plantilla sea válida.', true);
+  }
 }
 
 function confirmarSolicitudAula(id) {
@@ -9953,35 +10080,6 @@ function confirmarSolicitudAula(id) {
   actualizarBadgeAulas();
   renderCoordAulasView();
   showToast('Solicitud confirmada — el docente ya puede ver las aulas asignadas');
-}
-
-async function descargarPlanillaAula(id) {
-  const sol = solicitudesAulas.find(s => s.id === id);
-  if (!sol) return;
-  const materia = MATERIAS.find(m => m.id === sol.materia_id);
-
-  // Recolectar aulas otorgadas de los inputs antes de generar
-  (sol.filas || []).forEach((f, idx) => {
-    const input = document.getElementById(`aula-ot-${id}-${idx}`);
-    if (input) f.aula_otorgada = input.value.trim() || null;
-  });
-
-  showToast('Generando planilla...');
-
-  // Leer el template Word
-  try {
-    const response = await fetch('/app/Planilla-Solicitud-Aula.docx');
-    if (!response.ok) throw new Error('No se encontró la planilla');
-    const arrayBuffer = await response.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-
-    // Reemplazar marcadores en el XML
-    // Necesitamos PizZip + Docxtemplater (los cargamos dinámicamente)
-    showToast('La planilla se generará cuando estén disponibles las librerías. Por ahora descargá desde la URL.');
-  } catch(e) {
-    showToast('Error al generar la planilla. Verificá que el archivo esté en el servidor.', true);
-    console.warn(e);
-  }
 }
 
 // ── CARTELERA FCM ─────────────────────────────────────────
