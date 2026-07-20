@@ -1932,6 +1932,27 @@ async function loadDataFromSupabase() {
       });
     }
 
+    // Cargar SKILLS_DATA (áreas y habilidades del portfolio)
+    const { data: areasData } = await _supabase.from('skills_areas').select('*, skills(*)').order('orden');
+    if (areasData && areasData.length > 0) {
+      SKILLS_DATA.length = 0;
+      areasData.forEach(a => {
+        SKILLS_DATA.push({
+          id: a.id,
+          name: a.name,
+          skills: (a.skills || [])
+            .sort((x, y) => (x.orden || 0) - (y.orden || 0))
+            .map(s => ({
+              id: s.id,
+              name: s.name,
+              descripcion: s.descripcion || '',
+              docentesDnis: s.docentes_dni || [],
+              activa: s.activa !== false,
+            })),
+        });
+      });
+    }
+
     // Cargar solicitudes de aulas
     const { data: aulasData } = await _supabase.from('solicitudes_aulas').select('*');
     if (aulasData) {
@@ -3590,6 +3611,18 @@ function guardarEstado(comId, parcial, fecha, email, estado) {
 function actualizarFechaExamen(comId, parcial, fecha, value) {
   if (!parciales[comId]?.[parcial]?.[fecha]) return;
   parciales[comId][parcial][fecha]._fechaExamen = value || null;
+  // Actualizar fecha_examen en Supabase para todos los alumnos de esa fecha
+  const comision = COMISIONES.find(c => c.id === comId);
+  (comision?.alumnos || []).forEach(email => {
+    const legajo = getLegajoByEmail(email);
+    if (legajo) {
+      _supabase.from('parciales')
+        .update({ fecha_examen: value || null })
+        .eq('comision_id', comId).eq('parcial', parcial)
+        .eq('fecha_parcial', fecha).eq('legajo', legajo)
+        .then(({ error }) => { if (error) console.warn('Error actualizando fecha examen:', error); });
+    }
+  });
   // Habilitar/deshabilitar botón publicar
   const btn = document.getElementById(`btn-publicar-${comId}-${parcial}-${fecha}`);
   if (btn) {
@@ -6827,6 +6860,12 @@ function closeDeleteRegistroModal() {
 }
 function confirmDeleteRegistro() {
   if (asistencia[deleteComId]) delete asistencia[deleteComId][deleteFecha];
+  // Eliminar en Supabase
+  _supabase.from('asistencia')
+    .delete()
+    .eq('comision_id', deleteComId)
+    .eq('fecha', deleteFecha)
+    .then(({ error }) => { if (error) console.warn('Error eliminando registro:', error); });
   closeDeleteRegistroModal();
   showToast('Registro eliminado');
   const today = new Date().toISOString().split('T')[0];
@@ -10435,12 +10474,16 @@ function archivarDocente(dni) {
   const s = ENROLLED_STAFF[dni];
   if (!confirm(`¿Archivar a ${s.apellido}, ${s.nombre}? Dejará de aparecer en el sistema pero sus registros se conservan.`)) return;
   ENROLLED_STAFF[dni].activo = false;
+  _supabase.from('staff').update({ activo: false }).eq('dni', dni)
+    .then(({ error }) => { if (error) console.warn('Error archivando docente:', error); });
   renderTeachersView();
   showToast(`${s.apellido} archivado/a`);
 }
 
 function desarchivarDocente(dni) {
   ENROLLED_STAFF[dni].activo = true;
+  _supabase.from('staff').update({ activo: true }).eq('dni', dni)
+    .then(({ error }) => { if (error) console.warn('Error desarchivando docente:', error); });
   renderTeachersView();
   showToast(`${ENROLLED_STAFF[dni].apellido} desarchivado/a`);
 }
@@ -10453,6 +10496,8 @@ function eliminarDocente(dni, tieneRegistros) {
   const s = ENROLLED_STAFF[dni];
   if (!confirm(`¿Eliminar permanentemente a ${s.apellido}, ${s.nombre}? Esta acción no se puede deshacer.`)) return;
   delete ENROLLED_STAFF[dni];
+  _supabase.from('staff').delete().eq('dni', dni)
+    .then(({ error }) => { if (error) console.warn('Error eliminando docente:', error); });
   renderTeachersView();
   showToast('Persona eliminada');
 }
@@ -10597,6 +10642,9 @@ function confirmStaffReassign() {
   }
 
   ENROLLED_STAFF[reassigningStaffDni].email = newEmail;
+  // Guardar en Supabase
+  _supabase.from('staff').update({ email: newEmail }).eq('dni', reassigningStaffDni)
+    .then(({ error }) => { if (error) console.warn('Error actualizando email de staff:', error); });
   closeStaffReassignModal();
   renderTeachersView();
   showToast('Email actualizado correctamente');
@@ -12140,8 +12188,14 @@ function confirmSaveArea() {
   if (!name) { showToast('Ingresá el nombre del área', true); return; }
   if (editingAreaId) {
     SKILLS_DATA.find(a => a.id === editingAreaId).name = name;
+    _supabase.from('skills_areas').update({ name }).eq('id', editingAreaId)
+      .then(({ error }) => { if (error) console.warn('Error actualizando área:', error); });
   } else {
-    SKILLS_DATA.push({ id: 'a' + Date.now(), name, skills: [] });
+    const id = 'a' + Date.now();
+    const orden = SKILLS_DATA.length + 1;
+    SKILLS_DATA.push({ id, name, skills: [] });
+    _supabase.from('skills_areas').insert({ id, name, orden })
+      .then(({ error }) => { if (error) console.warn('Error guardando área:', error); });
   }
   closePortfolioModal('area');
   renderCoordPortfolioView();
@@ -12190,8 +12244,15 @@ function confirmSaveSkill() {
   if (editingSkillId) {
     const skill = area.skills.find(s => s.id === editingSkillId);
     skill.name = name; skill.descripcion = descripcion; skill.docentesDnis = docentesDnis;
+    _supabase.from('skills').update({ name, descripcion, docentes_dni: docentesDnis })
+      .eq('id', editingSkillId)
+      .then(({ error }) => { if (error) console.warn('Error actualizando habilidad:', error); });
   } else {
-    area.skills.push({ id: 's' + Date.now(), name, descripcion, docentesDnis });
+    const id = 's' + Date.now();
+    const orden = area.skills.length + 1;
+    area.skills.push({ id, name, descripcion, docentesDnis });
+    _supabase.from('skills').insert({ id, area_id: editingSkillAreaId, name, descripcion, docentes_dni: docentesDnis, activa: true, orden })
+      .then(({ error }) => { if (error) console.warn('Error guardando habilidad:', error); });
   }
   closePortfolioModal('skill');
   renderCoordPortfolioView(editingSkillAreaId);
@@ -12203,6 +12264,8 @@ function archivarHabilidad(areaId, skillId) {
   const skill = area.skills.find(s => s.id === skillId);
   if (!confirm(`¿Archivar "${skill.name}"? Dejará de estar disponible para nuevas cargas pero los registros existentes se conservan.`)) return;
   skill.activa = false;
+  _supabase.from('skills').update({ activa: false }).eq('id', skillId)
+    .then(({ error }) => { if (error) console.warn('Error archivando habilidad:', error); });
   renderCoordPortfolioView(areaId);
   showToast(`"${skill.name}" archivada`);
 }
@@ -12211,6 +12274,8 @@ function desarchivarHabilidad(areaId, skillId) {
   const area  = SKILLS_DATA.find(a => a.id === areaId);
   const skill = area.skills.find(s => s.id === skillId);
   skill.activa = true;
+  _supabase.from('skills').update({ activa: true }).eq('id', skillId)
+    .then(({ error }) => { if (error) console.warn('Error desarchivando habilidad:', error); });
   renderCoordPortfolioView(areaId);
   showToast(`"${skill.name}" desarchivada · disponible nuevamente`);
 }
@@ -12224,6 +12289,8 @@ function eliminarHabilidad(areaId, skillId, tieneRegistros) {
   const skill = area.skills.find(s => s.id === skillId);
   if (!confirm(`¿Eliminar permanentemente "${skill.name}"? Esta acción no se puede deshacer.`)) return;
   area.skills = area.skills.filter(s => s.id !== skillId);
+  _supabase.from('skills').delete().eq('id', skillId)
+    .then(({ error }) => { if (error) console.warn('Error eliminando habilidad:', error); });
   renderCoordPortfolioView(areaId);
   showToast('Habilidad eliminada');
 }
