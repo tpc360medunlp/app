@@ -9584,12 +9584,6 @@ function rechazarSolicitudCambio(solId) {
 // ── MÓDULO SOLICITUD DE AULAS ─────────────────────────────
 let solicitudesAulas = [];
 
-function getTeacherDni() {
-  return Object.keys(ENROLLED_STAFF).find(dni =>
-    ENROLLED_STAFF[dni].email === currentUser.email
-  ) || null;
-}
-
 function actualizarBadgeAulas() {
   const pendientes = solicitudesAulas.filter(s => s.estado === 'pendiente').length;
   const badgeCoord = document.getElementById('aulas-badge-coord');
@@ -10045,14 +10039,24 @@ function confirmarEnvioSolicitudAula() {
 
   window._pendingSolicitudAula = null;
   _aulaFilaCount = 1;
-  window._aulasTeacherTab = 'mis-solicitudes';
+
+  const esCoord = window._aulasCoordSolicitud;
+  window._aulasCoordSolicitud = false;
+
   actualizarBadgeAulas();
-  renderTeacherAulasView();
-  showToast('Solicitud enviada a coordinación');
+  if (esCoord) {
+    window._aulasCoordTab = 'pendientes';
+    renderCoordAulasView();
+  } else {
+    window._aulasTeacherTab = 'mis-solicitudes';
+    renderTeacherAulasView();
+  }
+  showToast('Solicitud enviada correctamente');
 }
 
 function renderCoordAulasView(tab = null) {
   if (tab) window._aulasCoordTab = tab;
+  if (tab === 'nueva-solicitud') _aulaFilaCount = 1;
   const activeTab = window._aulasCoordTab || 'pendientes';
 
   actualizarBadgeAulas();
@@ -10073,6 +10077,7 @@ function renderCoordAulasView(tab = null) {
   let html = `<div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
     ${tabBtn('pendientes', 'Pendientes', pendientes.length)}
     ${tabBtn('confirmadas', 'Confirmadas')}
+    ${tabBtn('nueva-solicitud', '+ Nueva solicitud')}
     ${tabBtn('plantilla', 'Plantilla institucional')}
   </div>`;
 
@@ -10088,6 +10093,8 @@ function renderCoordAulasView(tab = null) {
     } else {
       html += confirmadas.map(s => renderSolCoord(s, false)).join('');
     }
+  } else if (activeTab === 'nueva-solicitud') {
+    html += renderCoordAulasFormulario();
   } else {
     // Plantilla institucional
     const plantillaUrl = window._plantillaAulasUrl || null;
@@ -10112,6 +10119,92 @@ function renderCoordAulasView(tab = null) {
   }
 
   container.innerHTML = html;
+}
+
+function renderCoordAulasFormulario() {
+  const actividades = ['Examen parcial oral','Examen parcial escrito','Examen final oral','Examen final escrito','Cursada','Otra'];
+  const docentesOptions = Object.entries(ENROLLED_STAFF)
+    .filter(([,s]) => s.activo !== false)
+    .sort((a,b) => a[1].apellido.localeCompare(b[1].apellido, 'es'))
+    .map(([,s]) => `<option value="${s.apellido}, ${s.nombre}">${s.apellido}, ${s.nombre}</option>`)
+    .join('');
+
+  return `<div class="area-card">
+    <div class="area-header"><span class="area-name">Nueva solicitud</span></div>
+    <div style="padding:1.25rem 1.5rem">
+
+      <div class="form-field">
+        <label class="form-label">Asignatura</label>
+        <select class="form-select" id="aula-materia">
+          <option value="">Seleccioná una materia</option>
+          ${MATERIAS.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Profesor titular / Docente a cargo de la cátedra</label>
+        <select class="form-select" id="aula-docente-titular">
+          <option value="">Seleccioná un docente</option>
+          ${docentesOptions}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Actividad a realizar</label>
+        <select class="form-select" id="aula-actividad" onchange="toggleAulaOtra()">
+          <option value="">Seleccioná una actividad</option>
+          ${actividades.map(a => `<option value="${a}">${a}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-field" id="aula-otra-group" style="display:none">
+        <label class="form-label">Describí la actividad <span id="aula-otra-count" style="font-weight:400;color:var(--gray-400)">(0/55)</span></label>
+        <input type="text" class="form-input" id="aula-actividad-otra" maxlength="55"
+          placeholder="Describí brevemente la actividad"
+          oninput="document.getElementById('aula-otra-count').textContent='('+this.value.length+'/55)'">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label class="form-label">Aula híbrida</label>
+          <select class="form-select" id="aula-hibrida">
+            <option value="no">No</option>
+            <option value="si">Sí</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Total de estudiantes</label>
+          <input type="number" class="form-input" id="aula-total-est" min="1" placeholder="Ej: 30">
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Teléfono de contacto</label>
+        <input type="tel" class="form-input" id="aula-tel" placeholder="Ej: 2214567890">
+      </div>
+
+      <div style="margin:1rem 0 8px;font-size:13px;font-weight:600;color:var(--navy)">Fechas solicitadas</div>
+      <div id="aula-filas-container">
+        ${renderFilaAula(1)}
+      </div>
+      <button onclick="agregarFilaAula()"
+        style="margin-top:8px;padding:6px 14px;font-size:12px;background:var(--gray-100);color:var(--navy);border:1px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+        + Agregar fecha
+      </button>
+
+      <div style="margin-top:1.25rem">
+        <button onclick="enviarSolicitudAulaCoord()"
+          style="padding:10px 24px;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)">
+          Revisar y enviar
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function enviarSolicitudAulaCoord() {
+  // Mismo flujo que docente pero usando DNI de coordinación
+  window._aulasCoordSolicitud = true;
+  enviarSolicitudAula();
 }
 
 function renderSolCoord(s, conAcciones) {
