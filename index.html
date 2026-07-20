@@ -9691,16 +9691,20 @@ function renderTeacherAulasMisSolicitudes(dni) {
               </tr>
             </thead>
             <tbody>
-              ${(s.filas || []).filter(f => f.fecha).map(f => `
-                <tr>
-                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.fecha.split('-').reverse().join('/')}</td>
+              ${(s.filas || []).filter(f => f.fecha).map(f => {
+                const fechaDisplay = f.dia && f.fecha_fin
+                  ? `${f.dia} (${f.fecha.split('-').reverse().join('/')} al ${f.fecha_fin.split('-').reverse().join('/')})`
+                  : f.fecha.split('-').reverse().join('/');
+                return `<tr>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${fechaDisplay}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.desde} - ${f.hasta}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.docente_act}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100);color:${f.aula_otorgada ? '#1a7a35' : 'var(--gray-400)'};font-weight:${f.aula_otorgada ? '500' : '400'}">
                     ${f.aula_otorgada || (s.estado === 'pendiente' ? '—' : 'Sin aula asignada')}
                   </td>
-                </tr>`).join('')}
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -9765,8 +9769,10 @@ function renderTeacherAulasFormulario(dni) {
         </select>
       </div>
       <div class="form-field" id="aula-otra-group" style="display:none">
-        <label class="form-label">Describí la actividad</label>
-        <input type="text" class="form-input" id="aula-actividad-otra" placeholder="Describí brevemente la actividad">
+        <label class="form-label">Describí la actividad <span id="aula-otra-count" style="font-weight:400;color:var(--gray-400)">(0/55)</span></label>
+        <input type="text" class="form-input" id="aula-actividad-otra" maxlength="55"
+          placeholder="Describí brevemente la actividad"
+          oninput="document.getElementById('aula-otra-count').textContent='('+this.value.length+'/55)'">
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -9807,17 +9813,43 @@ function renderTeacherAulasFormulario(dni) {
   </div>`;
 }
 
+function isCursada() {
+  const act = document.getElementById('aula-actividad');
+  return act && act.value === 'Cursada';
+}
+
 function renderFilaAula(n) {
   const docentesDni = Object.keys(ENROLLED_STAFF);
   const opts = docentesDni.map(d => {
     const s = ENROLLED_STAFF[d];
     return `<option value="${s.apellido}, ${s.nombre}">${s.apellido}, ${s.nombre}</option>`;
   }).join('');
+  const cursada = isCursada();
+  const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
   return `<div class="fila-aula" id="fila-aula-${n}" style="padding:10px;border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:8px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span style="font-size:12px;font-weight:600;color:var(--gray-500)">Fecha ${n}</span>
+      <span style="font-size:12px;font-weight:600;color:var(--gray-500)">${cursada ? 'Período' : 'Fecha'} ${n}</span>
       ${n > 1 ? `<button onclick="eliminarFilaAula(${n})" style="font-size:11px;background:none;border:none;color:#b02030;cursor:pointer">✕ Eliminar</button>` : ''}
     </div>
+    ${cursada ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <div>
+        <label class="form-label" style="font-size:11px">Fecha inicio</label>
+        <input type="date" class="form-input" id="aula-fecha-${n}" style="font-size:12px;padding:6px 8px">
+      </div>
+      <div>
+        <label class="form-label" style="font-size:11px">Fecha fin</label>
+        <input type="date" class="form-input" id="aula-fecha-fin-${n}" style="font-size:12px;padding:6px 8px">
+      </div>
+      <div>
+        <label class="form-label" style="font-size:11px">Día de cursada</label>
+        <select class="form-select" id="aula-dia-${n}" style="font-size:12px;padding:6px 8px">
+          <option value="">Seleccioná</option>
+          ${dias.map(d => `<option value="${d}">${d}</option>`).join('')}
+        </select>
+      </div>
+    </div>` : `
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
       <div>
         <label class="form-label" style="font-size:11px">Fecha</label>
@@ -9831,13 +9863,22 @@ function renderFilaAula(n) {
         <label class="form-label" style="font-size:11px">Hasta</label>
         <input type="time" class="form-input" id="aula-hasta-${n}" style="font-size:12px;padding:6px 8px">
       </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">
+    </div>`}
+    <div style="display:grid;grid-template-columns:${cursada ? '1fr 1fr 1fr' : '1fr 1fr 1fr'};gap:8px">
+      ${cursada ? `
+      <div>
+        <label class="form-label" style="font-size:11px">Desde</label>
+        <input type="time" class="form-input" id="aula-desde-${n}" style="font-size:12px;padding:6px 8px">
+      </div>
+      <div>
+        <label class="form-label" style="font-size:11px">Hasta</label>
+        <input type="time" class="form-input" id="aula-hasta-${n}" style="font-size:12px;padding:6px 8px">
+      </div>` : ''}
       <div>
         <label class="form-label" style="font-size:11px">Aforo</label>
         <input type="number" class="form-input" id="aula-aforo-${n}" min="1" placeholder="Nº" style="font-size:12px;padding:6px 8px">
       </div>
-      <div>
+      ${!cursada ? `<div style="grid-column: span 2">` : '<div>'}
         <label class="form-label" style="font-size:11px">Docente a cargo</label>
         <select class="form-select" id="aula-docente-${n}" style="font-size:12px;padding:6px 8px">
           <option value="">Seleccioná</option>
@@ -9851,7 +9892,7 @@ function renderFilaAula(n) {
 let _aulaFilaCount = 1;
 
 function agregarFilaAula() {
-  if (_aulaFilaCount >= 6) { showToast('Máximo 6 fechas por solicitud', true); return; }
+  if (_aulaFilaCount >= 6) { showToast('Máximo 6 períodos por solicitud', true); return; }
   _aulaFilaCount++;
   const container = document.getElementById('aula-filas-container');
   container.insertAdjacentHTML('beforeend', renderFilaAula(_aulaFilaCount));
@@ -9864,21 +9905,27 @@ function eliminarFilaAula(n) {
 function toggleAulaOtra() {
   const val = document.getElementById('aula-actividad').value;
   document.getElementById('aula-otra-group').style.display = val === 'Otra' ? 'block' : 'none';
+  // Regenerar filas según actividad
+  _aulaFilaCount = 1;
+  const container = document.getElementById('aula-filas-container');
+  if (container) container.innerHTML = renderFilaAula(1);
 }
 
 function enviarSolicitudAula() {
   const materiaId = document.getElementById('aula-materia').value;
   const docenteTitular = document.getElementById('aula-docente-titular').value;
   const actividad = document.getElementById('aula-actividad').value;
-  const actividadOtra = document.getElementById('aula-actividad-otra')?.value || '';
+  const actividadOtra = document.getElementById('aula-actividad-otra')?.value?.trim() || '';
   const hibrida = document.getElementById('aula-hibrida').value === 'si';
   const totalEst = parseInt(document.getElementById('aula-total-est').value) || 0;
   const tel = document.getElementById('aula-tel').value.trim();
+  const esCursada = actividad === 'Cursada';
 
   if (!materiaId)     { showToast('Seleccioná una materia', true); return; }
   if (!docenteTitular){ showToast('Seleccioná el docente titular', true); return; }
   if (!actividad)     { showToast('Seleccioná la actividad', true); return; }
   if (actividad === 'Otra' && !actividadOtra) { showToast('Describí la actividad', true); return; }
+  if (actividad === 'Otra' && actividadOtra.length > 55) { showToast('La descripción no puede superar los 55 caracteres', true); return; }
   if (!totalEst || totalEst < 1) { showToast('Ingresá el total de estudiantes', true); return; }
   if (!tel)           { showToast('Ingresá el teléfono de contacto', true); return; }
 
@@ -9887,18 +9934,31 @@ function enviarSolicitudAula() {
   for (let i = 1; i <= _aulaFilaCount; i++) {
     const el = document.getElementById(`fila-aula-${i}`);
     if (!el) continue;
-    const fecha   = document.getElementById(`aula-fecha-${i}`)?.value;
-    const desde   = document.getElementById(`aula-desde-${i}`)?.value;
-    const hasta   = document.getElementById(`aula-hasta-${i}`)?.value;
-    const aforo   = document.getElementById(`aula-aforo-${i}`)?.value;
-    const docente = document.getElementById(`aula-docente-${i}`)?.value;
-    if (!fecha && !desde && !hasta && !aforo && !docente) continue; // fila vacía, ignorar
-    if (!fecha)   { showToast(`Completá la fecha en la fila ${filas.length + 1}`, true); return; }
-    if (!desde)   { showToast(`Completá el horario de inicio en la fila ${filas.length + 1}`, true); return; }
-    if (!hasta)   { showToast(`Completá el horario de finalización en la fila ${filas.length + 1}`, true); return; }
-    if (!aforo)   { showToast(`Completá el aforo en la fila ${filas.length + 1}`, true); return; }
-    if (!docente) { showToast(`Seleccioná el docente a cargo en la fila ${filas.length + 1}`, true); return; }
-    filas.push({ fecha, desde, hasta, aforo, docente_act: docente, aula_otorgada: null });
+    const fecha    = document.getElementById(`aula-fecha-${i}`)?.value;
+    const fechaFin = document.getElementById(`aula-fecha-fin-${i}`)?.value;
+    const dia      = document.getElementById(`aula-dia-${i}`)?.value;
+    const desde    = document.getElementById(`aula-desde-${i}`)?.value;
+    const hasta    = document.getElementById(`aula-hasta-${i}`)?.value;
+    const aforo    = document.getElementById(`aula-aforo-${i}`)?.value;
+    const docente  = document.getElementById(`aula-docente-${i}`)?.value;
+
+    // Detectar fila vacía
+    const camposLlenos = [fecha, desde, hasta, aforo, docente].filter(Boolean);
+    if (camposLlenos.length === 0 && !fechaFin && !dia) continue;
+
+    const n = filas.length + 1;
+    if (!fecha)   { showToast(`Completá la fecha${esCursada ? ' de inicio' : ''} en el período ${n}`, true); return; }
+    if (esCursada && !fechaFin) { showToast(`Completá la fecha de fin en el período ${n}`, true); return; }
+    if (esCursada && !dia)      { showToast(`Seleccioná el día de cursada en el período ${n}`, true); return; }
+    if (!desde)   { showToast(`Completá el horario de inicio en el período ${n}`, true); return; }
+    if (!hasta)   { showToast(`Completá el horario de finalización en el período ${n}`, true); return; }
+    if (!aforo)   { showToast(`Completá el aforo en el período ${n}`, true); return; }
+    if (!docente) { showToast(`Seleccioná el docente a cargo en el período ${n}`, true); return; }
+
+    filas.push({
+      fecha, fecha_fin: fechaFin || null, dia: dia || null,
+      desde, hasta, aforo, docente_act: docente, aula_otorgada: null
+    });
   }
 
   if (filas.length === 0) { showToast('Completá al menos una fecha', true); return; }
@@ -9935,14 +9995,18 @@ function enviarSolicitudAula() {
         </tr>
       </thead>
       <tbody>
-        ${filas.map(f => `
-          <tr>
-            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.fecha.split('-').reverse().join('/')}</td>
-            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde}</td>
-            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.hasta}</td>
-            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
-            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.docente_act}</td>
-          </tr>`).join('')}
+        ${filas.map(f => {
+            const fechaDisplay = f.dia
+              ? `${f.dia} (${f.fecha.split('-').reverse().join('/')} al ${(f.fecha_fin||'').split('-').reverse().join('/')})`
+              : f.fecha.split('-').reverse().join('/');
+            return `<tr>
+              <td style="padding:6px 8px;border:1px solid var(--gray-100)">${fechaDisplay}</td>
+              <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde}</td>
+              <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.hasta}</td>
+              <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
+              <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.docente_act}</td>
+            </tr>`;
+          }).join('')}
       </tbody>
     </table>`;
 
@@ -9987,107 +10051,143 @@ function confirmarEnvioSolicitudAula() {
   showToast('Solicitud enviada a coordinación');
 }
 
-function renderCoordAulasView() {
+function renderCoordAulasView(tab = null) {
+  if (tab) window._aulasCoordTab = tab;
+  const activeTab = window._aulasCoordTab || 'pendientes';
+
   actualizarBadgeAulas();
   const container = document.getElementById('coord-aulas-container');
-  const pendientes  = solicitudesAulas.filter(s => s.estado === 'pendiente');
-  const confirmadas = solicitudesAulas.filter(s => s.estado === 'confirmada');
 
-  // Sección configuración de plantilla
-  const plantillaUrl = window._plantillaAulasUrl || null;
-  let html = `<div class="area-card" style="margin-bottom:1rem">
-    <div class="area-header"><span class="area-name">Plantilla institucional</span></div>
-    <div style="padding:1rem 1.5rem;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div style="font-size:13px;color:${plantillaUrl ? '#1a7a35' : 'var(--gray-400)'}">
-        ${plantillaUrl ? '✅ Plantilla cargada' : '⚠️ No hay plantilla cargada aún'}
-      </div>
-      <label style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:12px;cursor:pointer;font-family:var(--font)">
-        📄 ${plantillaUrl ? 'Reemplazar plantilla' : 'Subir plantilla (.docx)'}
-        <input type="file" accept=".docx" onchange="subirPlantillaAulas(this)" style="display:none">
-      </label>
-    </div>
+  const pendientes  = solicitudesAulas.filter(s => s.estado === 'pendiente');
+  const confirmadas = solicitudesAulas.filter(s => s.estado === 'confirmada')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const tabBtn = (id, label, badge = 0) =>
+    `<button onclick="renderCoordAulasView('${id}')"
+      style="padding:8px 18px;font-size:13px;font-weight:500;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;
+      background:${activeTab===id?'var(--navy)':'var(--gray-100)'};color:${activeTab===id?'white':'var(--gray-600)'}">
+      ${label}
+      ${badge > 0 ? `<span style="background:#b02030;color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600">${badge > 9 ? '9+' : badge}</span>` : ''}
+    </button>`;
+
+  let html = `<div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
+    ${tabBtn('pendientes', 'Pendientes', pendientes.length)}
+    ${tabBtn('confirmadas', 'Confirmadas')}
+    ${tabBtn('plantilla', 'Plantilla institucional')}
   </div>`;
 
-  if (solicitudesAulas.length === 0) {
-    html += `<div class="empty-state"><div class="empty-icon">🏫</div><p>No hay solicitudes de aulas.</p></div>`;
-    container.innerHTML = html;
-    return;
-  }
-
-  const renderSol = (s, conAcciones) => {
-    const materia = MATERIAS.find(m => m.id === s.materia_id);
-    const docente = ENROLLED_STAFF[s.docente_dni];
-    const est = s.estado === 'pendiente'
-      ? { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' }
-      : { label: 'Confirmada', color: '#1a7a35', bg: 'var(--green-light)' };
-
-    return `<div class="area-card" style="margin-bottom:.75rem">
-      <div style="padding:1rem 1.5rem">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
-          <div>
-            <div style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</div>
-            <div style="font-size:12px;color:var(--gray-500)">Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : s.docente_dni}</div>
-            <div style="font-size:12px;color:var(--gray-500)">Titular: ${s.docente_titular || '-'} · Actividad: ${s.actividad === 'Otra' ? s.actividad_otra : s.actividad}</div>
-            <div style="font-size:12px;color:var(--gray-500)">Aula híbrida: ${s.hibrida ? 'Sí' : 'No'} · Estudiantes: ${s.total_estudiantes || '-'} · Tel: ${s.tel_contacto || '-'}</div>
+  if (activeTab === 'pendientes') {
+    if (pendientes.length === 0) {
+      html += `<div class="empty-state"><div class="empty-icon">✅</div><p>No hay solicitudes pendientes.</p></div>`;
+    } else {
+      html += pendientes.map(s => renderSolCoord(s, true)).join('');
+    }
+  } else if (activeTab === 'confirmadas') {
+    if (confirmadas.length === 0) {
+      html += `<div class="empty-state"><div class="empty-icon">🏫</div><p>No hay solicitudes confirmadas aún.</p></div>`;
+    } else {
+      html += confirmadas.map(s => renderSolCoord(s, false)).join('');
+    }
+  } else {
+    // Plantilla institucional
+    const plantillaUrl = window._plantillaAulasUrl || null;
+    html += `<div class="area-card">
+      <div class="area-header"><span class="area-name">Plantilla institucional</span></div>
+      <div style="padding:1.25rem 1.5rem">
+        <p style="font-size:13px;color:var(--gray-600);margin-bottom:1rem">
+          Subí el archivo Word (.docx) con los marcadores <code>{{ASIGNATURA}}</code>, <code>{{FECHA1}}</code>, etc.
+          Este archivo se usará para generar la planilla al descargar una solicitud.
+        </p>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div style="font-size:13px;color:${plantillaUrl ? '#1a7a35' : 'var(--gray-400)'}">
+            ${plantillaUrl ? '✅ Plantilla cargada correctamente' : '⚠️ No hay plantilla cargada aún'}
           </div>
-          <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${est.bg};color:${est.color};white-space:nowrap">${est.label}</span>
+          <label style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:13px;cursor:pointer;font-family:var(--font)">
+            📄 ${plantillaUrl ? 'Reemplazar plantilla' : 'Subir plantilla (.docx)'}
+            <input type="file" accept=".docx" onchange="subirPlantillaAulas(this)" style="display:none">
+          </label>
         </div>
-        <div style="overflow-x:auto;margin-top:8px">
-          <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead>
-              <tr style="background:var(--gray-50)">
-                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
-                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Desde</th>
-                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Hasta</th>
-                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
-                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Docente a cargo</th>
-                <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${(s.filas || []).filter(f => f.fecha).map((f, idx) => `
-                <tr>
-                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.fecha.split('-').reverse().join('/')}</td>
-                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde || ''}</td>
-                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.hasta || ''}</td>
-                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.aforo || ''}</td>
-                  <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.docente_act || ''}</td>
-                  <td style="padding:${conAcciones ? '4px 6px' : '6px 8px'};border:1px solid var(--gray-100)">
-                    ${conAcciones
-                      ? `<input type="text" value="${f.aula_otorgada || ''}" placeholder="Ej: Aula 5"
-                          id="aula-ot-${s.id}-${idx}"
-                          style="width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--gray-200);border-radius:4px;font-family:var(--font)">`
-                      : `<span style="color:#1a7a35;font-weight:500">${f.aula_otorgada || '-'}</span>`}
-                  </td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-        ${conAcciones ? `
-        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-          <button onclick="descargarPlanillaAula('${s.id}')"
-            style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
-            📄 Descargar planilla
-          </button>
-          <button onclick="confirmarSolicitudAula('${s.id}')"
-            style="padding:6px 14px;font-size:12px;font-weight:500;background:#1a7a35;color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
-            ✓ Confirmar con aulas
-          </button>
-        </div>` : ''}
       </div>
     </div>`;
-  };
-
-  if (pendientes.length > 0) {
-    html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Pendientes</div>`;
-    html += pendientes.map(s => renderSol(s, true)).join('');
-  }
-  if (confirmadas.length > 0) {
-    html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin:1rem 0 10px">Confirmadas</div>`;
-    html += confirmadas.map(s => renderSol(s, false)).join('');
   }
 
   container.innerHTML = html;
+}
+
+function renderSolCoord(s, conAcciones) {
+  const materia  = MATERIAS.find(m => m.id === s.materia_id);
+  const docente  = ENROLLED_STAFF[s.docente_dni];
+  const est = s.estado === 'pendiente'
+    ? { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' }
+    : { label: 'Confirmada', color: '#1a7a35', bg: 'var(--green-light)' };
+  const actividadLabel = s.actividad === 'Otra' ? s.actividad_otra : s.actividad;
+  const fecha = s.created_at ? new Date(s.created_at).toLocaleDateString('es-AR') : '';
+
+  return `<div class="area-card" style="margin-bottom:.75rem">
+    <div style="padding:1rem 1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</div>
+          <div style="font-size:12px;color:var(--gray-500)">Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : s.docente_dni} · ${fecha}</div>
+          <div style="font-size:12px;color:var(--gray-500)">Titular: ${s.docente_titular || '-'} · Actividad: ${actividadLabel}</div>
+          <div style="font-size:12px;color:var(--gray-500)">Aula híbrida: ${s.hibrida ? 'Sí' : 'No'} · Estudiantes: ${s.total_estudiantes || '-'} · Tel: ${s.tel_contacto || '-'}</div>
+        </div>
+        <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${est.bg};color:${est.color};white-space:nowrap">${est.label}</span>
+      </div>
+      <div style="overflow-x:auto;margin-top:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--gray-50)">
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Desde</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Hasta</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Docente a cargo</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(s.filas || []).filter(f => f.fecha).map((f, idx) => {
+              const fechaDisplay = f.dia && f.fecha_fin
+                ? `${f.dia} (${f.fecha.split('-').reverse().join('/')} al ${f.fecha_fin.split('-').reverse().join('/')})`
+                : f.fecha.split('-').reverse().join('/');
+              return `<tr>
+                <td style="padding:5px 8px;border:1px solid var(--gray-100)">${fechaDisplay}</td>
+                <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.desde || ''}</td>
+                <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.hasta || ''}</td>
+                <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.aforo || ''}</td>
+                <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.docente_act || ''}</td>
+                <td style="padding:${conAcciones ? '4px 6px' : '5px 8px'};border:1px solid var(--gray-100)">
+                  ${conAcciones
+                    ? `<input type="text" value="${f.aula_otorgada || ''}" placeholder="Ej: Aula 5"
+                        id="aula-ot-${s.id}-${idx}"
+                        style="width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--gray-200);border-radius:4px;font-family:var(--font)">`
+                    : `<span style="color:${f.aula_otorgada ? '#1a7a35' : 'var(--gray-400)'};font-weight:${f.aula_otorgada ? '500' : '400'}">${f.aula_otorgada || '-'}</span>`}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${conAcciones ? `
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button onclick="descargarPlanillaAula('${s.id}')"
+          style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+          📄 Descargar planilla
+        </button>
+        <button onclick="confirmarSolicitudAula('${s.id}')"
+          style="padding:6px 14px;font-size:12px;font-weight:500;background:#1a7a35;color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+          ✓ Confirmar con aulas
+        </button>
+      </div>` : `
+      <div style="margin-top:10px">
+        <button onclick="editarAulasConfirmadas('${s.id}')"
+          style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--gray-100);color:var(--navy);border:1px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+          ✏️ Editar aulas asignadas
+        </button>
+      </div>`}
+    </div>
+  </div>`;
 }
 
 async function subirPlantillaAulas(input) {
@@ -10150,10 +10250,19 @@ async function descargarPlanillaAula(id) {
     // Preparar datos para reemplazar marcadores
     const filas = Array.from({ length: 6 }, (_, i) => {
       const f = (sol.filas || [])[i];
+      let fechaLabel = '';
+      if (f?.fecha) {
+        if (f.dia && f.fecha_fin) {
+          // Cursada: Día (inicio al fin)
+          fechaLabel = `${f.dia} (${f.fecha.split('-').reverse().join('/')} al ${f.fecha_fin.split('-').reverse().join('/')})`;
+        } else {
+          fechaLabel = f.fecha.split('-').reverse().join('/');
+        }
+      }
       return {
-        [`FECHA${i+1}`]:      f?.fecha ? f.fecha.split('-').reverse().join('/') : '',
-        [`HORARIO${i+1}`]:    f ? `${f.desde || ''} - ${f.hasta || ''}` : '',
-        [`AFORO${i+1}`]:      f?.aforo || '',
+        [`FECHA${i+1}`]:       fechaLabel,
+        [`HORARIO${i+1}`]:     f ? `${f.desde || ''} - ${f.hasta || ''}` : '',
+        [`AFORO${i+1}`]:       f?.aforo || '',
         [`DOCENTE-ACT${i+1}`]: f?.docente_act || '',
       };
     });
@@ -10195,6 +10304,73 @@ async function descargarPlanillaAula(id) {
     console.warn('Error generando planilla:', e);
     showToast('Error al generar la planilla. Verificá que la plantilla sea válida.', true);
   }
+}
+
+function editarAulasConfirmadas(id) {
+  const sol = solicitudesAulas.find(s => s.id === id);
+  if (!sol) return;
+  // Cambiar temporalmente a pendiente para mostrar inputs de edición
+  const card = document.querySelector(`[data-sol-id="${id}"]`);
+  // Más simple: re-render en modo "edición" — agregar inputs inline
+  const filas = (sol.filas || []).filter(f => f.fecha);
+  const inputs = filas.map((f, idx) => {
+    const fechaDisplay = f.dia && f.fecha_fin
+      ? `${f.dia} (${f.fecha.split('-').reverse().join('/')} al ${f.fecha_fin.split('-').reverse().join('/')})`
+      : f.fecha.split('-').reverse().join('/');
+    return `<tr>
+      <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${fechaDisplay}</td>
+      <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${f.desde||''} - ${f.hasta||''}</td>
+      <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${f.aforo||''}</td>
+      <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${f.docente_act||''}</td>
+      <td style="padding:4px 6px;border:1px solid var(--gray-100)">
+        <input type="text" value="${f.aula_otorgada||''}" placeholder="Ej: Aula 5"
+          id="edit-aula-ot-${id}-${idx}"
+          style="width:100%;padding:4px 6px;font-size:11px;border:1px solid var(--gray-200);border-radius:4px;font-family:var(--font)">
+      </td>
+    </tr>`;
+  }).join('');
+
+  const materia = MATERIAS.find(m => m.id === sol.materia_id);
+  document.getElementById('modal-confirm-aula-body').innerHTML = `
+    <p style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:10px">${materia?.nombre||''}</p>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--gray-50)">
+        <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
+        <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Horario</th>
+        <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
+        <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Docente</th>
+        <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>
+      </tr></thead>
+      <tbody>${inputs}</tbody>
+    </table>`;
+
+  // Cambiar botón del modal para guardar edición
+  document.querySelector('#modal-confirm-solicitud-aula .btn-primary').textContent = 'Guardar cambios';
+  document.querySelector('#modal-confirm-solicitud-aula .btn-primary').onclick = () => guardarEdicionAulas(id, filas.length);
+  document.querySelector('#modal-confirm-solicitud-aula .modal-sub').textContent = 'Modificá las aulas asignadas';
+  document.querySelector('#modal-confirm-solicitud-aula .modal-title').textContent = 'Editar aulas asignadas';
+  document.getElementById('modal-confirm-solicitud-aula').classList.add('open');
+}
+
+function guardarEdicionAulas(id, count) {
+  const sol = solicitudesAulas.find(s => s.id === id);
+  if (!sol) return;
+  (sol.filas || []).filter(f => f.fecha).forEach((f, idx) => {
+    const input = document.getElementById(`edit-aula-ot-${id}-${idx}`);
+    if (input) f.aula_otorgada = input.value.trim() || null;
+  });
+  _supabase.from('solicitudes_aulas')
+    .update({ filas: sol.filas })
+    .eq('id', id)
+    .then(({ error }) => { if (error) console.warn('Error guardando edición aulas:', error); });
+  document.getElementById('modal-confirm-solicitud-aula').classList.remove('open');
+  // Restaurar modal a su estado original
+  document.querySelector('#modal-confirm-solicitud-aula .btn-primary').textContent = 'Confirmar y enviar';
+  document.querySelector('#modal-confirm-solicitud-aula .btn-primary').onclick = confirmarEnvioSolicitudAula;
+  document.querySelector('#modal-confirm-solicitud-aula .modal-title').textContent = 'Confirmar solicitud de aula';
+  document.querySelector('#modal-confirm-solicitud-aula .modal-sub').textContent = 'Revisá los datos antes de enviar a coordinación';
+  renderCoordAulasView('confirmadas');
+  showToast('Aulas actualizadas correctamente');
 }
 
 function confirmarSolicitudAula(id) {
