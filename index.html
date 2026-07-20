@@ -6962,14 +6962,16 @@ function duplicarComisiones() {
   }
 
   nuevas.forEach(c => {
+    const id = 'com' + Date.now() + Math.random().toString(36).slice(2,6);
     COMISIONES.push({
-      id:         'com' + Date.now() + Math.random().toString(36).slice(2,6),
-      materiaId:  c.materiaId,
-      nombre:     c.nombre,
-      docenteDni: c.docenteDni,
-      año:        selectedAcademicYear,
-      alumnos:    [], // sin alumnos — se importan luego
+      id, materiaId: c.materiaId, nombre: c.nombre,
+      docenteDni: c.docenteDni, año: selectedAcademicYear,
+      periodo: c.periodo || 1, alumnos: [],
     });
+    _supabase.from('comisiones').insert({
+      id, materia_id: c.materiaId, nombre: c.nombre,
+      docente_dni: c.docenteDni, año: selectedAcademicYear, periodo: c.periodo || 1
+    }).then(({ error }) => { if (error) console.warn('Error duplicando comisión:', error); });
   });
 
   renderAcademicView();
@@ -7253,6 +7255,7 @@ function showImportError(msg) {
 function confirmImport() {
   if (importedRows.length === 0) return;
   let added = 0, updated = 0;
+  const upsertRows = [];
   importedRows.forEach(r => {
     if (ENROLLED_STUDENTS[r.legajo]) {
       ENROLLED_STUDENTS[r.legajo].nombre   = r.nombre;
@@ -7263,13 +7266,21 @@ function confirmImport() {
     } else {
       ENROLLED_STUDENTS[r.legajo] = {
         nombre: r.nombre, apellido: r.apellido,
-        email: r.email || null,
-        legajo: r.legajo,
-        doc: r.doc || '',
+        email: r.email || null, legajo: r.legajo, doc: r.doc || '',
       };
       added++;
     }
+    upsertRows.push({
+      legajo: r.legajo, legajo_completo: r.legajo,
+      nombre: r.nombre, apellido: r.apellido,
+      email: r.email || null, dni: r.doc || null,
+    });
   });
+  // Guardar en Supabase
+  if (upsertRows.length > 0) {
+    _supabase.from('alumnos').upsert(upsertRows, { onConflict: 'legajo' })
+      .then(({ error }) => { if (error) console.warn('Error importando alumnos:', error); });
+  }
   closeImportModal();
   showToast(`Padrón actualizado: ${added} nuevos, ${updated} actualizados`);
 }
@@ -7360,10 +7371,22 @@ function confirmAddMateria() {
     materia.añoCarrera = añoCarrera; materia.regimen = regimen;
     materia.regimen_cursada = regimenCursada;
     materia.notaPromocion = notaPromocion; materia.criterioPromocion = criterioPromocion;
+    _supabase.from('materias').update({
+      nombre, docente_dni: docenteDni, año_carrera: añoCarrera,
+      regimen, regimen_cursada: regimenCursada,
+      nota_promocion: notaPromocion, criterio_promocion: criterioPromocion
+    }).eq('id', editingMateriaId)
+      .then(({ error }) => { if (error) console.warn('Error actualizando materia:', error); });
     closeMateriaModal(); renderAcademicView();
     showToast('Materia actualizada correctamente');
   } else {
-    MATERIAS.push({ id: 'm' + Date.now(), nombre, docenteDni, añoCarrera, regimen, notaPromocion, criterioPromocion, regimen_cursada: regimenCursada, cronograma: null });
+    const id = 'm' + Date.now();
+    MATERIAS.push({ id, nombre, docenteDni, añoCarrera, regimen, notaPromocion, criterioPromocion, regimen_cursada: regimenCursada, cronograma: null });
+    _supabase.from('materias').insert({
+      id, nombre, docente_dni: docenteDni, año_carrera: añoCarrera,
+      regimen, regimen_cursada: regimenCursada,
+      nota_promocion: notaPromocion, criterio_promocion: criterioPromocion
+    }).then(({ error }) => { if (error) console.warn('Error guardando materia:', error); });
     closeMateriaModal(); renderAcademicView();
     showToast('Materia agregada correctamente');
   }
@@ -7460,12 +7483,22 @@ function confirmAddComision() {
   if (editingComisionId) {
     const c = COMISIONES.find(com => com.id === editingComisionId);
     c.nombre = nombre; c.materiaId = materiaId; c.docenteDni = docenteDni; c.año = año; c.periodo = periodo;
+    // Actualizar en Supabase
+    _supabase.from('comisiones').update({
+      nombre, materia_id: materiaId, docente_dni: docenteDni, año, periodo
+    }).eq('id', editingComisionId)
+      .then(({ error }) => { if (error) console.warn('Error actualizando comisión:', error); });
     closeComisionModal();
     selectedAcademicYear = año;
     renderAcademicView(materiaId);
     showToast('Comisión actualizada correctamente');
   } else {
-    COMISIONES.push({ id: 'c' + Date.now(), materiaId, nombre, docenteDni, año, periodo, alumnos: [] });
+    const id = 'c' + Date.now();
+    COMISIONES.push({ id, materiaId, nombre, docenteDni, año, periodo, alumnos: [] });
+    // Guardar en Supabase
+    _supabase.from('comisiones').insert({
+      id, materia_id: materiaId, nombre, docente_dni: docenteDni, año, periodo
+    }).then(({ error }) => { if (error) console.warn('Error guardando comisión:', error); });
     closeComisionModal();
     selectedAcademicYear = año;
     renderAcademicView(materiaId);
@@ -7702,18 +7735,37 @@ function confirmComisionImport() {
   if (importedRows.length === 0) { showToast('Primero cargá un archivo válido', true); return; }
   const comision = COMISIONES.find(c => c.id === gestionComisionId);
   let added = 0;
+  const upsertAlumnos = [];
+  const upsertComAlumnos = [];
+
   importedRows.forEach(r => {
-    // Registrar en padrón si no existe
-    if (!ENROLLED_STUDENTS[r.dni]) {
-      ENROLLED_STUDENTS[r.dni] = { nombre: r.nombre, apellido: r.apellido, email: null };
+    const legajoNorm = normalizeLegajo(r.legajo || r.dni || '');
+    if (!ENROLLED_STUDENTS[legajoNorm]) {
+      ENROLLED_STUDENTS[legajoNorm] = { nombre: r.nombre, apellido: r.apellido, email: null, legajo: r.legajo || r.dni };
+      upsertAlumnos.push({
+        legajo: legajoNorm, legajo_completo: r.legajo || r.dni,
+        nombre: r.nombre, apellido: r.apellido, email: null, dni: r.dni || null
+      });
     }
-    const email = ENROLLED_STUDENTS[r.dni].email || `dni_${r.dni}`;
+    const email = ENROLLED_STUDENTS[legajoNorm].email || `legajo_${legajoNorm}`;
     if (!STUDENT_NAMES[email]) STUDENT_NAMES[email] = `${r.apellido}, ${r.nombre}`;
     if (!comision.alumnos.includes(email)) {
       comision.alumnos.push(email);
       added++;
+      if (legajoNorm) upsertComAlumnos.push({ comision_id: gestionComisionId, legajo: legajoNorm });
     }
   });
+
+  // Guardar en Supabase
+  if (upsertAlumnos.length > 0) {
+    _supabase.from('alumnos').upsert(upsertAlumnos, { onConflict: 'legajo' })
+      .then(({ error }) => { if (error) console.warn('Error importando alumnos a padrón:', error); });
+  }
+  if (upsertComAlumnos.length > 0) {
+    _supabase.from('comision_alumnos').upsert(upsertComAlumnos, { onConflict: 'comision_id,legajo' })
+      .then(({ error }) => { if (error) console.warn('Error importando alumnos a comisión:', error); });
+  }
+
   document.getElementById('modal-comision-sub').textContent = `${comision.alumnos.length} alumno/s inscripto/s`;
   showToast(`${added} alumno/s agregados a la comisión`);
   showComisionTab('actuales');
@@ -7749,6 +7801,14 @@ function addToComision(email, name, legajo, otraComisionId) {
 
   if (!STUDENT_NAMES[email]) STUDENT_NAMES[email] = name;
   comision.alumnos.push(email);
+  // Guardar en Supabase
+  const legajoDb = legajo || getLegajoByEmail(email);
+  if (legajoDb) {
+    _supabase.from('comision_alumnos').upsert(
+      { comision_id: gestionComisionId, legajo: legajoDb },
+      { onConflict: 'comision_id,legajo' }
+    ).then(({ error }) => { if (error) console.warn('Error agregando alumno a comisión:', error); });
+  }
   document.getElementById('modal-comision-sub').textContent = `${comision.alumnos.length} alumno/s inscripto/s`;
   renderComisionTab('agregar');
   showToast(`${name} agregado`);
@@ -7761,6 +7821,17 @@ function confirmarTransferenciaInline(email, name, otraComisionId) {
   registrarCambioComision(email, otraComisionId, gestionComisionId);
   if (!STUDENT_NAMES[email]) STUDENT_NAMES[email] = name;
   comision.alumnos.push(email);
+  // Guardar en Supabase
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    _supabase.from('comision_alumnos').delete()
+      .eq('comision_id', otraComisionId).eq('legajo', legajo)
+      .then(({ error }) => { if (error) console.warn('Error quitando de comisión origen:', error); });
+    _supabase.from('comision_alumnos').upsert(
+      { comision_id: gestionComisionId, legajo },
+      { onConflict: 'comision_id,legajo' }
+    ).then(({ error }) => { if (error) console.warn('Error agregando a comisión destino:', error); });
+  }
   document.getElementById('modal-comision-sub').textContent = `${comision.alumnos.length} alumno/s inscripto/s`;
   renderComisionTab('agregar');
   showToast(`${name} transferido desde ${otraComision?.nombre}`);
@@ -7827,14 +7898,28 @@ function confirmarQuitarConDestino(email, esCambio) {
   }
 
   // Mover al alumno a la comisión destino
+  const legajoAlumno = getLegajoByEmail(email);
   if (destinoId) {
     const destino = COMISIONES.find(c => c.id === destinoId);
     if (!destino.alumnos.includes(email)) destino.alumnos.push(email);
     registrarCambioComision(email, gestionComisionId, destinoId);
+    // Guardar en Supabase
+    if (legajoAlumno) {
+      _supabase.from('comision_alumnos').upsert(
+        { comision_id: destinoId, legajo: legajoAlumno },
+        { onConflict: 'comision_id,legajo' }
+      ).then(({ error }) => { if (error) console.warn('Error moviendo a destino:', error); });
+    }
     showToast(`${name} movido a ${destino.nombre}`);
   }
 
   comision.alumnos = comision.alumnos.filter(e => e !== email);
+  // Quitar de Supabase
+  if (legajoAlumno) {
+    _supabase.from('comision_alumnos').delete()
+      .eq('comision_id', gestionComisionId).eq('legajo', legajoAlumno)
+      .then(({ error }) => { if (error) console.warn('Error quitando de comisión:', error); });
+  }
   document.getElementById('modal-comision-sub').textContent = `${comision.alumnos.length} alumno/s inscripto/s`;
   renderComisionTab('actuales');
 }
@@ -7844,6 +7929,13 @@ function confirmarQuitarInline(email, esCambio) {
   const name = STUDENT_NAMES[email] || email;
   if (esCambio) registrarCambioComision(email, gestionComisionId, null);
   comision.alumnos = comision.alumnos.filter(e => e !== email);
+  // Quitar de Supabase
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    _supabase.from('comision_alumnos').delete()
+      .eq('comision_id', gestionComisionId).eq('legajo', legajo)
+      .then(({ error }) => { if (error) console.warn('Error dando de baja:', error); });
+  }
   document.getElementById('modal-comision-sub').textContent = `${comision.alumnos.length} alumno/s inscripto/s`;
   renderComisionTab('actuales');
   showToast(`${name} quitado`);
@@ -10454,6 +10546,14 @@ function confirmSaveDocente() {
     nombre, apellido, email, cargo, roles,
     roleLabel: roles.includes('coordinator') ? 'Coordinación' : 'Docente'
   };
+
+  // Guardar en Supabase
+  _supabase.from('staff').upsert({
+    dni, nombre, apellido, email, roles, cargo,
+    role_label: roles.includes('coordinator') ? 'Coordinación' : 'Docente',
+    activo: true
+  }, { onConflict: 'dni' })
+    .then(({ error }) => { if (error) console.warn('Error guardando docente:', error); });
 
   closeDocenteModal();
   renderTeachersView();
