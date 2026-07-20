@@ -9607,20 +9607,125 @@ function actualizarBadgeAulas() {
   }
 }
 
-function renderTeacherAulasView() {
+function renderTeacherAulasView(tab = null) {
+  // Recordar tab activo
+  if (tab) window._aulasTeacherTab = tab;
+  if (tab === 'nueva-solicitud') _aulaFilaCount = 1;
+  const activeTab = window._aulasTeacherTab || 'mis-solicitudes';
+
   actualizarBadgeAulas();
   const container = document.getElementById('teacher-aulas-container');
   const dni = getTeacherDni();
 
-  // Mis solicitudes previas
-  const misSolicitudes = solicitudesAulas.filter(s => s.docente_dni === dni);
+  const tabBtn = (id, label) =>
+    `<button onclick="renderTeacherAulasView('${id}')"
+      style="padding:8px 18px;font-size:13px;font-weight:500;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font);
+      background:${activeTab===id?'var(--navy)':'var(--gray-100)'};color:${activeTab===id?'white':'var(--gray-600)'}">
+      ${label}
+    </button>`;
 
+  let html = `<div style="display:flex;gap:8px;margin-bottom:1.25rem">
+    ${tabBtn('mis-solicitudes','Mis solicitudes')}
+    ${tabBtn('nueva-solicitud','+ Nueva solicitud')}
+  </div>`;
+
+  if (activeTab === 'mis-solicitudes') {
+    html += renderTeacherAulasMisSolicitudes(dni);
+  } else {
+    html += renderTeacherAulasFormulario(dni);
+  }
+
+  container.innerHTML = html;
+}
+
+function renderTeacherAulasMisSolicitudes(dni) {
+  // Solicitudes propias + solicitudes donde figura como docente a cargo
+  const propias = solicitudesAulas
+    .filter(s => s.docente_dni === dni)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const comoDocente = solicitudesAulas
+    .filter(s => s.docente_dni !== dni &&
+      (s.filas || []).some(f => {
+        // Buscar si el nombre del docente coincide con alguna fila
+        const staffEntry = ENROLLED_STAFF[dni];
+        if (!staffEntry) return false;
+        const nombre = `${staffEntry.apellido}, ${staffEntry.nombre}`;
+        return f.docente_act === nombre;
+      })
+    )
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (propias.length === 0 && comoDocente.length === 0) {
+    return `<div class="empty-state"><div class="empty-icon">🏫</div><p>No tenés solicitudes de aulas.</p></div>`;
+  }
+
+  const renderSol = (s, esMia) => {
+    const materia  = MATERIAS.find(m => m.id === s.materia_id);
+    const solicitante = ENROLLED_STAFF[s.docente_dni];
+    const est = s.estado === 'pendiente'
+      ? { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' }
+      : { label: 'Confirmada', color: '#1a7a35', bg: 'var(--green-light)' };
+    const actividadLabel = s.actividad === 'Otra' ? s.actividad_otra : s.actividad;
+    const fecha = s.created_at ? new Date(s.created_at).toLocaleDateString('es-AR') : '';
+
+    return `<div class="area-card" style="margin-bottom:.75rem">
+      <div style="padding:1rem 1.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</div>
+            ${!esMia && solicitante ? `<div style="font-size:11px;color:var(--teal);font-weight:500;margin-bottom:2px">Solicitada por: ${solicitante.apellido}, ${solicitante.nombre}</div>` : ''}
+            <div style="font-size:12px;color:var(--gray-500)">Actividad: ${actividadLabel} · ${fecha}</div>
+          </div>
+          <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${est.bg};color:${est.color};white-space:nowrap">${est.label}</span>
+        </div>
+        <div style="overflow-x:auto;margin-top:6px">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--gray-50)">
+                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
+                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Horario</th>
+                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
+                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Docente a cargo</th>
+                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(s.filas || []).filter(f => f.fecha).map(f => `
+                <tr>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.fecha.split('-').reverse().join('/')}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.desde} - ${f.hasta}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.docente_act}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100);color:${f.aula_otorgada ? '#1a7a35' : 'var(--gray-400)'};font-weight:${f.aula_otorgada ? '500' : '400'}">
+                    ${f.aula_otorgada || (s.estado === 'pendiente' ? '—' : 'Sin aula asignada')}
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  let html = '';
+  if (propias.length > 0) {
+    html += propias.map(s => renderSol(s, true)).join('');
+  }
+  if (comoDocente.length > 0) {
+    html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin:1rem 0 10px">Solicitudes donde figurás como docente a cargo</div>`;
+    html += comoDocente.map(s => renderSol(s, false)).join('');
+  }
+  return html;
+}
+
+function renderTeacherAulasFormulario(dni) {
   // Materias del docente
   const misComisiones = COMISIONES.filter(c => c.docenteDni === dni);
   const misMateriasIds = [...new Set(misComisiones.map(c => c.materiaId))];
   const misMaterias = MATERIAS.filter(m => misMateriasIds.includes(m.id));
 
-  // Docentes de mis cátedras (mismo docenteDni o en comisiones de mismas materias)
+  // Docentes de las cátedras
   const todosDocentesDni = [...new Set(
     COMISIONES.filter(c => misMateriasIds.includes(c.materiaId)).map(c => c.docenteDni)
   )].filter(Boolean);
@@ -9632,39 +9737,7 @@ function renderTeacherAulasView() {
 
   const actividades = ['Examen parcial oral','Examen parcial escrito','Examen final oral','Examen final escrito','Cursada','Otra'];
 
-  let html = '';
-
-  // Solicitudes previas
-  if (misSolicitudes.length > 0) {
-    html += `<div class="area-card" style="margin-bottom:1rem">
-      <div class="area-header"><span class="area-name">Mis solicitudes</span></div>
-      <div style="padding:1rem 1.5rem">`;
-    misSolicitudes.forEach(s => {
-      const materia = MATERIAS.find(m => m.id === s.materia_id);
-      const est = s.estado === 'pendiente'
-        ? { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' }
-        : { label: 'Confirmada', color: '#1a7a35', bg: 'var(--green-light)' };
-      html += `<div style="padding:10px 12px;border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</span>
-          <span style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;background:${est.bg};color:${est.color}">${est.label}</span>
-        </div>
-        <div style="font-size:12px;color:var(--gray-500)">Actividad: ${s.actividad === 'Otra' ? s.actividad_otra : s.actividad}</div>
-        ${s.estado === 'confirmada' ? `
-        <div style="margin-top:8px;padding:8px;background:var(--green-light);border-radius:var(--radius-md)">
-          <div style="font-size:12px;font-weight:600;color:#1a7a35;margin-bottom:4px">Aulas otorgadas:</div>
-          ${(s.filas || []).filter(f => f.fecha).map(f => `
-            <div style="font-size:12px;color:#1a7a35">
-              ${f.fecha} ${f.desde}-${f.hasta}: <strong>${f.aula_otorgada || 'Pendiente'}</strong>
-            </div>`).join('')}
-        </div>` : ''}
-      </div>`;
-    });
-    html += `</div></div>`;
-  }
-
-  // Formulario nueva solicitud
-  html += `<div class="area-card">
+  return `<div class="area-card">
     <div class="area-header"><span class="area-name">Nueva solicitud</span></div>
     <div style="padding:1.25rem 1.5rem">
 
@@ -9727,13 +9800,11 @@ function renderTeacherAulasView() {
       <div style="margin-top:1.25rem">
         <button onclick="enviarSolicitudAula()"
           style="padding:10px 24px;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)">
-          Enviar solicitud
+          Revisar y enviar
         </button>
       </div>
     </div>
   </div>`;
-
-  container.innerHTML = html;
 }
 
 function renderFilaAula(n) {
@@ -9910,6 +9981,7 @@ function confirmarEnvioSolicitudAula() {
 
   window._pendingSolicitudAula = null;
   _aulaFilaCount = 1;
+  window._aulasTeacherTab = 'mis-solicitudes';
   actualizarBadgeAulas();
   renderTeacherAulasView();
   showToast('Solicitud enviada a coordinación');
