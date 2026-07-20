@@ -9896,9 +9896,21 @@ function eliminarFilaAula(n) {
   document.getElementById(`fila-aula-${n}`)?.remove();
 }
 
+function eliminarSolicitudAula(id) {
+  if (!confirm('¿Eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
+  const idx = solicitudesAulas.findIndex(s => s.id === id);
+  if (idx >= 0) solicitudesAulas.splice(idx, 1);
+  _supabase.from('solicitudes_aulas').delete().eq('id', id)
+    .then(({ error }) => { if (error) console.warn('Error eliminando solicitud:', error); });
+  actualizarBadgeAulas();
+  renderCoordAulasView('pendientes');
+  showToast('Solicitud eliminada');
+}
+
 function toggleAulaOtra() {
-  const val = document.getElementById('aula-actividad').value;
-  document.getElementById('aula-otra-group').style.display = val === 'Otra' ? 'block' : 'none';
+  const val = document.getElementById('aula-actividad')?.value;
+  const otraGroup = document.getElementById('aula-otra-group');
+  if (otraGroup) otraGroup.style.display = val === 'Otra' ? 'block' : 'none';
   // Regenerar filas según actividad
   _aulaFilaCount = 1;
   const container = document.getElementById('aula-filas-container');
@@ -10215,13 +10227,19 @@ function renderSolCoord(s, conAcciones) {
     : { label: 'Confirmada', color: '#1a7a35', bg: 'var(--green-light)' };
   const actividadLabel = s.actividad === 'Otra' ? s.actividad_otra : s.actividad;
   const fecha = s.created_at ? new Date(s.created_at).toLocaleDateString('es-AR') : '';
+  const coordDni = getTeacherDni();
+  const esMia = s.docente_dni === coordDni;
 
   return `<div class="area-card" style="margin-bottom:.75rem">
     <div style="padding:1rem 1.5rem">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
         <div>
           <div style="font-size:14px;font-weight:600;color:var(--navy)">${materia?.nombre || ''}</div>
-          <div style="font-size:12px;color:var(--gray-500)">Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : s.docente_dni} · ${fecha}</div>
+          <div style="font-size:12px;color:var(--gray-500)">
+            ${esMia
+              ? `<span style="color:var(--teal);font-weight:500">Creada por vos</span> · Fecha de solicitud: ${fecha}`
+              : `Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : s.docente_dni} · Fecha de solicitud: ${fecha}`}
+          </div>
           <div style="font-size:12px;color:var(--gray-500)">Titular: ${s.docente_titular || '-'} · Actividad: ${actividadLabel}</div>
           <div style="font-size:12px;color:var(--gray-500)">Aula híbrida: ${s.hibrida ? 'Sí' : 'No'} · Estudiantes: ${s.total_estudiantes || '-'} · Tel: ${s.tel_contacto || '-'}</div>
         </div>
@@ -10271,6 +10289,10 @@ function renderSolCoord(s, conAcciones) {
         <button onclick="confirmarSolicitudAula('${s.id}')"
           style="padding:6px 14px;font-size:12px;font-weight:500;background:#1a7a35;color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
           ✓ Confirmar con aulas
+        </button>
+        <button onclick="eliminarSolicitudAula('${s.id}')"
+          style="padding:6px 14px;font-size:12px;font-weight:500;background:white;color:#b02030;border:1.5px solid #f5b8be;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+          🗑 Eliminar
         </button>
       </div>` : `
       <div style="margin-top:10px">
