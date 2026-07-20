@@ -1043,6 +1043,19 @@
 </div>
 
 <!-- MODAL: confirmar eliminación de registro -->
+<!-- MODAL: confirmar solicitud de aula -->
+<div class="modal-overlay" id="modal-confirm-solicitud-aula" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:540px">
+    <h2 class="modal-title">Confirmar solicitud de aula</h2>
+    <p class="modal-sub">Revisá los datos antes de enviar a coordinación</p>
+    <div id="modal-confirm-aula-body" style="margin:1rem 0;max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="document.getElementById('modal-confirm-solicitud-aula').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmarEnvioSolicitudAula()">Confirmar y enviar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-delete-registro">
   <div class="modal" style="max-width:420px">
     <h2 class="modal-title">Eliminar registro</h2>
@@ -9819,14 +9832,66 @@ function enviarSolicitudAula() {
 
   if (filas.length === 0) { showToast('Completá al menos una fecha', true); return; }
 
+  // Guardar datos pendientes de confirmación
+  window._pendingSolicitudAula = {
+    materiaId, docenteTitular, actividad, actividadOtra,
+    hibrida, totalEst, tel, filas
+  };
+
+  // Mostrar modal de confirmación
+  const materia = MATERIAS.find(m => m.id === materiaId);
+  const actividadLabel = actividad === 'Otra' ? actividadOtra : actividad;
+  let body = `
+    <div style="background:var(--gray-50);border-radius:var(--radius-md);padding:14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px">${materia?.nombre || ''}</div>
+      <div style="font-size:12px;color:var(--gray-600);display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <span>Titular: ${docenteTitular}</span>
+        <span>Actividad: ${actividadLabel}</span>
+        <span>Aula híbrida: ${hibrida ? 'Sí' : 'No'}</span>
+        <span>Estudiantes: ${totalEst}</span>
+        <span>Tel: ${tel}</span>
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Fechas solicitadas</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--gray-50)">
+          <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
+          <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Desde</th>
+          <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Hasta</th>
+          <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
+          <th style="padding:6px 8px;text-align:left;border:1px solid var(--gray-100)">Docente</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filas.map(f => `
+          <tr>
+            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.fecha.split('-').reverse().join('/')}</td>
+            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde}</td>
+            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.hasta}</td>
+            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
+            <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.docente_act}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  document.getElementById('modal-confirm-aula-body').innerHTML = body;
+  document.getElementById('modal-confirm-solicitud-aula').classList.add('open');
+}
+
+function confirmarEnvioSolicitudAula() {
+  const p = window._pendingSolicitudAula;
+  if (!p) return;
+  document.getElementById('modal-confirm-solicitud-aula').classList.remove('open');
+
   const dni = getTeacherDni();
-  const id = 'sa_' + Date.now();
+  const id  = 'sa_' + Date.now();
   const sol = {
-    id, docente_dni: dni, materia_id: materiaId,
-    docente_titular: docenteTitular,
-    actividad, actividad_otra: actividadOtra,
-    hibrida, total_estudiantes: totalEst,
-    tel_contacto: tel, filas,
+    id, docente_dni: dni, materia_id: p.materiaId,
+    docente_titular: p.docenteTitular,
+    actividad: p.actividad, actividad_otra: p.actividadOtra,
+    hibrida: p.hibrida, total_estudiantes: p.totalEst,
+    tel_contacto: p.tel, filas: p.filas,
     estado: 'pendiente',
     created_at: new Date().toISOString()
   };
@@ -9835,14 +9900,15 @@ function enviarSolicitudAula() {
 
   // Guardar en Supabase
   _supabase.from('solicitudes_aulas').insert({
-    id, docente_dni: dni, materia_id: materiaId,
-    docente_titular: docenteTitular,
-    actividad, actividad_otra: actividadOtra,
-    hibrida, total_estudiantes: totalEst,
-    tel_contacto: tel, filas,
+    id, docente_dni: dni, materia_id: p.materiaId,
+    docente_titular: p.docenteTitular,
+    actividad: p.actividad, actividad_otra: p.actividadOtra,
+    hibrida: p.hibrida, total_estudiantes: p.totalEst,
+    tel_contacto: p.tel, filas: p.filas,
     estado: 'pendiente'
   }).then(({ error }) => { if (error) console.warn('Error guardando solicitud aula:', error); });
 
+  window._pendingSolicitudAula = null;
   _aulaFilaCount = 1;
   actualizarBadgeAulas();
   renderTeacherAulasView();
