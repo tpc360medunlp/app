@@ -1996,14 +1996,7 @@ async function loadDataFromSupabase() {
   }
 }
 // Clave: legajo normalizado (sin ceros adelante). Ej: "51064/9"
-const ENROLLED_STUDENTS = {
-  "40123/4": { nombre: "Juan",  apellido: "Pérez",  email: "parolafranco@gmail.com",  legajo: "040123/4", doc: "41234567",
-    cude: { activo: true,  vencimiento: "2026-12-31", estado: "validado",  archivo: null } },
-  "41234/5": { nombre: "María", apellido: "García", email: "maria.garcia@gmail.com", legajo: "041234/5", doc: "41234568",
-    cude: { activo: false, vencimiento: null,         estado: "pendiente", archivo: null } },
-  "42345/6": { nombre: "Pedro", apellido: "López",  email: "pedro.lopez@gmail.com",  legajo: "042345/6", doc: "42345678",
-    cude: null },
-};
+const ENROLLED_STUDENTS = {};
 
 // Normaliza legajo: quita ceros a la izquierda del número antes de la barra
 // Ej: "068885/7" → "68885/7", "051064/9" → "51064/9", "5/1" → "5/1"
@@ -2015,10 +2008,7 @@ function normalizeLegajo(raw) {
 }
 
 // ── CUdE: PERÍODOS DE CAMBIO DE COMISIÓN ─────────────────
-let periodosCambioComision = [
-  { id: 'p1', materias: ['m1'], apertura: '2026-03-15', cierre: '2026-03-30' },
-  { id: 'p2', materias: ['m2'], apertura: '2026-07-01', cierre: '2026-07-15' },
-];
+let periodosCambioComision = [];
 
 // ── CUdE: SOLICITUDES DE CAMBIO DE COMISIÓN ──────────────
 // { id, email, materiaId, deComId, aComId, motivo, estado, motivoRechazo, fecha }
@@ -2084,38 +2074,16 @@ function registrarCambioComision(email, deComId, aComId) {
     legajo, de_com_id: deComId, a_com_id: aComId, fecha
   }).then(({ error }) => { if (error) console.warn('Error guardando historial:', error); });
 }
-const ENROLLED_STAFF = {
-  "30111222": { nombre: "Ana",    apellido: "Torres",  roles: ["teacher"],                 roleLabel: "Docente",       email: "a.torres@fcm.unlp.edu.ar",  cargo: "JTP" },
-  "31222333": { nombre: "Carlos", apellido: "Ramírez", roles: ["teacher"],                 roleLabel: "Docente",       email: "c.ramirez@fcm.unlp.edu.ar", cargo: "Ayudante Diplomado" },
-  "32527404": { nombre: "Franco", apellido: "Parola",  roles: ["coordinator","teacher"],   roleLabel: "Coordinación",  email: "fparola@med.unlp.edu.ar",   cargo: "JTP" },
-};
+const ENROLLED_STAFF = {};
 
 // ── MATERIAS Y COMISIONES ─────────────────────────────────
-let MATERIAS = [
-  { id: "m1", nombre: "Electrocardiografía",        docenteDni: "30111222", añoCarrera: "1", regimen: "promocion",    notaPromocion: 7, criterioPromocion: "primera_fecha", regimen_cursada: "anual",         cronograma: null },
-  { id: "m2", nombre: "Ultrasonido en Cardiología", docenteDni: "31222333", añoCarrera: "2", regimen: "sin_promocion", notaPromocion: null, criterioPromocion: null,       regimen_cursada: "cuatrimestral", cronograma: null },
-  { id: "m3", nombre: "Ergometría",                 docenteDni: "30111222", añoCarrera: "3", regimen: "sin_promocion", notaPromocion: null, criterioPromocion: null,       regimen_cursada: "anual",         cronograma: null },
-];
+let MATERIAS = [];
 
-let COMISIONES = [
-  { id: "c1", materiaId: "m1", nombre: "Comisión A", docenteDni: "30111222", año: 2026, periodo: 1,
-    alumnos: ["juan.perez@gmail.com", "maria.garcia@gmail.com"] },
-  { id: "c2", materiaId: "m1", nombre: "Comisión B", docenteDni: "31222333", año: 2026, periodo: 1,
-    alumnos: [] },
-  { id: "c3", materiaId: "m2", nombre: "Comisión A", docenteDni: "30111222", año: 2026, periodo: 1,
-    alumnos: ["juan.perez@gmail.com", "pedro.lopez@gmail.com"] },
-  { id: "c4", materiaId: "m1", nombre: "Comisión A", docenteDni: "30111222", año: 2025, periodo: 1,
-    alumnos: ["pedro.lopez@gmail.com"] },
-];
+let COMISIONES = [];
 
 // ── ASISTENCIA ────────────────────────────────────────────
 // Estructura: asistencia["c1"]["2026-05-08"] = { "email": "presente"|"ausente" }
-let asistencia = {
-  "c1": {
-    "2026-04-15": { "juan.perez@gmail.com": "presente", "maria.garcia@gmail.com": "ausente" },
-    "2026-04-22": { "juan.perez@gmail.com": "presente", "maria.garcia@gmail.com": "presente" },
-  }
-};
+let asistencia = {};
 
 // ── PARCIALES ─────────────────────────────────────────────
 // Nombres fijos del sistema
@@ -2125,100 +2093,18 @@ const NOMBRES_FECHAS    = ["1era Fecha",  "2da Fecha",   "3era Fecha",  "4ta Fec
 
 // Estructura: parciales["c1"]["1er Parcial"]["1era Fecha"] = { email: { nota, estado } }
 // estado: "aprobado" | "desaprobado" | "ausente" | null
-let parciales = {
-  "c1": {
-    "1er Parcial": {
-      "1era Fecha": {
-        _publicado: true, _fechaExamen: "2026-05-20",
-        "juan.perez@gmail.com":   { nota: 7, estado: "aprobado" },
-        "maria.garcia@gmail.com": { nota: 4, estado: "desaprobado" },
-      },
-      "2da Fecha": {
-        _publicado: false, _fechaExamen: null,
-        "maria.garcia@gmail.com": { nota: 6, estado: "aprobado" },
-      }
-    }
-  }
-};
-// Demo parciales para ciclo 2025 (cursada 2025)
-// Juan Pérez y María García aprobaron regular, Pedro López también
-// Juan promocionó
-if (!parciales["c4"]) parciales["c4"] = {};
-if (!parciales["c4"]["1er Parcial"]) parciales["c4"]["1er Parcial"] = {};
-if (!parciales["c4"]["2do Parcial"]) parciales["c4"]["2do Parcial"] = {};
-parciales["c4"]["1er Parcial"]["1era Fecha"] = {
-  _publicado: true, _fechaExamen: "2025-05-15",
-  "pedro.lopez@gmail.com":  { nota: 5, estado: "aprobado" },
-};
-parciales["c4"]["2do Parcial"]["1era Fecha"] = {
-  _publicado: true, _fechaExamen: "2025-07-10",
-  "pedro.lopez@gmail.com":  { nota: 6, estado: "aprobado" },
-};
+let parciales = {};
 
 
 // ── DATA ──────────────────────────────────────────────────
-let SKILLS_DATA = [
-  { id: "a1", name: "Área A",
-    skills: [
-      { id: "s1",  name: "Habilidad 1",  descripcion: "", docentesDnis: ["30111222"] },
-      { id: "s2",  name: "Habilidad 2",  descripcion: "", docentesDnis: ["30111222"] },
-      { id: "s3",  name: "Habilidad 3",  descripcion: "", docentesDnis: ["31222333"] },
-    ]},
-  { id: "a2", name: "Área B",
-    skills: [
-      { id: "s4",  name: "Habilidad 4",  descripcion: "", docentesDnis: ["31222333"] },
-      { id: "s5",  name: "Habilidad 5",  descripcion: "", docentesDnis: ["30111222","31222333"] },
-    ]},
-  { id: "a3", name: "Área C",
-    skills: [
-      { id: "s6",  name: "Habilidad 6",  descripcion: "", docentesDnis: ["30111222"] },
-      { id: "s7",  name: "Habilidad 7",  descripcion: "", docentesDnis: ["31222333"] },
-      { id: "s8",  name: "Habilidad 8",  descripcion: "", docentesDnis: ["30111222"] },
-    ]},
-  { id: "a4", name: "Área D",
-    skills: [
-      { id: "s9",  name: "Habilidad 9",  descripcion: "", docentesDnis: ["31222333"] },
-      { id: "s10", name: "Habilidad 10", descripcion: "", docentesDnis: ["30111222"] },
-    ]},
-  { id: "a5", name: "Área E",
-    skills: [
-      { id: "s11", name: "Habilidad 11", descripcion: "", docentesDnis: ["30111222"] },
-      { id: "s12", name: "Habilidad 12", descripcion: "", docentesDnis: ["31222333"] },
-      { id: "s13", name: "Habilidad 13", descripcion: "", docentesDnis: ["30111222"] },
-    ]},
-  { id: "a6", name: "Área F",
-    skills: [
-      { id: "s14", name: "Habilidad 14", descripcion: "", docentesDnis: ["30111222"] },
-      { id: "s15", name: "Habilidad 15", descripcion: "", docentesDnis: ["31222333"] },
-    ]},
-];
+let SKILLS_DATA = [];
 
-// Demo student records
-let studentRecords = {
-  "juan.perez@gmail.com": {
-    s1: { status: "validated", date: "12/03/2026", teacher: "Ana Torres", obs: "", docenteDni: "30111222", teacherObs: "Muy buena técnica, bien hecho." },
-    s2: { status: "validated", date: "20/03/2026", teacher: "Ana Torres", obs: "" , docenteDni: "30111222" },
-    s3: { status: "pending",   date: "28/04/2026", teacher: "", obs: "Realicé la práctica con la docente presente en la sala de ECG.", docenteDni: "30111222" },
-    s4: { status: "validated", date: "05/04/2026", teacher: "Carlos Ramírez", obs: "", docenteDni: "31222333" },
-  },
-  "maria.garcia@gmail.com": {
-    s1: { status: "validated", date: "10/03/2026", teacher: "Ana Torres", obs: "", docenteDni: "30111222" },
-    s2: { status: "rejected",  date: "25/04/2026", teacher: "Carlos Ramírez", obs: "Práctica realizada en simulación.", docenteDni: "31222333", teacherObs: "Revisá la técnica, necesita más práctica presencial." },
-  },
-  "pedro.lopez@gmail.com": {
-    s1: { status: "validated", date: "15/03/2026", teacher: "Ana Torres", obs: "", docenteDni: "30111222" },
-    s2: { status: "validated", date: "22/03/2026", teacher: "Ana Torres", obs: "", docenteDni: "30111222" },
-    s3: { status: "validated", date: "01/04/2026", teacher: "Carlos Ramírez", obs: "", docenteDni: "31222333" },
-    s4: { status: "validated", date: "10/04/2026", teacher: "Carlos Ramírez", obs: "", docenteDni: "31222333" },
-    s5: { status: "validated", date: "18/04/2026", teacher: "Carlos Ramírez", obs: "", docenteDni: "31222333" },
-    s6: { status: "pending",   date: "02/05/2026", teacher: "", obs: "", docenteDni: "30111222" },
-  }
-};
+let studentRecords = {};
 
 const USERS = {
-  student:     { name: "Juan Pérez",       email: "juan.perez@gmail.com",   role: "Estudiante",    initials: "JP" },
-  teacher:     { name: "Dra. Ana Torres",  email: "a.torres@cardiologia.ar", role: "Docente",       initials: "AT" },
-  coordinator: { name: "TPC. Franco P.",   email: "fparola@med.unlp.edu.ar",role: "Coordinación", initials: "FP" }
+  student:     { name: "",  email: "", role: "Estudiante",   initials: "" },
+  teacher:     { name: "",  email: "", role: "Docente",      initials: "" },
+  coordinator: { name: "",  email: "", role: "Coordinación", initials: "" }
 };
 
 let currentRole = "student";
@@ -4364,11 +4250,7 @@ function submitPractica() {
 }
 
 // ── TEACHER ──────────────────────────────────────────────
-const STUDENT_NAMES = {
-  "juan.perez@gmail.com":   "Pérez, Juan",
-  "maria.garcia@gmail.com": "García, María",
-  "pedro.lopez@gmail.com":  "López, Pedro"
-};
+const STUDENT_NAMES = {};
 
 // ── HELPER GLOBAL DE ORDENAMIENTO POR APELLIDO ───────────
 // Todos los nombres se guardan como "Apellido, Nombre"
@@ -4382,24 +4264,7 @@ function sortStudentsByApellido(arr, getNameFn) {
   );
 }
 // ── IN-APP NOTIFICATIONS ─────────────────────────────────
-let lastSeenSkillStatus = {
-  // Simular que Juan ya había visto algunas habilidades como pending
-  // así al entrar verá que s1 y s4 pasaron a validated (novedad)
-  "juan.perez@gmail.com": {
-    s1: 'pending',   // era pending, ahora validated → notificación ✅
-    s2: 'validated',
-    s3: 'pending',   // sigue pending → sin novedad
-    s4: 'pending',   // era pending, ahora validated → notificación ✅
-    s5: 'validated',
-    s6: 'validated',
-  },
-  // María verá que s2 fue devuelta
-  "maria.garcia@gmail.com": {
-    s1: 'validated',
-    s2: 'pending',   // era pending, ahora rejected → notificación 🔄
-    s3: 'validated',
-  }
-};
+let lastSeenSkillStatus = {};
 let lastSeenNotasStatus    = {};
 let lastSeenCertStatus     = {};
 let lastSeenPendingCount   = {};
@@ -8061,38 +7926,7 @@ const CALENDARIO_MESAS = [
 // Solo para visualización personal — NO influye en estadísticas
 let selfReportedFinales = {};
 
-let mesasExamen = {
-  // Electrocardiografía (m1) — ciclo 2025-2026
-  "m1": {
-    2025: {
-      "dic1": { cargado: true, fecha: "2025-12-05", resultados: [
-        { legajo:"40123/4", nombre:"Pérez, Juan",   nota:7, estado:"aprobado",    externo:false },
-        { legajo:"41234/5", nombre:"García, María", nota:null, estado:"ausente",  externo:false },
-        { legajo:"55001/1", nombre:"Romero, Ana",   nota:9, estado:"aprobado",    externo:true  },
-        { legajo:"55002/2", nombre:"Díaz, Carlos",  nota:null, estado:"ausente",  externo:true  },
-      ]},
-      "dic2": { cargado: true, fecha: "2025-12-19", resultados: [
-        { legajo:"55003/3", nombre:"Torres, Laura", nota:8, estado:"aprobado",    externo:true  },
-      ]},
-    },
-    2026: {
-      "feb1": { cargado: true, fecha: "2026-02-13", resultados: [
-        { legajo:"41234/5", nombre:"García, María", nota:7, estado:"aprobado",    externo:false },
-        { legajo:"55004/4", nombre:"Ruiz, Marcos",  nota:3, estado:"desaprobado", externo:true  },
-      ]},
-      "mar1": { cargado: true, fecha: "2026-03-06", resultados: [
-        { legajo:"55004/4", nombre:"Ruiz, Marcos",  nota:5, estado:"aprobado",    externo:true  },
-        { legajo:"55005/5", nombre:"Vega, Sofía",   nota:null, estado:"ausente",  externo:true  },
-      ]},
-      "mar2": { cargado: false, anulada: true, resultados: [] },
-      "mar3": { cargado: true, fecha: "2026-03-27", resultados: [
-        { legajo:"55005/5", nombre:"Vega, Sofía",   nota:7, estado:"aprobado",    externo:true  },
-      ]},
-      "abr1": { cargado: false, resultados: [] },
-      "may1": { cargado: false, resultados: [] },
-    }
-  }
-};
+let mesasExamen = {};
 
 // Ciclo lectivo seleccionado en la vista de finales
 var _finalesCiclo = 2025;
@@ -10535,32 +10369,8 @@ const CARTELERA_CATEDRAS = [
 ];
 
 // Datos demo cargados de la cartelera real (cátedra 15 — TPC Información General)
-const CARTELERA_DEMO = [
-  { id:11058, titulo:'Mesas finales mayo-diciembre 2026', subtitulo:'Aulas', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/11058', fechaPub:'05/05/2026', fechaMod:'14/05/2026 10:09', catedraId:15, catedraNombre:'TPC - Información General',
-    contenido:'Ver aulas asignadas para mesas finales mayo-diciembre 2026:\n\nhttps://docs.google.com/document/d/1dYfa9ytx5cXnDRP6FFLnPwjsE8P6aZrumD9008xoXXQ/edit?usp=sharing' },
-  { id:10831, titulo:'Fechas finales', subtitulo:'Mayo a Diciembre 2026', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/10831', fechaPub:'14/04/2026', fechaMod:'14/05/2026 10:12', catedraId:15, catedraNombre:'TPC - Información General',
-    contenido:'Ver calendario completo de fechas finales mayo a diciembre 2026:\n\nhttps://drive.google.com/file/d/1z0rn7Lh5otNn2rCVcRStieE2aowv7aTh/view?usp=sharing' },
-  { id:10454, titulo:'Mesa final Cardiología Clínica 3/3', subtitulo:'Cambio horario', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/10454', fechaPub:'02/03/2026', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:10428, titulo:'Inscripción a cursadas 1° año', subtitulo:'Ciclo lectivo 2026', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/10428', fechaPub:'23/02/2026', fechaMod:'05/03/2026 12:01', catedraId:15, catedraNombre:'TPC - Información General',
-    contenido:'Se informa a las y los estudiantes, que las inscripciones a las cursadas de las materias de 1° año, para el ciclo lectivo 2026, se realizarán por SIU Guaraní, desde el 11/03 a las 11 hs., al 13/03 a las 23:59 hs.' },
-  { id:10204, titulo:'Fechas finales', subtitulo:'Febrero, marzo y abril', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/10204', fechaPub:'17/11/2025', fechaMod:'12/03/2026 11:38', catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:10179, titulo:'Hemodinamia - Mesas finales', subtitulo:'Información importante', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/10179', fechaPub:'12/11/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:9627,  titulo:'Inscripción a materias 2° cuatrimestre', subtitulo:'2025', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/9627', fechaPub:'18/07/2025', fechaMod:'10/08/2025 12:02', catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:9109,  titulo:'Plan de estudios TPC', subtitulo:'TPC', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/9109', fechaPub:'23/04/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:9082,  titulo:'Mesa final Inglés I y II (turno abril)', subtitulo:'Reprogramación', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/9082', fechaPub:'22/04/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8864,  titulo:'Fechas finales', subtitulo:'Abril a diciembre 2025', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8864', fechaPub:'03/04/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8697,  titulo:'Correos institucionales', subtitulo:'Cátedras de TPC', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8697', fechaPub:'20/03/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8664,  titulo:'Mesa final Inglés Técnico I y II (19/3)', subtitulo:'Cambio de lugar', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8664', fechaPub:'18/03/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8627,  titulo:'Mesa final Ultrasonido (18/3)', subtitulo:'Reprogramada por paro nacional', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8627', fechaPub:'14/03/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8629,  titulo:'Mesa final Microbiología 18/3', subtitulo:'Paro nacional', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8629', fechaPub:'14/03/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8604,  titulo:'Inscripción a cursadas - 2° y 3° año', subtitulo:'Ciclo Lectivo 2025', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8604', fechaPub:'13/03/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8607,  titulo:'Mesas finales Fisiología y Cardiología Clínica', subtitulo:'Reprogramadas por paro nacional 17/3', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8607', fechaPub:'13/03/2025', fechaMod:null, catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-  { id:8455,  titulo:'Inscripción a cursadas - 1° año', subtitulo:'2025', url:'https://cartelera.med.unlp.edu.ar/publicacion/show/8455', fechaPub:'25/02/2025', fechaMod:'28/02/2025 10:43', catedraId:15, catedraNombre:'TPC - Información General', contenido:null },
-];
-
 function openCartelaModal(pubId) {
-  const p = (window._carteleraCache || []).find(x => x.id === pubId)
-         || CARTELERA_DEMO.find(x => x.id === pubId);
+  const p = (window._carteleraCache || []).find(x => x.id === pubId);
   if (!p) return;
   document.getElementById('modal-cartelera-catedra').textContent   = p.catedraNombre || p.catedra_nombre || '';
   document.getElementById('modal-cartelera-titulo').textContent     = p.titulo || '';
@@ -10688,11 +10498,8 @@ async function renderCartelaView(containerId) {
       fechaOrden:   parseFechaCartelera(p.fecha_mod ? p.fecha_mod.substring(0,10) : p.fecha_pub),
     }));
   } else {
-    // Fallback a datos demo si Supabase no tiene datos
-    todas = CARTELERA_DEMO.map(p => ({
-      ...p,
-      fechaOrden: parseFechaCartelera(p.fechaMod ? p.fechaMod.substring(0,10) : p.fechaPub),
-    }));
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📢</div><p>No hay publicaciones disponibles.</p></div>`;
+    return;
   }
 
   // Guardar en cache para el modal
