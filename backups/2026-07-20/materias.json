@@ -1,0 +1,38 @@
+[
+  {
+    "id": "m1",
+    "nombre": "Electrocardiografía",
+    "docente_dni": "30111222",
+    "año_carrera": "1",
+    "regimen": "promocion",
+    "nota_promocion": null,
+    "criterio_promocion": null,
+    "regimen_cursada": "anual",
+    "cronograma": null,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  },
+  {
+    "id": "m2",
+    "nombre": "Ultrasonido en Cardiología",
+    "docente_dni": "31222333",
+    "año_carrera": "2",
+    "regimen": "sin_promocion",
+    "nota_promocion": null,
+    "criterio_promocion": null,
+    "regimen_cursada": "cuatrimestral",
+    "cronograma": null,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  },
+  {
+    "id": "m3",
+    "nombre": "Ergometría",
+    "docente_dni": "30111222",
+    "año_carrera": "3",
+    "regimen": "sin_promocion",
+    "nota_promocion": null,
+    "criterio_promocion": null,
+    "regimen_cursada": "anual",
+    "cronograma": null,
+    "created_at": "2026-07-19T01:29:30.7776+00:00"
+  }
+]

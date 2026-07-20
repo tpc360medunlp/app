@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "mesa_db_id": 1,
+    "legajo": "068950/9",
+    "nombre": "Equiza, Rocío Belén",
+    "nota": 5,
+    "estado": "aprobado",
+    "externo": true
+  },
+  {
+    "id": 2,
+    "mesa_db_id": 1,
+    "legajo": "66611/2",
+    "nombre": "Trejo, Tihana Abigail",
+    "nota": null,
+    "estado": "ausente",
+    "externo": true
+  }
+]

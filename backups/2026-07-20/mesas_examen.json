@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "materia_id": "m1",
+    "año": 2025,
+    "mesa_id": "abr1",
+    "fecha": null,
+    "cargado": true,
+    "anulada": false
+  }
+]

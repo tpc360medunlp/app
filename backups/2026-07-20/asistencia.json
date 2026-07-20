@@ -1,0 +1,16 @@
+[
+  {
+    "id": 2,
+    "comision_id": "c1",
+    "fecha": "2026-07-19",
+    "legajo": "41234/5",
+    "estado": "ausente"
+  },
+  {
+    "id": 1,
+    "comision_id": "c1",
+    "fecha": "2026-07-19",
+    "legajo": "40123/4",
+    "estado": "ausente"
+  }
+]
