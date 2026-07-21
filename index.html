@@ -1940,7 +1940,7 @@ async function loadDataFromSupabase() {
         studentRecords[email][r.skill_id] = {
           status:      r.status,
           date:        r.fecha,
-          teacher:     r.teacher_dni ? (ENROLLED_STAFF[r.teacher_dni] ? `${ENROLLED_STAFF[r.teacher_dni].nombre} ${ENROLLED_STAFF[r.teacher_dni].apellido}` : r.teacher_dni) : '',
+          teacher:     r.teacher_dni ? (ENROLLED_STAFF[r.teacher_dni] ? `${ENROLLED_STAFF[r.teacher_dni].nombre} ${ENROLLED_STAFF[r.teacher_dni].apellido}` : '') : '',
           docenteDni:  r.teacher_dni || '',
           obs:         r.obs || '',
           satisfaccion: r.satisfaccion || null,
@@ -10106,7 +10106,7 @@ function renderSolCoord(s, conAcciones) {
           <div style="font-size:12px;color:var(--gray-500)">
             ${esMia
               ? `<span style="color:var(--teal);font-weight:500">Creada por vos</span> · Fecha de solicitud: ${fecha}`
-              : `Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : s.docente_dni} · Fecha de solicitud: ${fecha}`}
+              : `Solicitado por: ${docente ? `${docente.apellido}, ${docente.nombre}` : 'Docente no encontrado'} · Fecha de solicitud: ${fecha}`}
           </div>
           <div style="font-size:12px;color:var(--gray-500)">Titular: ${s.docente_titular || '-'} · Actividad: ${actividadLabel}</div>
           <div style="font-size:12px;color:var(--gray-500)">Aula híbrida: ${s.hibrida ? 'Sí' : 'No'} · Estudiantes: ${s.total_estudiantes || '-'} · Tel: ${s.tel_contacto || '-'}</div>
@@ -12494,8 +12494,9 @@ function renderCoordPortfolioView(selectedAreaId = null) {
     : skillsSorted.map(s => {
         const archivada = s.activa === false;
         const docentesNombres = (s.docentesDnis||[])
-          .map(dni => { const st = ENROLLED_STAFF[dni]; return st ? `${st.apellido}, ${st.nombre}` : dni; })
-          .join(' · ');
+          .map(dni => { const st = ENROLLED_STAFF[dni]; return st ? `${st.apellido}, ${st.nombre}` : null; })
+          .filter(Boolean)
+          .join(' · ') || '(sin docente asignado)';
         // Contar registros de alumnos
         const tieneRegistros = Object.values(studentRecords).some(recs => recs[s.id]);
 
