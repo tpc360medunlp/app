@@ -20,8 +20,15 @@
 <body>
   <div class="spinner"></div>
   <script>
-    // Redirigir a la app en modo coordinación
-    window.location.replace('index.html#coordinacion');
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+      // Viene de Google OAuth — guardar rol y redirigir preservando el token
+      localStorage.setItem('tpc360_role', 'coordinator');
+      window.location.replace('index.html' + hash);
+    } else {
+      // Acceso normal — redirigir al login de coordinación
+      window.location.replace('index.html#coordinacion');
+    }
   </script>
 </body>
 </html>

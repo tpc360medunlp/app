@@ -20,8 +20,15 @@
 <body>
   <div class="spinner"></div>
   <script>
-    // Redirigir a la app en modo docente
-    window.location.replace('index.html#docente');
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+      // Viene de Google OAuth — guardar rol y redirigir preservando el token
+      localStorage.setItem('tpc360_role', 'teacher');
+      window.location.replace('index.html' + hash);
+    } else {
+      // Acceso normal — redirigir al login de docente
+      window.location.replace('index.html#docente');
+    }
   </script>
 </body>
 </html>
