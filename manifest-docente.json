@@ -1,8 +1,8 @@
 {
-  "name": "TPC360 · Estudiantes",
-  "short_name": "TPC360",
+  "name": "TPC360 · Docentes",
+  "short_name": "TPC360 Doc",
   "description": "Plataforma de gestión académica de la Tecnicatura en Prácticas Cardiológicas · FCM · UNLP",
-  "start_url": "/app/index.html",
+  "start_url": "/app/docente.html",
   "scope": "/app/",
   "display": "standalone",
   "background_color": "#0B1F3A",

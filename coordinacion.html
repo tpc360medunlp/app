@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TPC360 Coord">
+<meta name="theme-color" content="#0B1F3A">
+<title>TPC360 · Coordinación</title>
+<link rel="manifest" href="manifest-coordinacion.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  body { margin: 0; background: #0B1F3A; display: flex; align-items: center; justify-content: center; height: 100vh; }
+  .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.2); border-top-color: #00897B; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <script>
+    // Redirigir a la app en modo coordinación
+    window.location.replace('index.html#coordinacion');
+  </script>
+</body>
+</html>
