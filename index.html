@@ -2291,17 +2291,21 @@ async function verifyDni() {
 _supabase.auth.onAuthStateChange(async (event, session) => {
   if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
     googleEmail = session.user.email;
-    // Determinar rol desde URL o localStorage
-    const params = new URLSearchParams(window.location.search);
-    const rolParam = params.get('rol');
-    const hash = window.location.hash.replace('#','').toLowerCase();
-    const savedRole = localStorage.getItem('tpc360_role');
-    if (rolParam === 'docente') currentRole = 'teacher';
-    else if (rolParam === 'coordinacion') currentRole = 'coordinator';
-    else if (hash === 'docente') currentRole = 'teacher';
-    else if (hash === 'coordinacion') currentRole = 'coordinator';
-    else if (savedRole) { currentRole = savedRole; localStorage.removeItem('tpc360_role'); }
-    else currentRole = 'student';
+
+    // Determinar rol — usar currentRole si ya fue fijado por initLoginScreen,
+    // de lo contrario leer desde URL o localStorage
+    if (!currentRole || currentRole === 'student') {
+      const params = new URLSearchParams(window.location.search);
+      const rolParam = params.get('rol');
+      const hash = window.location.hash.replace('#','').toLowerCase();
+      const savedRole = localStorage.getItem('tpc360_role');
+      if (rolParam === 'docente') currentRole = 'teacher';
+      else if (rolParam === 'coordinacion') currentRole = 'coordinator';
+      else if (hash === 'docente') currentRole = 'teacher';
+      else if (hash === 'coordinacion') currentRole = 'coordinator';
+      else if (savedRole) { currentRole = savedRole; localStorage.removeItem('tpc360_role'); }
+      else currentRole = 'student';
+    }
 
     // Mostrar loading mientras carga datos
     const step1 = document.getElementById('login-step1');
