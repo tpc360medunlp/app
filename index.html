@@ -2365,12 +2365,11 @@ async function cambiarCuentaGoogle() {
 }
 
 async function iniciarLoginGoogle() {
-  const redirectTo = currentRole === 'teacher'     ? 'https://tpc360medunlp.github.io/app/docente.html'
-                   : currentRole === 'coordinator' ? 'https://tpc360medunlp.github.io/app/coordinacion.html'
-                   : 'https://tpc360medunlp.github.io/app/';
+  // Guardar rol antes del redirect para recuperarlo al volver
+  localStorage.setItem('tpc360_role', currentRole || 'student');
   const { error } = await _supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo }
+    options: { redirectTo: 'https://tpc360medunlp.github.io/app/' }
   });
   if (error) {
     showRegError('❌ Error al conectar con Google. Intentá de nuevo.');
