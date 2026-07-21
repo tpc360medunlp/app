@@ -2110,6 +2110,8 @@ const USERS = {
 };
 
 let currentRole = "student";
+// Leer rol guardado al inicio ANTES de que initLoginScreen lo borre
+const _savedRoleAtStart = localStorage.getItem('tpc360_role');
 let currentUser = USERS.student;
 let selectedSkillId = null;
 let selectedEvalValue = null;
@@ -2293,17 +2295,18 @@ _supabase.auth.onAuthStateChange(async (event, session) => {
     googleEmail = session.user.email;
 
     // Determinar rol — usar currentRole si ya fue fijado por initLoginScreen,
-    // de lo contrario leer desde URL o localStorage
+    // de lo contrario leer desde URL o rol guardado al inicio
     if (!currentRole || currentRole === 'student') {
       const params = new URLSearchParams(window.location.search);
       const rolParam = params.get('rol');
       const hash = window.location.hash.replace('#','').toLowerCase();
-      const savedRole = localStorage.getItem('tpc360_role');
       if (rolParam === 'docente') currentRole = 'teacher';
       else if (rolParam === 'coordinacion') currentRole = 'coordinator';
       else if (hash === 'docente') currentRole = 'teacher';
       else if (hash === 'coordinacion') currentRole = 'coordinator';
-      else if (savedRole) { currentRole = savedRole; localStorage.removeItem('tpc360_role'); }
+      else if (_savedRoleAtStart === 'teacher' || _savedRoleAtStart === 'coordinator') {
+        currentRole = _savedRoleAtStart;
+      }
       else currentRole = 'student';
     }
 
@@ -8818,6 +8821,9 @@ function setLoginRole(role) {
 }
 
 function initLoginScreen() {
+  // No reinicializar si ya hay sesión activa
+  if (googleEmail) return;
+
   // Determinar rol según query param, hash URL o localStorage
   const params = new URLSearchParams(window.location.search);
   const rolParam = params.get('rol');
@@ -8837,7 +8843,10 @@ function initLoginScreen() {
 
 // Inicializar al cargar
 window.addEventListener('DOMContentLoaded', initLoginScreen);
-window.addEventListener('hashchange', initLoginScreen);
+window.addEventListener('hashchange', () => {
+  // Solo reinicializar si no hay sesión activa
+  if (!googleEmail) initLoginScreen();
+});
 
 function getCudeBadge(email) {
   const legajo = getLegajoByEmail(email);
