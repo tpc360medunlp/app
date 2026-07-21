@@ -20,13 +20,16 @@
 <body>
   <div class="spinner"></div>
   <script>
-    const hash = window.location.hash;
-    if (hash.includes('access_token')) {
-      // Viene de Google OAuth — guardar rol y redirigir preservando el token
+    const hash   = window.location.hash;
+    const search = window.location.search;
+    const isOAuth = hash.includes('access_token') || search.includes('code=');
+
+    if (isOAuth) {
+      // Viene de Google OAuth — guardar rol y redirigir preservando parámetros
       localStorage.setItem('tpc360_role', 'coordinator');
-      window.location.replace('index.html' + hash);
+      window.location.replace('index.html' + search + hash);
     } else {
-      // Acceso normal — redirigir al login de coordinación
+      // Acceso normal
       window.location.replace('index.html#coordinacion');
     }
   </script>
