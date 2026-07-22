@@ -5756,8 +5756,8 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
       const t2 = sanitizePdf(line2);
       const w1 = t1.length * 4;
       const w2 = t2.length * 4;
-      page.drawText(t1, { x: x + Math.max(2, (colW - w1) / 2), y: y-headerH+14, font:fontBold, size:7, color:WHITE });
-      page.drawText(t2, { x: x + Math.max(2, (colW - w2) / 2), y: y-headerH+6,  font,          size:7, color:rgb(0.75,0.85,1) });
+      page.drawText(t1, { x: x + Math.max(2, (colW - w1) / 2), y: y-headerH+16, font:fontBold, size:8, color:WHITE });
+      page.drawText(t2, { x: x + Math.max(2, (colW - w2) / 2), y: y-headerH+7,  font,          size:8, color:rgb(0.75,0.85,1) });
     } else {
       const txt  = sanitizePdf(h);
       let xPos   = x + 4;
@@ -5770,6 +5770,22 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
     x += colW;
   });
   y -= headerH + 4;
+
+  // Colores para resultados
+  const RESULT_COLORS = {
+    'Aprobado':    rgb(0.10, 0.47, 0.21),
+    'Aprobado*':   rgb(0.10, 0.47, 0.21),
+    'Promocion':   rgb(0.36, 0.18, 0.56),
+    'Desaprobado': rgb(0.69, 0.13, 0.19),
+    'Ausente':     rgb(0.55, 0.55, 0.55),
+    'En curso':    rgb(0.00, 0.33, 0.65),
+  };
+  const getResultColor = (txt) => {
+    for (const [key, col] of Object.entries(RESULT_COLORS)) {
+      if (txt === key) return col;
+    }
+    return null;
+  };
 
   // Filas — altura doble para columna de nombre (apellido / nombre en dos líneas)
   const rowHNormal = rowH;
@@ -5798,8 +5814,8 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
         const dispAp   = apellido.length > maxChars ? apellido.slice(0, maxChars-1)+'...' : apellido;
         const dispNom  = nombre.length > maxChars   ? nombre.slice(0, maxChars-1)+'...'   : nombre;
         const midY     = y - rowHActual / 2 + 4;
-        page.drawText(dispAp,  { x:x+4, y:midY + 4,  font:fontBold, size:7.5, color:rgb(0.1,0.1,0.1) });
-        page.drawText(dispNom, { x:x+4, y:midY - 5,  font,          size:7,   color:rgb(0.35,0.35,0.35) });
+        page.drawText(dispAp,  { x:x+4, y:midY + 4,  font:fontBold, size:8.5, color:rgb(0.1,0.1,0.1) });
+        page.drawText(dispNom, { x:x+4, y:midY - 5,  font,          size:7.5, color:rgb(0.35,0.35,0.35) });
       } else {
         const maxChars = Math.floor(colW / 5);
         const display  = txt.length > maxChars ? txt.slice(0,maxChars-1)+'...' : txt;
@@ -5808,8 +5824,11 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
           const textW = display.length * 4.5;
           xPos = x + Math.max(4, (colW - textW) / 2);
         }
-        const centerY = y - rowHActual + 4 + (rowHActual - 4) / 2 - 3;
-        page.drawText(display, { x:xPos, y:centerY, font, size:7.5, color:rgb(0.1,0.1,0.1) });
+        const centerY     = y - rowHActual + 4 + (rowHActual - 4) / 2 - 3;
+        const resultColor = getResultColor(display);
+        const textColor   = resultColor || rgb(0.1,0.1,0.1);
+        const textFont    = resultColor ? fontBold : font;
+        page.drawText(display, { x:xPos, y:centerY, font:textFont, size:7.5, color:textColor });
       }
       x += colW;
     });
