@@ -8843,10 +8843,6 @@ function initLoginScreen() {
 
 // Inicializar al cargar
 window.addEventListener('DOMContentLoaded', initLoginScreen);
-window.addEventListener('hashchange', () => {
-  // Solo reinicializar si no hay sesión activa
-  if (!googleEmail) initLoginScreen();
-});
 
 function getCudeBadge(email) {
   const legajo = getLegajoByEmail(email);
