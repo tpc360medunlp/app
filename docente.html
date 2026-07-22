@@ -3423,7 +3423,11 @@ function renderNotasView(selectedComId, selectedParcial, selectedFecha) {
       </div>
       ${alumnosHabilitados.length === 0
         ? `<div style="padding:1.5rem;text-align:center;color:var(--gray-400);font-size:13px">No hay alumnos habilitados para esta fecha.</div>`
-        : `<div style="padding:8px 0">${rows}</div>`
+        : `${publicado ? `<div style="display:flex;align-items:center;gap:10px;padding:10px 18px;background:#f0faf4;border-bottom:1px solid #c3e8d0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#1a7a35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span style="font-size:13px;color:#1a7a35;font-weight:500">Registro publicado — los alumnos pueden ver sus notas. Para modificar, despublicá primero.</span>
+          </div>` : ''}
+          <div style="padding:8px 0">${rows}</div>`
       }
       ${alumnosNoHabilitados.length > 0 ? `
         <div style="border-top:1px solid var(--gray-100);padding:10px 18px 6px">
