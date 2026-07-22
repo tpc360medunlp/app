@@ -5767,15 +5767,16 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
       const colW = scaled[i];
 
       if (i === nombreIdx && tieneDosParts) {
-        // Dibujar apellido (antes de la coma) arriba y nombre (después) abajo
+        // Dibujar apellido arriba y nombre abajo, centrados verticalmente
         const commaIdx = txt.indexOf(',');
         const apellido = txt.slice(0, commaIdx).trim();
         const nombre   = txt.slice(commaIdx + 1).trim();
         const maxChars = Math.floor(colW / 4.5);
         const dispAp   = apellido.length > maxChars ? apellido.slice(0, maxChars-1)+'...' : apellido;
         const dispNom  = nombre.length > maxChars   ? nombre.slice(0, maxChars-1)+'...'   : nombre;
-        page.drawText(dispAp,  { x:x+4, y:y-rowHActual+rowHActual/2+2, font:fontBold, size:7.5, color:rgb(0.1,0.1,0.1) });
-        page.drawText(dispNom, { x:x+4, y:y-rowHActual+rowHActual/2-7, font,          size:7,   color:rgb(0.3,0.3,0.3) });
+        const midY     = y - rowHActual / 2 + 4;
+        page.drawText(dispAp,  { x:x+4, y:midY + 4,  font:fontBold, size:7.5, color:rgb(0.1,0.1,0.1) });
+        page.drawText(dispNom, { x:x+4, y:midY - 5,  font,          size:7,   color:rgb(0.35,0.35,0.35) });
       } else {
         const maxChars = Math.floor(colW / 5);
         const display  = txt.length > maxChars ? txt.slice(0,maxChars-1)+'...' : txt;
