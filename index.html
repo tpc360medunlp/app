@@ -61,7 +61,7 @@
   }
 
   /* ── SCREENS ── */
-  .screen { display: none; min-height: 100vh; }
+  .screen { display: none; min-height: 100vh; min-height: 100dvh; }
   .screen.active { display: block; }
 
   /* ── LOGIN ── */
@@ -73,6 +73,9 @@
     padding: 2rem;
     position: relative;
     overflow: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
+    box-sizing: border-box;
   }
   #screen-login.active { display: flex; }
 
