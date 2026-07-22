@@ -5698,7 +5698,7 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
   y -= 20;
 
   // Calcular anchos de columna — con hints opcionales por header
-  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Fechas rendidas', 'Nota Final'];
+  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Fechas rendidas', 'Nota Final', 'Documento'];
   const NOMBRE_WIDTH = dynamicNombre ? null : 120;
   const nombreIdx = headers.findIndex(h => h.toLowerCase().includes('apellido') && h.toLowerCase().includes('nombre'));
 
