@@ -2373,11 +2373,13 @@ async function cambiarCuentaGoogle() {
 }
 
 async function iniciarLoginGoogle() {
-  // Guardar rol antes del redirect para recuperarlo al volver
+  // Guardar rol antes del redirect
   localStorage.setItem('tpc360_role', currentRole || 'student');
+  // Redirigir a la página actual (index.html, docente.html o coordinacion.html)
+  const currentPage = window.location.origin + window.location.pathname;
   const { error } = await _supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: 'https://tpc360medunlp.github.io/app/' }
+    options: { redirectTo: currentPage }
   });
   if (error) {
     showRegError('❌ Error al conectar con Google. Intentá de nuevo.');
