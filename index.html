@@ -2912,7 +2912,17 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
         }
       }
       if (presentaciones >= 3) return 'desaprobado';
-      if (tieneRegistro && todasFechasAgotadas) return 'desaprobado';
+      if (tieneRegistro && todasFechasAgotadas) {
+        // Si tuvo al menos una presentación (no solo ausencias) → desaprobado
+        // Si estuvo ausente en todas → ausente
+        const tuvoPresencia = NOMBRES_FECHAS.some(f =>
+          coms.some(com => {
+            const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
+            return est && est !== 'ausente';
+          })
+        );
+        return tuvoPresencia ? 'desaprobado' : 'ausente';
+      }
       if (tieneRegistro) return 'en_curso';
       return 'ausente';
     });
@@ -3059,7 +3069,13 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
     } else if (estadoFinal === 'desaprobado' && presentaciones >= 3) {
       estado = 'desaprobado';
     } else if (tieneRegistro && todasFechasAgotadas) {
-      estado = 'desaprobado';
+      const tuvoPresencia = NOMBRES_FECHAS.some(f =>
+        coms.some(com => {
+          const est = parciales[com.id]?.[parcial]?.[f]?.[email]?.estado;
+          return est && est !== 'ausente';
+        })
+      );
+      estado = tuvoPresencia ? 'desaprobado' : 'ausente';
     } else if (tieneRegistro) {
       estado = 'en_curso';
     } else {
