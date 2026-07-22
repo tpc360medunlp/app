@@ -375,7 +375,27 @@
   }
   .btn-cargar:hover { background: var(--teal); }
 
-  /* ── MODAL ── */
+  /* ── PWA LOADING SCREEN ── */
+  #pwa-loading {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--navy);
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  #pwa-loading.show { display: flex; }
+  #pwa-loading .pwa-spinner {
+    width: 44px; height: 44px;
+    border: 3px solid rgba(255,255,255,.2);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  #pwa-loading p { color: rgba(255,255,255,.6); font-size: 14px; font-family: var(--font); }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(11,31,58,0.5);
@@ -581,11 +601,16 @@
     .hamburger-btn { display: flex; }
     .sidebar {
       transform: translateX(-100%);
-      transition: transform 0.25s ease, width 0.25s ease;
-      width: 240px !important;
+      transition: transform 0.25s ease;
+      width: 260px !important;
+      position: fixed !important;
+      top: 0; left: 0;
+      height: 100vh !important;
+      z-index: 200;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.3);
     }
     .sidebar.mobile-open { transform: translateX(0); }
-    .sidebar.collapsed { width: 240px !important; transform: translateX(-100%); }
+    .sidebar.collapsed { width: 260px !important; transform: translateX(-100%); }
     .sidebar.mobile-open .sidebar-logo-text,
     .sidebar.mobile-open .sidebar-logo-sub,
     .sidebar.mobile-open .nav-item span,
@@ -596,7 +621,8 @@
     .sidebar-logo { padding-top: 3.5rem !important; }
     .main-content {
       margin-left: 0 !important;
-      padding: 4rem 1rem 1.5rem;
+      padding: 4rem 1rem 2rem;
+      min-height: 100vh;
     }
     .page-header { flex-direction: column; gap: 10px; }
     .page-title { font-size: 18px; }
@@ -605,10 +631,18 @@
     .area-header { flex-wrap: wrap; gap: 8px; }
     .skill-row { flex-wrap: wrap; }
     .validation-card { flex-direction: column; }
+    .modal { max-height: 90vh; overflow-y: auto; }
+    #screen-app { overflow-x: hidden; }
   }
 </style>
 </head>
 <body>
+
+<!-- PWA LOADING -->
+<div id="pwa-loading" class="show">
+  <div class="pwa-spinner"></div>
+  <p>Cargando TPC360...</p>
+</div>
 
 <!-- LOGIN -->
 <div id="screen-login" class="screen active">
@@ -9014,7 +9048,13 @@ function initLoginScreen() {
 })();
 
 // Inicializar al cargar
-window.addEventListener('DOMContentLoaded', initLoginScreen);
+window.addEventListener('DOMContentLoaded', () => {
+  initLoginScreen();
+  // Ocultar pantalla de carga PWA una vez que el DOM está listo
+  setTimeout(() => {
+    document.getElementById('pwa-loading')?.classList.remove('show');
+  }, 300);
+});
 
 function getCudeBadge(email) {
   const legajo = getLegajoByEmail(email);
