@@ -161,6 +161,22 @@
     text-align: center; font-size: 12px; color: var(--gray-400); margin-top: 1rem;
   }
 
+  /* ── MOBILE IMMEDIATE (antes del primer paint) ── */
+  html.is-mobile .sidebar {
+    transform: translateX(-100%);
+    width: 260px !important;
+    position: fixed !important;
+    top: 0; left: 0;
+    height: 100dvh !important;
+    z-index: 200;
+  }
+  html.is-mobile .main-content {
+    margin-left: 0 !important;
+  }
+  html.is-mobile .hamburger-btn {
+    display: flex;
+  }
+
   /* ── APP SHELL ── */
   .app-shell { display: flex; min-height: 100vh; }
 
@@ -641,7 +657,11 @@
 </head>
 <body>
 
-<!-- PWA LOADING -->
+<script>
+// Detectar mobile ANTES del render para evitar flash de layout incorrecto
+if (window.innerWidth <= 768) document.documentElement.classList.add('is-mobile');
+</script>
+
 <div id="pwa-loading" class="show">
   <div class="pwa-spinner"></div>
   <p>Cargando TPC360...</p>
