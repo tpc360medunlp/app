@@ -12638,15 +12638,14 @@ function eliminarArea(areaId) {
   const area = SKILLS_DATA.find(a => a.id === areaId);
   if (!area) return;
   if (area.skills.length > 0) {
-    if (!confirm(`El área "${area.name}" tiene ${area.skills.length} habilidad/es. Si la eliminás, se borrarán también todas sus habilidades. ¿Confirmás?`)) return;
-  } else {
-    if (!confirm(`¿Eliminás el área "${area.name}"? Esta acción no se puede deshacer.`)) return;
+    showToast(`No se puede eliminar el área "${area.name}" porque tiene ${area.skills.length} habilidad/es. Eliminá primero todas sus habilidades.`, true);
+    return;
   }
+  if (!confirm(`¿Eliminás el área "${area.name}"? Esta acción no se puede deshacer.`)) return;
   const idx = SKILLS_DATA.findIndex(a => a.id === areaId);
   if (idx >= 0) SKILLS_DATA.splice(idx, 1);
-  _supabase.from('skills').delete().eq('area_id', areaId)
-    .then(() => _supabase.from('skills_areas').delete().eq('id', areaId)
-      .then(({ error }) => { if (error) console.warn('Error eliminando área:', error); }));
+  _supabase.from('skills_areas').delete().eq('id', areaId)
+    .then(({ error }) => { if (error) console.warn('Error eliminando área:', error); });
   renderCoordPortfolioView();
   showToast(`Área "${area.name}" eliminada`);
 }
