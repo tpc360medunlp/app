@@ -5627,6 +5627,10 @@ function buildXlsx(titulo, subtitulo, headers, rows, sheetName = 'Datos') {
 // ── PDF builder ───────────────────────────────────────────
 function sanitizePdf(text) {
   return String(text || '')
+    .replace(/\u2014/g, '-')   // em dash → guión simple
+    .replace(/\u2013/g, '-')   // en dash → guión simple
+    .replace(/\u2019/g, "'")   // comilla derecha → apostrofe
+    .replace(/\u201C|\u201D/g, '"') // comillas tipográficas → rectas
     .replace(/✓/g, 'OK')
     .replace(/✗/g, 'X')
     .replace(/⭐/g, '*')
@@ -5695,7 +5699,7 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
   y -= 20;
 
   // Calcular anchos de columna — con hints opcionales por header
-  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Nota Final'];
+  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Fechas rendidas', 'Nota Final'];
   const NOMBRE_WIDTH = dynamicNombre ? null : 120;
   const nombreIdx = headers.findIndex(h => h.toLowerCase().includes('apellido') && h.toLowerCase().includes('nombre'));
 
@@ -5744,28 +5748,48 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
   });
   y -= headerH + 4;
 
-  // Filas
+  // Filas — altura doble para columna de nombre (apellido / nombre en dos líneas)
+  const rowHNormal = rowH;
+  const rowHNombre = rowH + 8; // más alto para dos líneas
+
   rows.forEach((row, ri) => {
-    checkY();
+    // Detectar si la celda de nombre tiene coma (apellido, nombre)
+    const nombreCell = nombreIdx >= 0 ? sanitizePdf(row[nombreIdx] || '') : '';
+    const tieneDosParts = nombreCell.includes(',');
+    const rowHActual = tieneDosParts ? rowHNombre : rowHNormal;
+
+    checkY(rowHActual + 2);
     const bg = ri%2===0 ? rgb(0.97,0.97,0.99) : WHITE;
-    page.drawRectangle({ x:ML, y:y-rowH+4, width:tableW, height:rowH, color:bg });
+    page.drawRectangle({ x:ML, y:y-rowHActual+4, width:tableW, height:rowHActual, color:bg });
     x = ML;
     row.forEach((cell, i) => {
-      const txt      = sanitizePdf(cell);
-      const colW     = scaled[i];
-      const maxChars = Math.floor(colW / 5);
-      const display  = txt.length > maxChars ? txt.slice(0,maxChars-1)+'...' : txt;
-      let xPos = x + 4;
-      if (SHORT_COLS_IDX.has(i)) {
-        // Centrar texto en la columna
-        const textW = display.length * 4.5;
-        xPos = x + Math.max(4, (colW - textW) / 2);
+      const txt  = sanitizePdf(cell);
+      const colW = scaled[i];
+
+      if (i === nombreIdx && tieneDosParts) {
+        // Dibujar apellido (antes de la coma) arriba y nombre (después) abajo
+        const commaIdx = txt.indexOf(',');
+        const apellido = txt.slice(0, commaIdx).trim();
+        const nombre   = txt.slice(commaIdx + 1).trim();
+        const maxChars = Math.floor(colW / 4.5);
+        const dispAp   = apellido.length > maxChars ? apellido.slice(0, maxChars-1)+'...' : apellido;
+        const dispNom  = nombre.length > maxChars   ? nombre.slice(0, maxChars-1)+'...'   : nombre;
+        page.drawText(dispAp,  { x:x+4, y:y-rowHActual+rowHActual/2+2, font:fontBold, size:7.5, color:rgb(0.1,0.1,0.1) });
+        page.drawText(dispNom, { x:x+4, y:y-rowHActual+rowHActual/2-7, font,          size:7,   color:rgb(0.3,0.3,0.3) });
+      } else {
+        const maxChars = Math.floor(colW / 5);
+        const display  = txt.length > maxChars ? txt.slice(0,maxChars-1)+'...' : txt;
+        let xPos = x + 4;
+        if (SHORT_COLS_IDX.has(i)) {
+          const textW = display.length * 4.5;
+          xPos = x + Math.max(4, (colW - textW) / 2);
+        }
+        page.drawText(display, { x:xPos, y:y-rowHActual/2-2, font, size:7.5, color:rgb(0.1,0.1,0.1) });
       }
-      page.drawText(display, { x:xPos, y:y-rowH+8, font, size:7.5, color:rgb(0.1,0.1,0.1) });
       x += colW;
     });
-    page.drawRectangle({ x:ML, y:y-rowH+4, width:tableW, height:0.5, color:rgb(0.88,0.88,0.92) });
-    y -= rowH;
+    page.drawRectangle({ x:ML, y:y-rowHActual+4, width:tableW, height:0.5, color:rgb(0.88,0.88,0.92) });
+    y -= rowHActual;
   });
 
   // Nota al pie — texto corrido fuera de la tabla
@@ -5946,7 +5970,7 @@ function exportConsolidadoParcial(comId, parcial, fmt='xlsx') {
 
   const titulo    = 'Resultado Consolidado de Parcial';
   const subtitulo = `${materia?.nombre||''} · ${com?.nombre||''} · Ciclo ${año} · ${parcial}`;
-  const headers   = ['Apellido y Nombre', 'Documento', 'Nota Final', 'Estado', 'Presentaciones'];
+  const headers   = ['Apellido y Nombre', 'Documento', 'Nota Final', 'Estado', 'Fechas rendidas'];
 
   const rows = alumnos.map(email => {
     const coms = getComisionesMateriaAlumno(email, materiaId, año);
@@ -5956,17 +5980,20 @@ function exportConsolidadoParcial(comId, parcial, fmt='xlsx') {
       for (const com2 of coms) {
         const rec = parciales[com2.id]?.[parcial]?.[f]?.[email];
         if (!rec) continue;
+        // Contar como presentación cualquier estado que no sea ausente
+        if (rec.estado && rec.estado !== 'ausente') presentaciones++;
         if (rec.estado==='aprobado'||rec.estado==='promocion') {
           notaFinal = rec.nota; estadoFinal = rec.estado==='promocion'?'Promocion':'Aprobado';
         } else if (rec.estado==='desaprobado') {
-          notaFinal = rec.nota; estadoFinal = 'Desaprobado'; presentaciones++;
+          notaFinal = rec.nota; estadoFinal = 'Desaprobado';
         }
         break;
       }
     });
     const entry = Object.entries(ENROLLED_STUDENTS).find(([,s]) => s.email === email);
     const doc   = entry?.[1]?.doc || '—';
-    return [STUDENT_NAMES[email]||email, doc, notaFinal??'—', estadoFinal, presentaciones];
+    const notaDisplay = notaFinal ?? '—';
+    return [STUDENT_NAMES[email]||email, doc, notaDisplay, estadoFinal, presentaciones || '—'];
   });
 
   const nombre = `Consolidado_${materia?.nombre||''}_${parcial}`.replace(/ /g,'_');
