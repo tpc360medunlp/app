@@ -5784,7 +5784,8 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
           const textW = display.length * 4.5;
           xPos = x + Math.max(4, (colW - textW) / 2);
         }
-        page.drawText(display, { x:xPos, y:y-rowHActual/2-2, font, size:7.5, color:rgb(0.1,0.1,0.1) });
+        const centerY = y - rowHActual + 4 + (rowHActual - 4) / 2 - 3;
+        page.drawText(display, { x:xPos, y:centerY, font, size:7.5, color:rgb(0.1,0.1,0.1) });
       }
       x += colW;
     });
