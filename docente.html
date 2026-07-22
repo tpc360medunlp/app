@@ -5673,7 +5673,7 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
 
   let page   = pdfDoc.getPage(0);
   const { width, height } = page.getSize();
-  const ML = 40, MR = 40, rowH = 16, headerH = 22;
+  const ML = 40, MR = 40, rowH = 16, headerH = 26;
   const tableW = width - ML - MR;
   let y = height - 30;
 
@@ -5731,19 +5731,43 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
     return isShort ? i : -1;
   }).filter(i => i >= 0));
 
+  // Detectar encabezados que deben mostrarse en dos líneas
+  // Patrón: "Xera Fecha Nota" → ["Xera Fecha", "Nota"] o "Xera Fecha Estado" → ["Xera Fecha", "Estado"]
+  const splitHeader = (h) => {
+    const keywords = ['Nota', 'Estado'];
+    for (const kw of keywords) {
+      if (h.endsWith(' ' + kw) && h.length > kw.length + 1) {
+        return [h.slice(0, h.length - kw.length - 1), kw];
+      }
+    }
+    return null; // no split
+  };
+
   // Encabezados de columna
   checkY(headerH + 4);
   page.drawRectangle({ x:ML, y:y-headerH+4, width:tableW, height:headerH, color:NAVY });
   let x = ML;
   headers.forEach((h, i) => {
-    const txt  = sanitizePdf(h);
-    const colW = scaled[i];
-    let xPos   = x + 4;
-    if (SHORT_COLS_IDX.has(i)) {
-      const textW = txt.length * 4.5;
-      xPos = x + Math.max(4, (colW - textW) / 2);
+    const colW   = scaled[i];
+    const parts  = splitHeader(h);
+    if (parts) {
+      // Dos líneas centradas
+      const [line1, line2] = parts;
+      const t1 = sanitizePdf(line1);
+      const t2 = sanitizePdf(line2);
+      const w1 = t1.length * 4;
+      const w2 = t2.length * 4;
+      page.drawText(t1, { x: x + Math.max(2, (colW - w1) / 2), y: y-headerH+14, font:fontBold, size:7, color:WHITE });
+      page.drawText(t2, { x: x + Math.max(2, (colW - w2) / 2), y: y-headerH+6,  font,          size:7, color:rgb(0.75,0.85,1) });
+    } else {
+      const txt  = sanitizePdf(h);
+      let xPos   = x + 4;
+      if (SHORT_COLS_IDX.has(i)) {
+        const textW = txt.length * 4.5;
+        xPos = x + Math.max(4, (colW - textW) / 2);
+      }
+      page.drawText(txt, { x:xPos, y:y-headerH+10, font:fontBold, size:8, color:WHITE });
     }
-    page.drawText(txt, { x:xPos, y:y-headerH+10, font:fontBold, size:8, color:WHITE });
     x += colW;
   });
   y -= headerH + 4;
