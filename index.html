@@ -5698,7 +5698,7 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
   y -= 20;
 
   // Calcular anchos de columna — con hints opcionales por header
-  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Fechas rendidas', 'Nota Final', 'Documento'];
+  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Fechas rendidas', 'Nota Final'];
   const NOMBRE_WIDTH = dynamicNombre ? null : 120;
   const nombreIdx = headers.findIndex(h => h.toLowerCase().includes('apellido') && h.toLowerCase().includes('nombre'));
 
@@ -6311,8 +6311,25 @@ function exportResultadoGlobal(comId, fmt='xlsx') {
       const reg = NOMBRES_FECHAS.some(f =>
         coms.some(com2 => parciales[com2.id]?.[p]?.[f]?.[email]!==undefined)
       );
-      if (pres>=3) return 'desaprobado';
-      if (reg)     return 'en_curso';
+      // Contar fechas cargadas del parcial
+      const fechasCargadas = NOMBRES_FECHAS.filter(f =>
+        coms.some(com2 => {
+          const d = parciales[com2.id]?.[p]?.[f];
+          return d && Object.keys(d).some(k => !k.startsWith('_'));
+        })
+      ).length;
+      const todasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
+      if (pres >= 3) return 'desaprobado';
+      if (reg && todasAgotadas) {
+        const tuvoPresencia = NOMBRES_FECHAS.some(f =>
+          coms.some(com2 => {
+            const e = parciales[com2.id]?.[p]?.[f]?.[email]?.estado;
+            return e && e !== 'ausente';
+          })
+        );
+        return tuvoPresencia ? 'desaprobado' : 'ausente';
+      }
+      if (reg) return 'en_curso';
       return 'ausente';
     });
 
