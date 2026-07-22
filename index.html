@@ -2894,6 +2894,15 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
         coms.some(com => parciales[com.id]?.[p]?.[f]?.[email] !== undefined)
       );
 
+      // Contar cuántas fechas del parcial ya fueron cargadas (tienen datos para cualquier alumno)
+      const fechasCargadas = NOMBRES_FECHAS.filter(f =>
+        coms.some(com => {
+          const datosDate = parciales[com.id]?.[p]?.[f];
+          return datosDate && Object.keys(datosDate).some(k => !k.startsWith('_'));
+        })
+      ).length;
+      const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
+
       for (const f of NOMBRES_FECHAS) {
         for (const com of coms) {
           const rec = parciales[com.id]?.[p]?.[f]?.[email];
@@ -2903,6 +2912,7 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
         }
       }
       if (presentaciones >= 3) return 'desaprobado';
+      if (tieneRegistro && todasFechasAgotadas) return 'desaprobado';
       if (tieneRegistro) return 'en_curso';
       return 'ausente';
     });
@@ -3011,6 +3021,15 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
       coms.some(com => parciales[com.id]?.[parcial]?.[f]?.[email] !== undefined)
     );
 
+    // Contar cuántas fechas del parcial ya fueron cargadas
+    const fechasCargadas = NOMBRES_FECHAS.filter(f =>
+      coms.some(com => {
+        const datosDate = parciales[com.id]?.[parcial]?.[f];
+        return datosDate && Object.keys(datosDate).some(k => !k.startsWith('_'));
+      })
+    ).length;
+    const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
+
     let notaFinal   = null;
     let estadoFinal = null;
 
@@ -3038,6 +3057,8 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
     } else if (estadoFinal === 'aprobado') {
       estado = 'aprobado';
     } else if (estadoFinal === 'desaprobado' && presentaciones >= 3) {
+      estado = 'desaprobado';
+    } else if (tieneRegistro && todasFechasAgotadas) {
       estado = 'desaprobado';
     } else if (tieneRegistro) {
       estado = 'en_curso';
