@@ -2448,6 +2448,7 @@ async function enterApp() {
     setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
   }
   else switchCoordView('stats');
+  forceRepaint();
 }
 
 function doLogout() {
@@ -2476,6 +2477,17 @@ function doLogout() {
 
 // ── SIDEBAR ──────────────────────────────────────────────
 
+
+// Forzar repintado en Android (evita pantalla en blanco hasta scroll)
+function forceRepaint() {
+  if (window.innerWidth > 768) return;
+  const app = document.getElementById('screen-app');
+  if (!app) return;
+  requestAnimationFrame(() => {
+    app.style.opacity = '0.9999';
+    requestAnimationFrame(() => { app.style.opacity = ''; });
+  });
+}
 
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
@@ -2612,6 +2624,7 @@ function switchCoordView(section) {
   if (section === 'cartelera')     renderCartelaView('coord-cartelera-container');
   if (section === 'cude')          renderCoordCudeView();
   if (section === 'aulas')         renderCoordAulasView();
+  forceRepaint();
 }
 
 function switchStudentView(view) {
@@ -2670,6 +2683,7 @@ function switchStudentView(view) {
   if (view === 'student-cronograma')   renderStudentCronogramaView();
   if (view === 'student-cartelera')    renderCartelaView('student-cartelera-container');
   if (view === 'student-cude')         renderStudentCudeView();
+  forceRepaint();
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -4101,6 +4115,7 @@ function switchTeacherView(view) {
   }
   if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
   if (view === 'teacher-aulas')       renderTeacherAulasView();
+  forceRepaint();
 }
 
 // Obtener las materiaIds que puede validar el docente actual
