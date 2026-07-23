@@ -635,6 +635,45 @@
     }
     .mobile-drawer-overlay.open { display: block; }
 
+    /* Drawer — specificità alta para override del media query */
+    .sidebar.mobile-drawer-active {
+      position: fixed !important;
+      top: 0 !important; left: 0 !important;
+      right: auto !important; bottom: 0 !important;
+      width: 270px !important; height: 100vh !important;
+      flex-direction: column !important;
+      padding: 1.5rem 0 !important;
+      z-index: 500 !important;
+      overflow-y: auto !important; overflow-x: hidden !important;
+      border-top: none !important;
+    }
+    .sidebar.mobile-drawer-active .sidebar-logo { display: flex !important; padding-top: 0 !important; }
+    .sidebar.mobile-drawer-active .sidebar-user { display: flex !important; }
+    .sidebar.mobile-drawer-active .sidebar-nav {
+      flex-direction: column !important;
+      padding: 1rem 0.75rem !important;
+      gap: 2px !important; min-height: auto !important;
+    }
+    .sidebar.mobile-drawer-active .nav-section-label { display: block !important; }
+    .sidebar.mobile-drawer-active .nav-item {
+      flex-direction: row !important;
+      justify-content: flex-start !important;
+      border-left: 3px solid transparent !important;
+      border-top: none !important;
+      border-radius: 8px !important;
+      padding: 10px 12px !important;
+      height: auto !important; font-size: 15px !important;
+      gap: 12px !important;
+    }
+    .sidebar.mobile-drawer-active .nav-item.active {
+      border-left-color: var(--teal-mid) !important;
+      border-top-color: transparent !important;
+    }
+    .sidebar.mobile-drawer-active .nav-item svg { width: 18px !important; height: 18px !important; }
+    .sidebar.mobile-drawer-active .nav-item-mas { display: none !important; }
+    .sidebar.mobile-drawer-active #aulas-badge-teacher,
+    .sidebar.mobile-drawer-active #aulas-badge-coord { display: inline !important; }
+
     #screen-app { overflow: hidden; }
     .page-header { flex-direction: column; gap: 10px; }
     .page-title { font-size: 18px; }
@@ -2555,56 +2594,15 @@ function renderMobileNav() {
 function openMobileDrawer() {
   const sidebar = document.getElementById('main-sidebar');
   const overlay = document.getElementById('mobile-drawer-overlay');
-  const nav = document.getElementById('sidebar-nav');
-  const logo = sidebar?.querySelector('.sidebar-logo');
-  const user = sidebar?.querySelector('.sidebar-user');
   if (!sidebar) return;
-
-  Array.from(nav.querySelectorAll('.nav-item')).forEach(el => {
-    if (!el.classList.contains('nav-item-mas')) el.style.display = '';
-  });
-
-  sidebar.style.cssText = `
-    position: fixed; top: 0; left: 0; bottom: 0; right: auto;
-    width: 270px; height: 100vh;
-    flex-direction: column;
-    padding: 1.5rem 0;
-    z-index: 500;
-    overflow-y: auto; overflow-x: hidden;
-    border-top: none;
-  `;
-  nav.style.cssText = 'flex-direction: column; padding: 1rem 0.75rem; gap: 2px; min-height: auto; flex: 1;';
-  if (logo) logo.style.cssText = 'display: flex; padding-top: 0;';
-  if (user) user.style.display = 'flex';
-
-  const mas = nav.querySelector('.nav-item-mas');
-  if (mas) mas.style.display = 'none';
-
-  // Aplicar estilo de drawer a cada nav-item
-  Array.from(nav.querySelectorAll('.nav-item:not(.nav-item-mas)')).forEach(el => {
-    el.style.cssText = 'flex-direction: row; justify-content: flex-start; border-left: 3px solid transparent; border-top: none; border-radius: 8px; padding: 10px 12px; height: auto; font-size: 15px; gap: 12px; width: 100%;';
-    if (el.classList.contains('active')) {
-      el.style.borderLeftColor = 'var(--teal-mid)';
-      el.style.borderTopColor = 'transparent';
-    }
-    const svg = el.querySelector('svg');
-    if (svg) { svg.style.width = '18px'; svg.style.height = '18px'; }
-  });
+  sidebar.classList.add('mobile-drawer-active');
+  overlay?.classList.add('open');
 }
 
 function closeMobileDrawer() {
   const sidebar = document.getElementById('main-sidebar');
   const overlay = document.getElementById('mobile-drawer-overlay');
-  const nav = document.getElementById('sidebar-nav');
-  const logo = sidebar?.querySelector('.sidebar-logo');
-  const user = sidebar?.querySelector('.sidebar-user');
-
-  // Limpiar inline styles — el CSS del media query vuelve a tomar control
-  if (sidebar) sidebar.style.cssText = '';
-  if (nav) nav.style.cssText = '';
-  if (logo) logo.style.display = '';
-  if (user) user.style.display = '';
-
+  sidebar?.classList.remove('mobile-drawer-active');
   overlay?.classList.remove('open');
   renderMobileNav();
 }
