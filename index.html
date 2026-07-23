@@ -3155,6 +3155,18 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
 
 
 function renderNotasView(selectedComId, selectedParcial, selectedFecha) {
+  // Mostrar spinner inmediatamente para no congelar la UI
+  const container = document.getElementById('notas-container');
+  if (container) {
+    container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--gray-400)">
+      <span style="display:inline-block;width:20px;height:20px;border:2px solid var(--gray-200);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px"></span>
+      Cargando calificaciones...
+    </div>`;
+  }
+  setTimeout(() => _renderNotasViewInternal(selectedComId, selectedParcial, selectedFecha), 0);
+}
+
+function _renderNotasViewInternal(selectedComId, selectedParcial, selectedFecha) {
   const comisiones = getTeacherComisiones();
   if (comisiones.length === 0) {
     document.getElementById('notas-container').innerHTML =
@@ -3196,16 +3208,29 @@ function renderNotasView(selectedComId, selectedParcial, selectedFecha) {
       </div>`;
     }).join('');
 
-    // Listado consolidado global de todos los parciales
-    const consolidadoGlobalHtml = buildConsolidadoGlobal(selCom, alumnos, conPromocion);
-
+    // Mostrar lista de parciales primero (inmediato), luego consolidado (diferido)
+    const consolidadoId = `consolidado-${selCom}`;
     document.getElementById('notas-container').innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
       <div class="area-card">
         <div class="area-header"><span class="area-name">${getMateriaName(comision.materiaId)} · ${comision.nombre}</span></div>
         ${rows}
-        ${consolidadoGlobalHtml}
+        <div id="${consolidadoId}">
+          <div style="padding:1rem 1.5rem;text-align:center;color:var(--gray-400);font-size:13px">
+            <span style="display:inline-block;width:16px;height:16px;border:2px solid var(--gray-200);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>
+            Calculando consolidado...
+          </div>
+        </div>
       </div>`;
+
+    // Diferir el cálculo pesado para no bloquear el primer paint
+    setTimeout(() => {
+      const consolidadoEl = document.getElementById(consolidadoId);
+      if (!consolidadoEl) return;
+      const consolidadoGlobalHtml = buildConsolidadoGlobal(selCom, alumnos, conPromocion);
+      consolidadoEl.outerHTML = consolidadoGlobalHtml || '';
+    }, 0);
+
     return;
   }
 
@@ -3225,9 +3250,8 @@ function renderNotasView(selectedComId, selectedParcial, selectedFecha) {
       </div>`;
     }).join('');
 
-    // Listado consolidado por alumno para este parcial
-    const consolidadoHtml = buildConsolidadoParcial(selCom, selParc, alumnos, conPromocion);
-
+    // Mostrar fechas primero (inmediato), luego consolidado (diferido)
+    const consolidadoParcialId = `consolidado-parc-${selCom}-${selParc}`;
     document.getElementById('notas-container').innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem">
@@ -3251,7 +3275,20 @@ function renderNotasView(selectedComId, selectedParcial, selectedFecha) {
       </div>
         ${rows}
       </div>
-      ${consolidadoHtml}`;
+      <div id="${consolidadoParcialId}">
+        <div style="padding:1rem 1.5rem;text-align:center;color:var(--gray-400);font-size:13px">
+          <span style="display:inline-block;width:16px;height:16px;border:2px solid var(--gray-200);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>
+          Calculando consolidado...
+        </div>
+      </div>`;
+
+    setTimeout(() => {
+      const el = document.getElementById(consolidadoParcialId);
+      if (!el) return;
+      const consolidadoHtml = buildConsolidadoParcial(selCom, selParc, alumnos, conPromocion);
+      el.outerHTML = consolidadoHtml || '';
+    }, 0);
+
     return;
   }
 
