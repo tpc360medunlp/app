@@ -2600,33 +2600,67 @@ function openMobileDrawer() {
   const sidebar = document.getElementById('main-sidebar');
   const overlay = document.getElementById('mobile-drawer-overlay');
   const nav = document.getElementById('sidebar-nav');
+  const logo = sidebar?.querySelector('.sidebar-logo');
+  const user = sidebar?.querySelector('.sidebar-user');
   if (!sidebar) return;
-  // Mostrar todos los items en el drawer
+
+  // Mostrar todos los items
   Array.from(nav.querySelectorAll('.nav-item')).forEach(el => {
     if (!el.classList.contains('nav-item-mas')) el.style.display = '';
   });
-  sidebar.classList.add('mobile-drawer-open');
+
+  // Aplicar estilos del drawer directamente como inline styles
+  sidebar.style.cssText = `
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    right: auto !important; bottom: 0 !important;
+    width: 270px !important; height: 100vh !important;
+    flex-direction: column !important;
+    padding: 1.5rem 0 !important;
+    z-index: 500 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border-top: none !important;
+  `;
+  nav.style.cssText = 'flex-direction: column !important; padding: 1rem 0.75rem !important; gap: 2px !important; min-height: auto !important;';
+  if (logo) logo.style.display = 'flex';
+  if (user) user.style.display = 'flex';
+
   overlay?.classList.add('open');
 }
 
 function closeMobileDrawer() {
   const sidebar = document.getElementById('main-sidebar');
   const overlay = document.getElementById('mobile-drawer-overlay');
-  sidebar?.classList.remove('mobile-drawer-open');
+  const nav = document.getElementById('sidebar-nav');
+  const logo = sidebar?.querySelector('.sidebar-logo');
+  const user = sidebar?.querySelector('.sidebar-user');
+
+  // Limpiar inline styles — el CSS del media query vuelve a tomar control
+  if (sidebar) sidebar.style.cssText = '';
+  if (nav) nav.style.cssText = '';
+  if (logo) logo.style.display = '';
+  if (user) user.style.display = '';
+
   overlay?.classList.remove('open');
-  // Volver a ocultar extras
   renderMobileNav();
 }
 
 function restoreSidebarDesktop() {
-  // Al volver a desktop, restaurar todos los items y quitar el botón "Más"
   const nav = document.getElementById('sidebar-nav');
-  if (!nav) return;
+  const sidebar = document.getElementById('main-sidebar');
+  if (!nav || !sidebar) return;
+  // Limpiar inline styles
+  sidebar.style.cssText = '';
+  nav.style.cssText = '';
+  const logo = sidebar.querySelector('.sidebar-logo');
+  const user = sidebar.querySelector('.sidebar-user');
+  if (logo) logo.style.display = '';
+  if (user) user.style.display = '';
+  // Restaurar todos los items y quitar "Más"
   Array.from(nav.querySelectorAll('.nav-item')).forEach(el => el.style.display = '');
   const mas = nav.querySelector('.nav-item-mas');
   if (mas) mas.remove();
-  const sidebar = document.getElementById('main-sidebar');
-  sidebar?.classList.remove('mobile-drawer-open');
   document.getElementById('mobile-drawer-overlay')?.classList.remove('open');
 }
 
