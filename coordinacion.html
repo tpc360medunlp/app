@@ -172,10 +172,9 @@
     background: var(--navy);
     display: flex; flex-direction: column;
     padding: 1.5rem 0;
-    position: fixed; top: 0; left: 0; bottom: 0;
-    z-index: 100;
     transition: width 0.25s ease;
     overflow: hidden;
+    position: relative;
   }
   .sidebar.collapsed { width: 60px; }
   .sidebar.collapsed .sidebar-logo-text,
@@ -265,11 +264,10 @@
 
   /* main content */
   .main-content {
-    margin-left: 240px;
     flex: 1;
     padding: 2rem 2.5rem;
     min-height: 100vh;
-    transition: margin-left 0.25s ease;
+    overflow-y: auto;
   }
 
   /* page header */
