@@ -55,7 +55,6 @@
     font-family: var(--font);
     background: var(--gray-50);
     color: var(--gray-800);
-    min-height: 100vh;
     font-size: 15px;
     line-height: 1.6;
   }
@@ -71,9 +70,14 @@
     inset: 0;
     background: var(--navy);
     z-index: 1000;
-    overflow-y: auto;
   }
-  #screen-login.active { display: block; }
+  #screen-login.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
 
   .login-bg-lines { display: none; }
 
@@ -82,13 +86,10 @@
     background: var(--white);
     border-radius: var(--radius-xl);
     padding: 2.5rem 2rem;
-    width: calc(100% - 2rem);
+    width: 100%;
     max-width: 420px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     box-shadow: var(--shadow-lg);
+    flex-shrink: 0;
   }
 
   .login-logo {
