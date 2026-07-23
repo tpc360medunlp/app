@@ -577,51 +577,7 @@
   }
   .sidebar-overlay.open { display: block; }
 
-  /* ── MOBILE BOTTOM NAV ── */
-  #mobile-bottom-nav {
-    display: none;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--navy);
-    z-index: 500;
-    box-shadow: 0 -1px 0 rgba(255,255,255,0.08);
-  }
-  #mobile-bottom-nav-items {
-    display: flex;
-    height: 58px;
-    align-items: stretch;
-  }
-  .m-nav-btn {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    border: none;
-    background: none;
-    color: rgba(255,255,255,0.4);
-    font-family: var(--font);
-    font-size: 10px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 6px 2px 4px;
-    -webkit-tap-highlight-color: transparent;
-    transition: color 0.15s;
-    min-width: 0;
-  }
-  .m-nav-btn.active { color: #4ECDC4; }
-  .m-nav-btn svg {
-    width: 22px; height: 22px;
-    stroke: currentColor; fill: none;
-    stroke-width: 1.8;
-    stroke-linecap: round; stroke-linejoin: round;
-    display: block; flex-shrink: 0;
-  }
-  .m-nav-btn span { white-space: nowrap; }
 
-  @media (max-width: 768px) {
-    #mobile-bottom-nav { display: block; }
     .hamburger-btn { display: none !important; }
     .sidebar { display: none !important; }
     .main-content {
@@ -637,6 +593,27 @@
     .validation-card { flex-direction: column; }
     .modal { max-height: 92vh; overflow-y: auto; }
     #screen-app { overflow-x: hidden; }
+  }
+  @media (max-width: 768px) {
+    .hamburger-btn { display: flex; }
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease, width 0.25s ease;
+      width: 240px !important;
+    }
+    .sidebar.collapsed { width: 240px !important; transform: translateX(-100%); }
+    .sidebar-logo { padding-top: 3.5rem !important; }
+    .main-content {
+      margin-left: 0 !important;
+      padding: 4rem 1rem 1.5rem;
+    }
+    .page-header { flex-direction: column; gap: 10px; }
+    .page-title { font-size: 18px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .coord-grid { grid-template-columns: 1fr; }
+    .area-header { flex-wrap: wrap; gap: 8px; }
+    .skill-row { flex-wrap: wrap; }
+    .validation-card { flex-direction: column; }
   }
 </style>
 </head>
@@ -1677,11 +1654,6 @@
   </div>
 </div>
 
-<!-- MOBILE BOTTOM NAV (solo visible en mobile) -->
-<nav id="mobile-bottom-nav" aria-label="Navegación principal">
-  <div id="mobile-bottom-nav-items"></div>
-</nav>
-
 <!-- TOAST -->
 <div class="toast" id="toast">
   <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2453,7 +2425,7 @@ async function enterApp() {
   // Cargar datos desde Supabase antes de renderizar
   await loadDataFromSupabase();
 
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
 
   if (currentRole === 'student') {
     switchStudentView('student');
@@ -2495,94 +2467,6 @@ function doLogout() {
 
 // ── SIDEBAR ──────────────────────────────────────────────
 
-function renderMobileNav() {
-  const nav = document.getElementById('mobile-bottom-nav-items');
-  if (!nav) return;
-
-  const ic = {
-    check:    `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
-    calendar: `<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-    list:     `<svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
-    file:     `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
-    home:     `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-    bell:     `<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
-    users:    `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    book:     `<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-    grid:     `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
-    more:     `<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
-    coffee:   `<svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>`,
-    star:     `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-  };
-
-  let items = [];
-
-  if (currentRole === 'student') {
-    const cfg = studentViewConfig;
-    if (cfg.portfolio?.enabled)    items.push({ ic: ic.check,    label: 'Portfolio',   fn: `switchStudentView('student')`,              id: 'nav-student-portfolio' });
-    if (cfg.asistencia?.enabled)   items.push({ ic: ic.calendar, label: 'Asistencia',  fn: `switchStudentView('student-attendance')`,    id: 'nav-student-attendance' });
-    if (cfg.notas_parciales?.enabled || cfg.notas_finales?.enabled)
-                                   items.push({ ic: ic.list,     label: 'Notas',       fn: `switchStudentView('student-notas')`,         id: 'nav-student-notas' });
-    if (cfg.certificados_parciales?.enabled || cfg.certificados_finales?.enabled)
-                                   items.push({ ic: ic.file,     label: 'Certificados',fn: `switchStudentView('student-certificados')`,  id: 'nav-student-certificados' });
-    if (cfg.cartelera?.enabled)    items.push({ ic: ic.bell,     label: 'Cartelera',   fn: `switchStudentView('student-cartelera')`,     id: 'nav-student-cartelera' });
-    if (cfg.cude?.enabled)         items.push({ ic: ic.home,     label: 'CUdE',        fn: `switchStudentView('student-cude')`,          id: 'nav-student-cude' });
-
-  } else if (currentRole === 'teacher') {
-    const tcfg = teacherViewConfig;
-    items.push({ ic: ic.check,    label: 'Portfolio',    fn: `switchTeacherView('teacher')`,          id: 'nav-validaciones' });
-    items.push({ ic: ic.calendar, label: 'Asistencia',   fn: `switchTeacherView('attendance')`,       id: 'nav-asistencia' });
-    if (tcfg.calificaciones?.enabled)
-      items.push({ ic: ic.list,   label: 'Notas',        fn: `switchTeacherView('notas')`,            id: 'nav-notas' });
-    if (tcfg.certificados?.enabled)
-      items.push({ ic: ic.file,   label: 'Certificados', fn: `switchTeacherView('cert-requests')`,    id: 'nav-cert-requests' });
-    if (tcfg.solicitudAulas?.enabled !== false)
-      items.push({ ic: ic.home,   label: 'Aulas',        fn: `switchTeacherView('teacher-aulas')`,    id: 'nav-teacher-aulas' });
-
-  } else if (currentRole === 'coordinator') {
-    items.push({ ic: ic.grid,   label: 'Estadísticas', fn: `switchCoordView('stats')`,      id: 'nav-coord-stats' });
-    items.push({ ic: ic.book,   label: 'Materias',     fn: `switchCoordView('academic')`,   id: 'nav-coord-academic' });
-    items.push({ ic: ic.users,  label: 'Docentes',     fn: `switchCoordView('teachers')`,   id: 'nav-coord-teachers' });
-    items.push({ ic: ic.coffee, label: 'Cartelera',    fn: `switchCoordView('cartelera')`,  id: 'nav-coord-cartelera' });
-    items.push({ ic: ic.more,   label: 'Más',          fn: `showMobileMore()`,              id: '' });
-  }
-
-  // Máximo 5 ítems
-  items = items.slice(0, 5);
-
-  nav.innerHTML = items.map(item => {
-    const active = item.id && document.getElementById(item.id)?.classList.contains('active');
-    return `<button class="m-nav-btn${active ? ' active' : ''}" onclick="${item.fn}; syncMobileNav()">
-      ${item.ic}<span>${item.label}</span>
-    </button>`;
-  }).join('');
-}
-
-function syncMobileNav() {
-  document.querySelectorAll('.m-nav-btn').forEach(btn => {
-    const fn = btn.getAttribute('onclick') || '';
-    const m  = fn.match(/switch\w+View\('([^']+)'\)/);
-    if (m) {
-      const sidebarBtn = document.querySelector(`.nav-item[onclick*="'${m[1]}'"]`);
-      btn.classList.toggle('active', !!sidebarBtn?.classList.contains('active'));
-    }
-  });
-}
-
-function showMobileMore() {
-  // En mobile, mostrar sidebar temporalmente como drawer
-  const sb  = document.getElementById('main-sidebar');
-  const ov  = document.getElementById('sidebar-overlay');
-  if (!sb) return;
-  sb.style.cssText = 'display:flex!important;position:fixed!important;top:0!important;left:0!important;bottom:0!important;width:270px!important;z-index:600!important;transform:none!important;box-shadow:4px 0 20px rgba(0,0,0,0.4)!important';
-  if (ov) { ov.style.cssText = 'display:block!important;z-index:599!important'; ov.onclick = hideMobileMore; }
-}
-
-function hideMobileMore() {
-  const sb = document.getElementById('main-sidebar');
-  const ov = document.getElementById('sidebar-overlay');
-  if (sb) sb.style.cssText = '';
-  if (ov) { ov.style.cssText = ''; ov.onclick = null; }
-}
 
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
@@ -5007,7 +4891,7 @@ function confirmApprove() {
   const card = document.getElementById('vc-' + approvingPendingId);
   if (card) card.style.opacity = '0.4';
   setTimeout(() => renderTeacherView(), 400);
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   showToast('Práctica validada correctamente');
 }
 
@@ -5052,7 +4936,7 @@ function confirmReject() {
   }
   closeRejectModal();
   renderTeacherView();
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   showToast('Práctica devuelta con observaciones');
 }
 
@@ -11013,7 +10897,7 @@ function toggleStudentView(key) {
     { clave: 'studentViewConfig', valor: studentViewConfig },
     { onConflict: 'clave' }
   ).then(({ error }) => { if (error) console.warn('Error guardando config alumno:', error); });
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   // Refrescar vista activa si corresponde
   const certContainer = document.getElementById('student-certificados-container');
   if (certContainer && document.getElementById('view-student-certificados')?.classList.contains('active')) {
@@ -11042,7 +10926,7 @@ function toggleTeacherView(key) {
     { clave: 'teacherViewConfig', valor: teacherViewConfig },
     { onConflict: 'clave' }
   ).then(({ error }) => { if (error) console.warn('Error guardando config docente:', error); });
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   renderConfigView();
 }
 
