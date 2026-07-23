@@ -615,11 +615,6 @@
 if (window.innerWidth <= 768) document.documentElement.classList.add('is-mobile');
 </script>
 
-<div id="pwa-loading" class="show">
-  <div class="pwa-spinner"></div>
-  <p>Cargando TPC360...</p>
-</div>
-
 <!-- LOGIN -->
 <div id="screen-login" class="screen active">
 
@@ -9145,7 +9140,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initLoginScreen();
   // Ocultar pantalla de carga PWA una vez que el DOM está listo
   setTimeout(() => {
-    document.getElementById('pwa-loading')?.classList.remove('show');
+
   }, 300);
 });
 
