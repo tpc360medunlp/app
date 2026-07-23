@@ -578,8 +578,8 @@
 
   @media (max-width: 768px) {
     /* MODI ROSSI pattern: columna invertida, sidebar abajo */
-    #screen-app { height: 100dvh; }
-    .app-shell { flex-direction: column-reverse; }
+    #screen-app { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+    .app-shell { flex-direction: column-reverse; flex: 1; overflow: hidden; }
     .hamburger-btn { display: none !important; }
     .sidebar-overlay { display: none !important; }
 
@@ -2596,6 +2596,11 @@ function openMobileDrawer() {
   if (!sidebar) return;
   sidebar.classList.add('mobile-drawer-active');
   overlay?.classList.add('open');
+  // Forzar repintado en Android
+  requestAnimationFrame(() => {
+    sidebar.style.opacity = '0.99';
+    requestAnimationFrame(() => { sidebar.style.opacity = ''; });
+  });
 }
 
 function closeMobileDrawer() {
