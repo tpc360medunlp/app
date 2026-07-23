@@ -578,7 +578,13 @@
 
   @media (max-width: 768px) {
     /* MODI ROSSI pattern: columna invertida, sidebar abajo */
-    #screen-app { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+    #screen-app {
+      height: 100dvh !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
     .app-shell { flex-direction: column-reverse; flex: 1; overflow: hidden; }
     .hamburger-btn { display: none !important; }
     .sidebar-overlay { display: none !important; }
@@ -1726,6 +1732,17 @@
 <!-- MOBILE DRAWER OVERLAY -->
 <div class="mobile-drawer-overlay" id="mobile-drawer-overlay" onclick="closeMobileDrawer()"></div>
 
+<!-- MOBILE DRAWER (elemento dedicado, independiente del sidebar) -->
+<div id="mobile-drawer" style="
+  display:none;
+  position:fixed;top:0;left:0;bottom:0;
+  width:270px;height:100%;
+  background:var(--navy);
+  flex-direction:column;
+  z-index:600;
+  overflow-y:auto;overflow-x:hidden;
+"></div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
   <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2592,24 +2609,53 @@ function renderMobileNav() {
 }
 
 function openMobileDrawer() {
-  const sidebar = document.getElementById('main-sidebar');
+  if (window.innerWidth > 768) return;
+  const drawer  = document.getElementById('mobile-drawer');
   const overlay = document.getElementById('mobile-drawer-overlay');
-  if (!sidebar) return;
-  sidebar.classList.add('mobile-drawer-active');
-  overlay?.classList.add('open');
-  // Forzar repintado en Android
-  requestAnimationFrame(() => {
-    sidebar.style.opacity = '0.99';
-    requestAnimationFrame(() => { sidebar.style.opacity = ''; });
+  const nav     = document.getElementById('sidebar-nav');
+  const sidebar = document.getElementById('main-sidebar');
+  if (!drawer) return;
+
+  // Clonar el contenido del sidebar en el drawer
+  const logo = sidebar?.querySelector('.sidebar-logo');
+  const user = sidebar?.querySelector('.sidebar-user');
+  let html = '';
+
+  // Logo
+  if (logo) html += `<div style="display:flex;align-items:center;gap:10px;padding:0 1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.08)">${logo.innerHTML}</div>`;
+
+  // Nav items (todos, incluyendo los ocultos)
+  html += '<div style="flex:1;padding:1rem 0.75rem;display:flex;flex-direction:column;gap:2px">';
+  Array.from(nav.querySelectorAll('.nav-item:not(.nav-item-mas)')).forEach(item => {
+    const isActive = item.classList.contains('active');
+    const onclick  = item.getAttribute('onclick') || '';
+    html += `<button onclick="closeMobileDrawer();${onclick}"
+      style="display:flex;align-items:center;gap:12px;padding:10px 12px;
+      border-radius:8px;cursor:pointer;font-size:15px;font-weight:400;
+      color:${isActive ? 'var(--teal-mid)' : 'rgba(255,255,255,0.55)'};
+      border:none;background:${isActive ? 'rgba(0,168,150,0.18)' : 'none'};
+      width:100%;text-align:left;font-family:var(--font);
+      ${isActive ? 'border-left:3px solid var(--teal-mid);' : 'border-left:3px solid transparent;'}">
+      ${item.innerHTML}
+    </button>`;
   });
+  html += '</div>';
+
+  // Usuario
+  if (user) html += `<div style="padding:1rem 1.25rem 0;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:10px">${user.innerHTML}</div>`;
+
+  drawer.innerHTML = html;
+  drawer.style.display = 'flex';
+  overlay?.classList.add('open');
 }
 
 function closeMobileDrawer() {
-  const sidebar = document.getElementById('main-sidebar');
+  const drawer  = document.getElementById('mobile-drawer');
   const overlay = document.getElementById('mobile-drawer-overlay');
-  sidebar?.classList.remove('mobile-drawer-active');
+  if (drawer) drawer.style.display = 'none';
   overlay?.classList.remove('open');
-  renderMobileNav();
+  // Remover clase si quedó
+  document.getElementById('main-sidebar')?.classList.remove('mobile-drawer-active');
 }
 
 function restoreSidebarDesktop() {
