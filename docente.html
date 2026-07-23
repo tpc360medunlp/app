@@ -1669,8 +1669,44 @@ async function getLegajoSupabase(email) {
 }
 async function loadDataFromSupabase() {
   try {
-    // Cargar materias
-    const { data: materias } = await _supabase.from('materias').select('*');
+    // Ejecutar todas las queries en paralelo
+    const [
+      { data: materias },
+      { data: staff },
+      { data: comisiones },
+      { data: comAlumnos },
+      { data: alumnos },
+      { data: asistenciaData },
+      { data: parcialesData },
+      { data: configData },
+      { data: mesasData },
+      { data: selfData },
+      { data: solCambioData },
+      { data: periodosData },
+      { data: certData },
+      { data: historialData },
+      { data: recordsData },
+      { data: areasData },
+      { data: aulasData },
+    ] = await Promise.all([
+      _supabase.from('materias').select('*'),
+      _supabase.from('staff').select('*'),
+      _supabase.from('comisiones').select('*'),
+      _supabase.from('comision_alumnos').select('*'),
+      _supabase.from('alumnos').select('*'),
+      _supabase.from('asistencia').select('*'),
+      _supabase.from('parciales').select('*'),
+      _supabase.from('config_sistema').select('*'),
+      _supabase.from('mesas_examen').select('*, mesas_resultados(*)'),
+      _supabase.from('self_reported_finales').select('*'),
+      _supabase.from('solicitudes_cambio_comision').select('*'),
+      _supabase.from('periodos_cambio_comision').select('*'),
+      _supabase.from('solicitudes_cert_finales').select('*'),
+      _supabase.from('historial_cambios_comision').select('*'),
+      _supabase.from('student_records').select('*'),
+      _supabase.from('skills_areas').select('*, skills(*)').order('orden'),
+      _supabase.from('solicitudes_aulas').select('*'),
+    ]);
     if (materias) {
       MATERIAS.length = 0;
       materias.forEach(m => MATERIAS.push({
@@ -1687,7 +1723,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar staff
-    const { data: staff } = await _supabase.from('staff').select('*');
     if (staff) {
       Object.keys(ENROLLED_STAFF).forEach(k => delete ENROLLED_STAFF[k]);
       staff.forEach(s => {
@@ -1704,8 +1739,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar comisiones
-    const { data: comisiones } = await _supabase.from('comisiones').select('*');
-    const { data: comAlumnos } = await _supabase.from('comision_alumnos').select('*');
     if (comisiones) {
       COMISIONES.length = 0;
       comisiones.forEach(c => {
@@ -1731,7 +1764,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar alumnos
-    const { data: alumnos } = await _supabase.from('alumnos').select('*');
     if (alumnos) {
       Object.keys(ENROLLED_STUDENTS).forEach(k => delete ENROLLED_STUDENTS[k]);
       alumnos.forEach(a => {
@@ -1751,7 +1783,6 @@ async function loadDataFromSupabase() {
     console.log('✅ Datos cargados desde Supabase');
 
     // Cargar asistencia (convertir legajo a email para el frontend)
-    const { data: asistenciaData } = await _supabase.from('asistencia').select('*');
     if (asistenciaData) {
       Object.keys(asistencia).forEach(k => delete asistencia[k]);
       asistenciaData.forEach(a => {
@@ -1766,7 +1797,6 @@ async function loadDataFromSupabase() {
       });
     }
     // Cargar parciales
-    const { data: parcialesData } = await _supabase.from('parciales').select('*');
     if (parcialesData) {
       Object.keys(parciales).forEach(k => delete parciales[k]);
       parcialesData.forEach(p => {
@@ -1794,7 +1824,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar configuración del sistema
-    const { data: configData } = await _supabase.from('config_sistema').select('*');
     if (configData) {
       configData.forEach(c => {
         if (c.clave === 'studentViewConfig' && c.valor) {
@@ -1820,7 +1849,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar mesas de examen
-    const { data: mesasData } = await _supabase.from('mesas_examen').select('*, mesas_resultados(*)');
     if (mesasData) {
       Object.keys(mesasExamen).forEach(k => delete mesasExamen[k]);
       mesasData.forEach(m => {
@@ -1842,7 +1870,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar self reported finales
-    const { data: selfData } = await _supabase.from('self_reported_finales').select('*');
     if (selfData) {
       Object.keys(selfReportedFinales).forEach(k => delete selfReportedFinales[k]);
       selfData.forEach(s => {
@@ -1859,7 +1886,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar solicitudes cambio de comisión
-    const { data: solCambioData } = await _supabase.from('solicitudes_cambio_comision').select('*');
     if (solCambioData) {
       solicitudesCambioComision.length = 0;
       solCambioData.forEach(s => {
@@ -1880,7 +1906,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar períodos cambio de comisión
-    const { data: periodosData } = await _supabase.from('periodos_cambio_comision').select('*');
     if (periodosData) {
       periodosCambioComision.length = 0;
       periodosData.forEach(p => {
@@ -1894,7 +1919,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar solicitudes certificados finales
-    const { data: certData } = await _supabase.from('solicitudes_cert_finales').select('*');
     if (certData) {
       solicitudesCertFinales.length = 0;
       certData.forEach(s => {
@@ -1918,7 +1942,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar historial cambios de comisión
-    const { data: historialData } = await _supabase.from('historial_cambios_comision').select('*');
     if (historialData) {
       historialCambiosComision.length = 0;
       historialData.forEach(h => {
@@ -1932,7 +1955,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar portfolio (student_records)
-    const { data: recordsData } = await _supabase.from('student_records').select('*');
     if (recordsData) {
       Object.keys(studentRecords).forEach(k => delete studentRecords[k]);
       recordsData.forEach(r => {
@@ -1954,7 +1976,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar SKILLS_DATA (áreas y habilidades del portfolio)
-    const { data: areasData } = await _supabase.from('skills_areas').select('*, skills(*)').order('orden');
     if (areasData && areasData.length > 0) {
       SKILLS_DATA.length = 0;
       areasData.forEach(a => {
@@ -1975,7 +1996,6 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar solicitudes de aulas
-    const { data: aulasData } = await _supabase.from('solicitudes_aulas').select('*');
     if (aulasData) {
       solicitudesAulas.length = 0;
       aulasData.forEach(s => solicitudesAulas.push({
