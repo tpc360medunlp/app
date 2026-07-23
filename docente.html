@@ -2888,13 +2888,28 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
 
   if (parcialesConNotas.length === 0) return '';
 
+  // Pre-calcular fechasCargadas por parcial (una sola vez, no por alumno)
+  const fechasCargadasPorParcial = {};
+  parcialesConNotas.forEach(p => {
+    fechasCargadasPorParcial[p] = NOMBRES_FECHAS.filter(f =>
+      comsMateria.some(com => {
+        const d = parciales[com.id]?.[p]?.[f];
+        return d && Object.keys(d).some(k => !k.startsWith('_'));
+      })
+    ).length;
+  });
+  // Pre-calcular comisiones por alumno
+  const comsCache = {};
+
   const estadosGlobales = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
+    if (!comsCache[email]) comsCache[email] = getComisionesMateriaAlumno(email, materiaId, año);
     const estadosPorParcial = parcialesConNotas.map(p => {
-      // Buscar en todas las comisiones de la materia
-      const coms = getComisionesMateriaAlumno(email, materiaId, año);
+      const coms = comsCache[email];
+      const fechasCargadas = fechasCargadasPorParcial[p];
+      const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
       const presentaciones = NOMBRES_FECHAS.filter(f => {
         return coms.some(com => {
           const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
@@ -2905,15 +2920,6 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
       const tieneRegistro = NOMBRES_FECHAS.some(f =>
         coms.some(com => parciales[com.id]?.[p]?.[f]?.[email] !== undefined)
       );
-
-      // Contar cuántas fechas del parcial ya fueron cargadas (tienen datos para cualquier alumno)
-      const fechasCargadas = NOMBRES_FECHAS.filter(f =>
-        coms.some(com => {
-          const datosDate = parciales[com.id]?.[p]?.[f];
-          return datosDate && Object.keys(datosDate).some(k => !k.startsWith('_'));
-        })
-      ).length;
-      const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
 
       for (const f of NOMBRES_FECHAS) {
         for (const com of coms) {
@@ -3025,12 +3031,25 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
   const año       = comision?.año || new Date().getFullYear();
   const materiaId = comision?.materiaId;
 
-  const estadosConsolidados = [];
+  // Pre-calcular fechasCargadas del parcial (una sola vez)
+  const comsMateria2 = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
+  const fechasCargadasParc = NOMBRES_FECHAS.filter(f =>
+    comsMateria2.some(com => {
+      const d = parciales[com.id]?.[parcial]?.[f];
+      return d && Object.keys(d).some(k => !k.startsWith('_'));
+    })
+  ).length;
+  const todasFechasAgotadasParc = fechasCargadasParc >= NOMBRES_FECHAS.length;
+  // Pre-calcular comisiones por alumno
+  const comsCacheParc = {};
+
+    const estadosConsolidados = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
     // Buscar en todas las comisiones de la materia
-    const coms = getComisionesMateriaAlumno(email, materiaId, año);
+    if (!comsCacheParc[email]) comsCacheParc[email] = getComisionesMateriaAlumno(email, materiaId, año);
+    const coms = comsCacheParc[email];
 
     const presentaciones = NOMBRES_FECHAS.filter(f =>
       coms.some(com => {
@@ -3042,15 +3061,7 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
     const tieneRegistro = NOMBRES_FECHAS.some(f =>
       coms.some(com => parciales[com.id]?.[parcial]?.[f]?.[email] !== undefined)
     );
-
-    // Contar cuántas fechas del parcial ya fueron cargadas
-    const fechasCargadas = NOMBRES_FECHAS.filter(f =>
-      coms.some(com => {
-        const datosDate = parciales[com.id]?.[parcial]?.[f];
-        return datosDate && Object.keys(datosDate).some(k => !k.startsWith('_'));
-      })
-    ).length;
-    const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
+    const todasFechasAgotadas = todasFechasAgotadasParc;
 
     let notaFinal   = null;
     let estadoFinal = null;
