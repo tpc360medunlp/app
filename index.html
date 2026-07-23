@@ -580,12 +580,17 @@
   @media (max-width: 768px) {
     .hamburger-btn { display: flex; }
     .sidebar {
+      position: fixed !important;
+      top: 0; left: 0; bottom: 0;
+      height: 100vh !important;
+      z-index: 400 !important;
       transform: translateX(-100%);
-      transition: transform 0.25s ease, width 0.25s ease;
-      width: 240px !important;
+      transition: transform 0.25s ease;
+      width: 260px !important;
+      overflow-y: auto;
     }
     .sidebar.mobile-open { transform: translateX(0); }
-    .sidebar.collapsed { width: 240px !important; transform: translateX(-100%); }
+    .sidebar.collapsed { width: 260px !important; transform: translateX(-100%); }
     .sidebar.mobile-open .sidebar-logo-text,
     .sidebar.mobile-open .sidebar-logo-sub,
     .sidebar.mobile-open .nav-item span,
@@ -594,6 +599,10 @@
     .sidebar.mobile-open .user-role { display: block; }
     .sidebar.mobile-open .sidebar-collapse-btn { display: none; }
     .sidebar-logo { padding-top: 3.5rem !important; }
+    .sidebar-overlay.open {
+      display: block !important;
+      z-index: 399 !important;
+    }
     .main-content {
       margin-left: 0 !important;
       padding: 4rem 1rem 1.5rem;
@@ -605,6 +614,7 @@
     .area-header { flex-wrap: wrap; gap: 8px; }
     .skill-row { flex-wrap: wrap; }
     .validation-card { flex-direction: column; }
+    #screen-app { overflow-x: hidden; }
   }
 </style>
 </head>
@@ -2405,7 +2415,7 @@ async function enterApp() {
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
 
-  // Actualizar sidebar (desktop)
+  // Actualizar sidebar
   if (document.getElementById('user-name-sidebar'))
     document.getElementById('user-name-sidebar').textContent = currentUser?.name || '';
   if (document.getElementById('user-role-sidebar'))
@@ -2413,9 +2423,7 @@ async function enterApp() {
   if (document.getElementById('user-avatar-sidebar'))
     document.getElementById('user-avatar-sidebar').textContent = currentUser?.initials || '?';
 
-  // Cargar datos desde Supabase antes de renderizar
-  await loadDataFromSupabase();
-
+  // Los datos ya fueron cargados en onAuthStateChange — no recargar
   renderSidebar();
 
   if (currentRole === 'student') {
