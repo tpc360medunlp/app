@@ -80,7 +80,8 @@
   #screen-login.active { display: flex; }
 
   .login-bg-lines {
-    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+    position: absolute; inset: 0; pointer-events: none;
+    z-index: 0;
   }
   .login-bg-lines svg { width: 100%; height: 100%; opacity: 0.07; }
 
@@ -91,10 +92,8 @@
     width: 100%;
     max-width: 420px;
     position: relative;
-    z-index: 1;
+    z-index: 2;
     box-shadow: var(--shadow-lg);
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
   }
 
   .login-logo {
@@ -602,6 +601,7 @@
       padding: 4rem 1rem 1.5rem;
     }
     .page-header { flex-direction: column; gap: 10px; }
+    .login-bg-lines { display: none; }
     .page-title { font-size: 18px; }
     .stats-row { grid-template-columns: 1fr 1fr; }
     .coord-grid { grid-template-columns: 1fr; }
