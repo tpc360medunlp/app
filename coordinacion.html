@@ -53,10 +53,11 @@
 
   body {
     font-family: var(--font);
-    background: var(--gray-50);
+    background: var(--navy);
     color: var(--gray-800);
     font-size: 15px;
     line-height: 1.6;
+    margin: 0;
   }
 
   /* ── SCREENS ── */
@@ -66,10 +67,9 @@
   /* ── LOGIN ── */
   #screen-login {
     display: none;
-    position: fixed;
-    inset: 0;
     background: var(--navy);
-    z-index: 1000;
+    min-height: 100dvh;
+    min-height: 100vh;
   }
   #screen-login.active {
     display: flex;
@@ -159,7 +159,7 @@
   }
 
   /* ── APP SHELL ── */
-  .app-shell { display: flex; min-height: 100vh; }
+  .app-shell { display: flex; min-height: 100vh; background: var(--gray-50); }
 
   /* sidebar */
   .sidebar {
