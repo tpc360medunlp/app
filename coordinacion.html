@@ -71,17 +71,13 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    position: relative;
-    overflow: hidden;
-    min-height: 100vh;
-    min-height: 100dvh;
+    position: fixed;
+    inset: 0;
+    overflow: auto;
     box-sizing: border-box;
+    z-index: 1000;
   }
-  #screen-login.active {
-    display: flex;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-  }
+  #screen-login.active { display: flex; }
 
   .login-bg-lines {
     position: absolute; inset: 0; pointer-events: none; overflow: hidden;
