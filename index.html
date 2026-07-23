@@ -2888,37 +2888,19 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
 
   if (parcialesConNotas.length === 0) return '';
 
-  // Cachear comisiones por alumno — evita recalcular en cada parcial
-  const comsCache = {};
-  alumnos.forEach(email => {
-    comsCache[email] = getComisionesMateriaAlumno(email, materiaId, año);
-  });
-
-  // Cachear fechas cargadas por parcial — evita recalcular por cada alumno
-  const fechasCargadasCache = {};
-  parcialesConNotas.forEach(p => {
-    fechasCargadasCache[p] = NOMBRES_FECHAS.filter(f =>
-      comsMateria.some(com => {
-        const d = parciales[com.id]?.[p]?.[f];
-        return d && Object.keys(d).some(k => !k.startsWith('_'));
-      })
-    ).length;
-  });
-
   const estadosGlobales = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
     const estadosPorParcial = parcialesConNotas.map(p => {
-      const coms = comsCache[email];
-      const todasFechasAgotadas = fechasCargadasCache[p] >= NOMBRES_FECHAS.length;
-
-      const presentaciones = NOMBRES_FECHAS.filter(f =>
-        coms.some(com => {
+      // Buscar en todas las comisiones de la materia
+      const coms = getComisionesMateriaAlumno(email, materiaId, año);
+      const presentaciones = NOMBRES_FECHAS.filter(f => {
+        return coms.some(com => {
           const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
           return est === 'aprobado' || est === 'desaprobado' || est === 'promocion';
-        })
-      ).length;
+        });
+      }).length;
 
       const tieneRegistro = NOMBRES_FECHAS.some(f =>
         coms.some(com => parciales[com.id]?.[p]?.[f]?.[email] !== undefined)
@@ -2933,17 +2915,6 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
         }
       }
       if (presentaciones >= 3) return 'desaprobado';
-      if (tieneRegistro && todasFechasAgotadas) {
-        // Si tuvo al menos una presentación (no solo ausencias) → desaprobado
-        // Si estuvo ausente en todas → ausente
-        const tuvoPresencia = NOMBRES_FECHAS.some(f =>
-          coms.some(com => {
-            const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
-            return est && est !== 'ausente';
-          })
-        );
-        return tuvoPresencia ? 'desaprobado' : 'ausente';
-      }
       if (tieneRegistro) return 'en_curso';
       return 'ausente';
     });
@@ -3034,23 +3005,12 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
   const año       = comision?.año || new Date().getFullYear();
   const materiaId = comision?.materiaId;
 
-  // Cachear comisiones por alumno y fechas cargadas del parcial
-  const comsCache = {};
-  alumnos.forEach(email => { comsCache[email] = getComisionesMateriaAlumno(email, materiaId, año); });
-  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
-  const fechasCargadas = NOMBRES_FECHAS.filter(f =>
-    comsMateria.some(com => {
-      const d = parciales[com.id]?.[parcial]?.[f];
-      return d && Object.keys(d).some(k => !k.startsWith('_'));
-    })
-  ).length;
-  const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
-
   const estadosConsolidados = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
-    const coms = comsCache[email];
+    // Buscar en todas las comisiones de la materia
+    const coms = getComisionesMateriaAlumno(email, materiaId, año);
 
     const presentaciones = NOMBRES_FECHAS.filter(f =>
       coms.some(com => {
@@ -3091,14 +3051,6 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
       estado = 'aprobado';
     } else if (estadoFinal === 'desaprobado' && presentaciones >= 3) {
       estado = 'desaprobado';
-    } else if (tieneRegistro && todasFechasAgotadas) {
-      const tuvoPresencia = NOMBRES_FECHAS.some(f =>
-        coms.some(com => {
-          const est = parciales[com.id]?.[parcial]?.[f]?.[email]?.estado;
-          return est && est !== 'ausente';
-        })
-      );
-      estado = tuvoPresencia ? 'desaprobado' : 'ausente';
     } else if (tieneRegistro) {
       estado = 'en_curso';
     } else {
