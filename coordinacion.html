@@ -159,16 +159,16 @@
   }
 
   /* ── APP SHELL ── */
-  .app-shell { display: flex; min-height: 100vh; }
+  /* App shell — flexbox puro, igual que MODI ROSSI */
+  #screen-app { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  .app-shell { display: flex; flex: 1; overflow: hidden; }
 
-  /* sidebar */
+  /* sidebar — ya NO usa position:fixed */
   .sidebar {
     width: 240px; flex-shrink: 0;
     background: var(--navy);
     display: flex; flex-direction: column;
     padding: 1.5rem 0;
-    position: fixed; top: 0; left: 0; bottom: 0;
-    z-index: 100;
     transition: width 0.25s ease;
     overflow: hidden;
   }
@@ -258,13 +258,12 @@
   .btn-logout:hover { color: rgba(255,255,255,0.7); }
   .btn-logout svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* main content */
+  /* main content — flex:1 en lugar de margin-left */
   .main-content {
-    margin-left: 240px;
     flex: 1;
     padding: 2rem 2.5rem;
-    min-height: 100vh;
-    transition: margin-left 0.25s ease;
+    overflow-y: auto;
+    min-height: 0;
   }
 
   /* page header */
@@ -578,46 +577,39 @@
   .sidebar-overlay.open { display: block; }
 
   @media (max-width: 768px) {
-    /* Layout: sidebar → barra inferior */
-    .app-shell { flex-direction: column; }
+    /* MODI ROSSI pattern: columna invertida, sidebar abajo */
+    #screen-app { height: 100dvh; }
+    .app-shell { flex-direction: column-reverse; }
     .hamburger-btn { display: none !important; }
     .sidebar-overlay { display: none !important; }
 
-    /* Sidebar se convierte en barra inferior fija */
+    /* Sidebar → barra inferior */
     .sidebar {
-      position: fixed !important;
-      top: auto !important; left: 0 !important;
-      right: 0 !important; bottom: 0 !important;
-      width: 100% !important; height: auto !important;
+      width: 100% !important;
+      height: 56px !important;
       flex-direction: row !important;
       padding: 0 !important;
-      z-index: 200 !important;
-      transition: none !important;
       overflow: visible !important;
       border-top: 1px solid rgba(255,255,255,0.1) !important;
+      flex-shrink: 0 !important;
     }
     .sidebar.collapsed { width: 100% !important; }
 
-    /* Sidebar-nav horizontal */
     .sidebar-nav {
       flex-direction: row !important;
       padding: 0 !important; gap: 0 !important;
-      flex: 1 !important; min-height: 56px;
+      flex: 1 !important;
     }
-
-    /* Ocultar elementos no usados en barra */
     .sidebar-logo, .sidebar-collapse-btn,
     .sidebar-user, .nav-section-label { display: none !important; }
 
-    /* Nav items en modo barra */
     .nav-item {
       flex: 1 !important; flex-direction: column !important;
       justify-content: center !important; align-items: center !important;
       gap: 3px !important; padding: 6px 2px 4px !important;
-      border-left: none !important; border-top: 3px solid transparent !important;
       border-radius: 0 !important; font-size: 9px !important;
       min-width: 0 !important; height: 56px !important;
-      white-space: nowrap !important;
+      border-left: none !important; border-top: 3px solid transparent !important;
     }
     .nav-item.active {
       border-left-color: transparent !important;
@@ -626,58 +618,24 @@
     }
     .nav-item svg { width: 20px !important; height: 20px !important; }
     .nav-item span { display: block !important; font-size: 9px !important; }
-
-    /* Main content sin margin ni padding extra de sidebar */
-    .main-content {
-      margin-left: 0 !important;
-      padding: 1rem 1rem 5rem !important;
-    }
-
-    /* Sidebar drawer (abierto desde "Más") */
-    .sidebar.mobile-drawer-open {
-      flex-direction: column !important;
-      width: 270px !important; height: 100vh !important;
-      top: 0 !important; right: auto !important;
-      bottom: 0 !important; padding: 1.5rem 0 !important;
-      z-index: 500 !important; overflow-y: auto !important;
-    }
-    .sidebar.mobile-drawer-open .sidebar-logo,
-    .sidebar.mobile-drawer-open .sidebar-user { display: flex !important; }
-    .sidebar.mobile-drawer-open .sidebar-nav {
-      flex-direction: column !important;
-      padding: 1rem 0.75rem !important;
-      gap: 2px !important; min-height: auto !important;
-    }
-    .sidebar.mobile-drawer-open .nav-item {
-      flex-direction: row !important;
-      justify-content: flex-start !important;
-      border-left: 3px solid transparent !important;
-      border-top: none !important;
-      border-radius: var(--radius-md) !important;
-      padding: 10px 12px !important;
-      height: auto !important; font-size: 15px !important;
-      gap: 12px !important;
-    }
-    .sidebar.mobile-drawer-open .nav-item.active {
-      border-left-color: var(--teal-mid) !important;
-      border-top-color: transparent !important;
-    }
-    .sidebar.mobile-drawer-open .nav-item svg { width: 18px !important; height: 18px !important; }
-    .sidebar.mobile-drawer-open .nav-section-label { display: block !important; }
-    .sidebar.mobile-drawer-open .sidebar-logo { padding-top: 0 !important; }
-    .sidebar.mobile-drawer-open .nav-item-mas { display: none !important; }
-    .nav-badge { font-size: 10px; min-width: 16px; height: 16px; padding: 0 4px; }
-    /* Badge de aulas en barra inferior — ocultar, solo mostrar en drawer */
     #aulas-badge-teacher, #aulas-badge-coord { display: none !important; }
-    .sidebar.mobile-drawer-open #aulas-badge-teacher,
-    .sidebar.mobile-drawer-open #aulas-badge-coord { display: inline !important; }
+
+    /* main-content */
+    .main-content {
+      padding: 1rem 1rem 1.5rem !important;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Drawer (Más) — posición absoluta sobre la barra */
     .mobile-drawer-overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(11,31,58,0.5); z-index: 499;
     }
     .mobile-drawer-overlay.open { display: block; }
 
-    #screen-app { overflow-x: hidden; }
+    #screen-app { overflow: hidden; }
     .page-header { flex-direction: column; gap: 10px; }
     .page-title { font-size: 18px; }
     .stats-row { grid-template-columns: 1fr 1fr; }
@@ -2224,12 +2182,10 @@ let selectedEvalValue = null;
 let rejectingPendingId = null;
 
 function toggleSidebar() {
-  // Solo en desktop
   if (window.innerWidth <= 768) return;
   const sidebar = document.getElementById('main-sidebar');
-  const main    = document.querySelector('.main-content');
   sidebar.classList.toggle('collapsed');
-  main.style.marginLeft = sidebar.classList.contains('collapsed') ? '60px' : '240px';
+  // Flexbox maneja el layout automáticamente — no se necesita margin-left
 }
 
 function toggleMobileSidebar() {
@@ -2604,29 +2560,36 @@ function openMobileDrawer() {
   const user = sidebar?.querySelector('.sidebar-user');
   if (!sidebar) return;
 
-  // Mostrar todos los items
   Array.from(nav.querySelectorAll('.nav-item')).forEach(el => {
     if (!el.classList.contains('nav-item-mas')) el.style.display = '';
   });
 
-  // Aplicar estilos del drawer directamente como inline styles
   sidebar.style.cssText = `
-    position: fixed !important;
-    top: 0 !important; left: 0 !important;
-    right: auto !important; bottom: 0 !important;
-    width: 270px !important; height: 100vh !important;
-    flex-direction: column !important;
-    padding: 1.5rem 0 !important;
-    z-index: 500 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    border-top: none !important;
+    position: fixed; top: 0; left: 0; bottom: 0; right: auto;
+    width: 270px; height: 100vh;
+    flex-direction: column;
+    padding: 1.5rem 0;
+    z-index: 500;
+    overflow-y: auto; overflow-x: hidden;
+    border-top: none;
   `;
-  nav.style.cssText = 'flex-direction: column !important; padding: 1rem 0.75rem !important; gap: 2px !important; min-height: auto !important;';
-  if (logo) logo.style.display = 'flex';
+  nav.style.cssText = 'flex-direction: column; padding: 1rem 0.75rem; gap: 2px; min-height: auto; flex: 1;';
+  if (logo) logo.style.cssText = 'display: flex; padding-top: 0;';
   if (user) user.style.display = 'flex';
 
-  overlay?.classList.add('open');
+  const mas = nav.querySelector('.nav-item-mas');
+  if (mas) mas.style.display = 'none';
+
+  // Aplicar estilo de drawer a cada nav-item
+  Array.from(nav.querySelectorAll('.nav-item:not(.nav-item-mas)')).forEach(el => {
+    el.style.cssText = 'flex-direction: row; justify-content: flex-start; border-left: 3px solid transparent; border-top: none; border-radius: 8px; padding: 10px 12px; height: auto; font-size: 15px; gap: 12px; width: 100%;';
+    if (el.classList.contains('active')) {
+      el.style.borderLeftColor = 'var(--teal-mid)';
+      el.style.borderTopColor = 'transparent';
+    }
+    const svg = el.querySelector('svg');
+    if (svg) { svg.style.width = '18px'; svg.style.height = '18px'; }
+  });
 }
 
 function closeMobileDrawer() {
