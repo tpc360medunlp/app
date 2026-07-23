@@ -654,9 +654,9 @@
       border-left: 3px solid transparent !important;
       border-top: none !important;
       border-radius: var(--radius-md) !important;
-      padding: 9px 12px !important;
-      height: auto !important; font-size: 14px !important;
-      gap: 10px !important;
+      padding: 10px 12px !important;
+      height: auto !important; font-size: 15px !important;
+      gap: 12px !important;
     }
     .sidebar.mobile-drawer-open .nav-item.active {
       border-left-color: var(--teal-mid) !important;
@@ -2616,6 +2616,27 @@ function closeMobileDrawer() {
   // Volver a ocultar extras
   renderMobileNav();
 }
+
+function restoreSidebarDesktop() {
+  // Al volver a desktop, restaurar todos los items y quitar el botón "Más"
+  const nav = document.getElementById('sidebar-nav');
+  if (!nav) return;
+  Array.from(nav.querySelectorAll('.nav-item')).forEach(el => el.style.display = '');
+  const mas = nav.querySelector('.nav-item-mas');
+  if (mas) mas.remove();
+  const sidebar = document.getElementById('main-sidebar');
+  sidebar?.classList.remove('mobile-drawer-open');
+  document.getElementById('mobile-drawer-overlay')?.classList.remove('open');
+}
+
+// Listener de resize para manejar cambio desktop ↔ mobile
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    restoreSidebarDesktop();
+  } else {
+    renderMobileNav();
+  }
+});
 
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
