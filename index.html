@@ -580,37 +580,23 @@
   @media (max-width: 768px) {
     .hamburger-btn { display: flex; }
     .sidebar {
-      position: fixed !important;
-      top: 0; left: 0; bottom: 0;
-      height: 100vh !important;
-      z-index: 400 !important;
       transform: translateX(-100%);
-      transition: transform 0.25s ease;
-      width: 260px !important;
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
+      transition: transform 0.25s ease, width 0.25s ease;
+      width: 240px !important;
     }
     .sidebar.mobile-open { transform: translateX(0); }
-    .sidebar.collapsed { width: 260px !important; transform: translateX(-100%); }
+    .sidebar.collapsed { width: 240px !important; transform: translateX(-100%); }
     .sidebar.mobile-open .sidebar-logo-text,
     .sidebar.mobile-open .sidebar-logo-sub,
     .sidebar.mobile-open .nav-item span,
     .sidebar.mobile-open .nav-section-label,
     .sidebar.mobile-open .user-name,
-    .sidebar.mobile-open .user-role { display: block !important; }
-    .sidebar.mobile-open .nav-item { opacity: 1 !important; }
+    .sidebar.mobile-open .user-role { display: block; }
     .sidebar.mobile-open .sidebar-collapse-btn { display: none; }
     .sidebar-logo { padding-top: 3.5rem !important; }
-    .sidebar-overlay.open {
-      display: block !important;
-      z-index: 399 !important;
-    }
     .main-content {
       margin-left: 0 !important;
       padding: 4rem 1rem 1.5rem;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-      -webkit-overflow-scrolling: touch;
     }
     .page-header { flex-direction: column; gap: 10px; }
     .page-title { font-size: 18px; }
@@ -619,7 +605,6 @@
     .area-header { flex-wrap: wrap; gap: 8px; }
     .skill-row { flex-wrap: wrap; }
     .validation-card { flex-direction: column; }
-    #screen-app { overflow-x: hidden; }
   }
 </style>
 </head>
@@ -2447,7 +2432,6 @@ async function enterApp() {
     setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
   }
   else switchCoordView('stats');
-  forceRepaint();
 }
 
 function doLogout() {
@@ -2477,16 +2461,6 @@ function doLogout() {
 // ── SIDEBAR ──────────────────────────────────────────────
 
 
-// Forzar repintado en Android (evita pantalla en blanco hasta scroll)
-function forceRepaint() {
-  if (window.innerWidth > 768) return;
-  const app = document.getElementById('screen-app');
-  if (!app) return;
-  requestAnimationFrame(() => {
-    app.style.opacity = '0.9999';
-    requestAnimationFrame(() => { app.style.opacity = ''; });
-  });
-}
 
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
@@ -2623,7 +2597,6 @@ function switchCoordView(section) {
   if (section === 'cartelera')     renderCartelaView('coord-cartelera-container');
   if (section === 'cude')          renderCoordCudeView();
   if (section === 'aulas')         renderCoordAulasView();
-  forceRepaint();
 }
 
 function switchStudentView(view) {
@@ -2682,7 +2655,6 @@ function switchStudentView(view) {
   if (view === 'student-cronograma')   renderStudentCronogramaView();
   if (view === 'student-cartelera')    renderCartelaView('student-cartelera-container');
   if (view === 'student-cude')         renderStudentCudeView();
-  forceRepaint();
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -2916,32 +2888,41 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
 
   if (parcialesConNotas.length === 0) return '';
 
+  // Cachear comisiones por alumno — evita recalcular en cada parcial
+  const comsCache = {};
+  alumnos.forEach(email => {
+    comsCache[email] = getComisionesMateriaAlumno(email, materiaId, año);
+  });
+
+  // Cachear fechas cargadas por parcial — evita recalcular por cada alumno
+  const fechasCargadasCache = {};
+  parcialesConNotas.forEach(p => {
+    fechasCargadasCache[p] = NOMBRES_FECHAS.filter(f =>
+      comsMateria.some(com => {
+        const d = parciales[com.id]?.[p]?.[f];
+        return d && Object.keys(d).some(k => !k.startsWith('_'));
+      })
+    ).length;
+  });
+
   const estadosGlobales = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
     const estadosPorParcial = parcialesConNotas.map(p => {
-      // Buscar en todas las comisiones de la materia
-      const coms = getComisionesMateriaAlumno(email, materiaId, año);
-      const presentaciones = NOMBRES_FECHAS.filter(f => {
-        return coms.some(com => {
+      const coms = comsCache[email];
+      const todasFechasAgotadas = fechasCargadasCache[p] >= NOMBRES_FECHAS.length;
+
+      const presentaciones = NOMBRES_FECHAS.filter(f =>
+        coms.some(com => {
           const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
           return est === 'aprobado' || est === 'desaprobado' || est === 'promocion';
-        });
-      }).length;
+        })
+      ).length;
 
       const tieneRegistro = NOMBRES_FECHAS.some(f =>
         coms.some(com => parciales[com.id]?.[p]?.[f]?.[email] !== undefined)
       );
-
-      // Contar cuántas fechas del parcial ya fueron cargadas (tienen datos para cualquier alumno)
-      const fechasCargadas = NOMBRES_FECHAS.filter(f =>
-        coms.some(com => {
-          const datosDate = parciales[com.id]?.[p]?.[f];
-          return datosDate && Object.keys(datosDate).some(k => !k.startsWith('_'));
-        })
-      ).length;
-      const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
 
       for (const f of NOMBRES_FECHAS) {
         for (const com of coms) {
@@ -3053,12 +3034,23 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
   const año       = comision?.año || new Date().getFullYear();
   const materiaId = comision?.materiaId;
 
+  // Cachear comisiones por alumno y fechas cargadas del parcial
+  const comsCache = {};
+  alumnos.forEach(email => { comsCache[email] = getComisionesMateriaAlumno(email, materiaId, año); });
+  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
+  const fechasCargadas = NOMBRES_FECHAS.filter(f =>
+    comsMateria.some(com => {
+      const d = parciales[com.id]?.[parcial]?.[f];
+      return d && Object.keys(d).some(k => !k.startsWith('_'));
+    })
+  ).length;
+  const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
+
   const estadosConsolidados = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
-    // Buscar en todas las comisiones de la materia
-    const coms = getComisionesMateriaAlumno(email, materiaId, año);
+    const coms = comsCache[email];
 
     const presentaciones = NOMBRES_FECHAS.filter(f =>
       coms.some(com => {
@@ -3070,15 +3062,6 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
     const tieneRegistro = NOMBRES_FECHAS.some(f =>
       coms.some(com => parciales[com.id]?.[parcial]?.[f]?.[email] !== undefined)
     );
-
-    // Contar cuántas fechas del parcial ya fueron cargadas
-    const fechasCargadas = NOMBRES_FECHAS.filter(f =>
-      coms.some(com => {
-        const datosDate = parciales[com.id]?.[parcial]?.[f];
-        return datosDate && Object.keys(datosDate).some(k => !k.startsWith('_'));
-      })
-    ).length;
-    const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
 
     let notaFinal   = null;
     let estadoFinal = null;
@@ -4114,7 +4097,6 @@ function switchTeacherView(view) {
   }
   if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
   if (view === 'teacher-aulas')       renderTeacherAulasView();
-  forceRepaint();
 }
 
 // Obtener las materiaIds que puede validar el docente actual
