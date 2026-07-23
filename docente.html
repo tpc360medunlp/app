@@ -665,6 +665,12 @@
     .sidebar.mobile-drawer-open .nav-item svg { width: 18px !important; height: 18px !important; }
     .sidebar.mobile-drawer-open .nav-section-label { display: block !important; }
     .sidebar.mobile-drawer-open .sidebar-logo { padding-top: 0 !important; }
+    .sidebar.mobile-drawer-open .nav-item-mas { display: none !important; }
+    .nav-badge { font-size: 10px; min-width: 16px; height: 16px; padding: 0 4px; }
+    /* Badge de aulas en barra inferior — ocultar, solo mostrar en drawer */
+    #aulas-badge-teacher, #aulas-badge-coord { display: none !important; }
+    .sidebar.mobile-drawer-open #aulas-badge-teacher,
+    .sidebar.mobile-drawer-open #aulas-badge-coord { display: inline !important; }
     .mobile-drawer-overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(11,31,58,0.5); z-index: 499;
