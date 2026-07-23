@@ -2408,18 +2408,14 @@ function doLogin() {
 async function enterApp() {
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
+  document.getElementById('user-name-sidebar').textContent = currentUser.name;
+  document.getElementById('user-role-sidebar').textContent = currentUser.role;
+  document.getElementById('user-avatar-sidebar').textContent = currentUser.initials;
 
-  // Actualizar sidebar
-  if (document.getElementById('user-name-sidebar'))
-    document.getElementById('user-name-sidebar').textContent = currentUser?.name || '';
-  if (document.getElementById('user-role-sidebar'))
-    document.getElementById('user-role-sidebar').textContent = currentUser?.role || '';
-  if (document.getElementById('user-avatar-sidebar'))
-    document.getElementById('user-avatar-sidebar').textContent = currentUser?.initials || '?';
+  // Cargar datos desde Supabase antes de renderizar
+  await loadDataFromSupabase();
 
-  // Los datos ya fueron cargados en onAuthStateChange — no recargar
   renderSidebar();
-
   if (currentRole === 'student') {
     switchStudentView('student');
     setTimeout(() => {
@@ -3397,11 +3393,7 @@ function renderNotasView(selectedComId, selectedParcial, selectedFecha) {
       </div>
       ${alumnosHabilitados.length === 0
         ? `<div style="padding:1.5rem;text-align:center;color:var(--gray-400);font-size:13px">No hay alumnos habilitados para esta fecha.</div>`
-        : `${publicado ? `<div style="display:flex;align-items:center;gap:10px;padding:10px 18px;background:#f0faf4;border-bottom:1px solid #c3e8d0">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#1a7a35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span style="font-size:13px;color:#1a7a35;font-weight:500">Registro publicado — los alumnos pueden ver sus notas. Para modificar, despublicá primero.</span>
-          </div>` : ''}
-          <div style="padding:8px 0">${rows}</div>`
+        : `<div style="padding:8px 0">${rows}</div>`
       }
       ${alumnosNoHabilitados.length > 0 ? `
         <div style="border-top:1px solid var(--gray-100);padding:10px 18px 6px">
@@ -4310,7 +4302,11 @@ function submitPractica() {
 }
 
 // ── TEACHER ──────────────────────────────────────────────
-const STUDENT_NAMES = {};
+const STUDENT_NAMES = {
+  "juan.perez@gmail.com":   "Pérez, Juan",
+  "maria.garcia@gmail.com": "García, María",
+  "pedro.lopez@gmail.com":  "López, Pedro"
+};
 
 // ── HELPER GLOBAL DE ORDENAMIENTO POR APELLIDO ───────────
 // Todos los nombres se guardan como "Apellido, Nombre"
@@ -4324,7 +4320,24 @@ function sortStudentsByApellido(arr, getNameFn) {
   );
 }
 // ── IN-APP NOTIFICATIONS ─────────────────────────────────
-let lastSeenSkillStatus = {};
+let lastSeenSkillStatus = {
+  // Simular que Juan ya había visto algunas habilidades como pending
+  // así al entrar verá que s1 y s4 pasaron a validated (novedad)
+  "juan.perez@gmail.com": {
+    s1: 'pending',   // era pending, ahora validated → notificación ✅
+    s2: 'validated',
+    s3: 'pending',   // sigue pending → sin novedad
+    s4: 'pending',   // era pending, ahora validated → notificación ✅
+    s5: 'validated',
+    s6: 'validated',
+  },
+  // María verá que s2 fue devuelta
+  "maria.garcia@gmail.com": {
+    s1: 'validated',
+    s2: 'pending',   // era pending, ahora rejected → notificación 🔄
+    s3: 'validated',
+  }
+};
 let lastSeenNotasStatus    = {};
 let lastSeenCertStatus     = {};
 let lastSeenPendingCount   = {};
@@ -4803,7 +4816,7 @@ function buildHistorialHtml(historial) {
   </details>`;
 }
 
-document.getElementById('modal-approve').dataset.closable='true'; document.getElementById('modal-approve')._closeModal=function(){closeApproveModal()};
+document.getElementById('modal-approve').addEventListener('click', function(e){ if(e.target===this) closeApproveModal(); });
 
 function approveSkill(uid) {
   approvingPendingId = uid;
@@ -5605,10 +5618,6 @@ function buildXlsx(titulo, subtitulo, headers, rows, sheetName = 'Datos') {
 // ── PDF builder ───────────────────────────────────────────
 function sanitizePdf(text) {
   return String(text || '')
-    .replace(/\u2014/g, '-')   // em dash → guión simple
-    .replace(/\u2013/g, '-')   // en dash → guión simple
-    .replace(/\u2019/g, "'")   // comilla derecha → apostrofe
-    .replace(/\u201C|\u201D/g, '"') // comillas tipográficas → rectas
     .replace(/✓/g, 'OK')
     .replace(/✗/g, 'X')
     .replace(/⭐/g, '*')
@@ -5651,7 +5660,7 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
 
   let page   = pdfDoc.getPage(0);
   const { width, height } = page.getSize();
-  const ML = 40, MR = 40, rowH = 16, headerH = 26;
+  const ML = 40, MR = 40, rowH = 16, headerH = 22;
   const tableW = width - ML - MR;
   let y = height - 30;
 
@@ -5677,7 +5686,7 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
   y -= 20;
 
   // Calcular anchos de columna — con hints opcionales por header
-  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Fechas rendidas', 'Nota Final'];
+  const SHORT_COLS = ['P', 'A', 'Presentes', '%', 'Total Presentes', '% Asistencia', 'Nota', 'Estado', 'Promedio', 'Presentaciones', 'Nota Final'];
   const NOMBRE_WIDTH = dynamicNombre ? null : 120;
   const nombreIdx = headers.findIndex(h => h.toLowerCase().includes('apellido') && h.toLowerCase().includes('nombre'));
 
@@ -5709,110 +5718,45 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
     return isShort ? i : -1;
   }).filter(i => i >= 0));
 
-  // Detectar encabezados que deben mostrarse en dos líneas
-  // Patrón: "Xera Fecha Nota" → ["Xera Fecha", "Nota"] o "Xera Fecha Estado" → ["Xera Fecha", "Estado"]
-  const splitHeader = (h) => {
-    const keywords = ['Nota', 'Estado'];
-    for (const kw of keywords) {
-      if (h.endsWith(' ' + kw) && h.length > kw.length + 1) {
-        return [h.slice(0, h.length - kw.length - 1), kw];
-      }
-    }
-    return null; // no split
-  };
-
   // Encabezados de columna
   checkY(headerH + 4);
   page.drawRectangle({ x:ML, y:y-headerH+4, width:tableW, height:headerH, color:NAVY });
   let x = ML;
   headers.forEach((h, i) => {
-    const colW   = scaled[i];
-    const parts  = splitHeader(h);
-    if (parts) {
-      // Dos líneas centradas
-      const [line1, line2] = parts;
-      const t1 = sanitizePdf(line1);
-      const t2 = sanitizePdf(line2);
-      const w1 = t1.length * 4;
-      const w2 = t2.length * 4;
-      page.drawText(t1, { x: x + Math.max(2, (colW - w1) / 2), y: y-headerH+16, font:fontBold, size:8, color:WHITE });
-      page.drawText(t2, { x: x + Math.max(2, (colW - w2) / 2), y: y-headerH+7,  font,          size:8, color:rgb(0.75,0.85,1) });
-    } else {
-      const txt  = sanitizePdf(h);
-      let xPos   = x + 4;
-      if (SHORT_COLS_IDX.has(i)) {
-        const textW = txt.length * 4.5;
-        xPos = x + Math.max(4, (colW - textW) / 2);
-      }
-      page.drawText(txt, { x:xPos, y:y-headerH+10, font:fontBold, size:8, color:WHITE });
+    const txt  = sanitizePdf(h);
+    const colW = scaled[i];
+    let xPos   = x + 4;
+    if (SHORT_COLS_IDX.has(i)) {
+      const textW = txt.length * 4.5;
+      xPos = x + Math.max(4, (colW - textW) / 2);
     }
+    page.drawText(txt, { x:xPos, y:y-headerH+10, font:fontBold, size:8, color:WHITE });
     x += colW;
   });
   y -= headerH + 4;
 
-  // Colores para resultados
-  const RESULT_COLORS = {
-    'Aprobado':    rgb(0.10, 0.47, 0.21),
-    'Aprobado*':   rgb(0.10, 0.47, 0.21),
-    'Promocion':   rgb(0.36, 0.18, 0.56),
-    'Desaprobado': rgb(0.69, 0.13, 0.19),
-    'Ausente':     rgb(0.55, 0.55, 0.55),
-    'En curso':    rgb(0.00, 0.33, 0.65),
-  };
-  const getResultColor = (txt) => {
-    for (const [key, col] of Object.entries(RESULT_COLORS)) {
-      if (txt === key) return col;
-    }
-    return null;
-  };
-
-  // Filas — altura doble para columna de nombre (apellido / nombre en dos líneas)
-  const rowHNormal = rowH;
-  const rowHNombre = rowH + 8; // más alto para dos líneas
-
+  // Filas
   rows.forEach((row, ri) => {
-    // Detectar si la celda de nombre tiene coma (apellido, nombre)
-    const nombreCell = nombreIdx >= 0 ? sanitizePdf(row[nombreIdx] || '') : '';
-    const tieneDosParts = nombreCell.includes(',');
-    const rowHActual = tieneDosParts ? rowHNombre : rowHNormal;
-
-    checkY(rowHActual + 2);
+    checkY();
     const bg = ri%2===0 ? rgb(0.97,0.97,0.99) : WHITE;
-    page.drawRectangle({ x:ML, y:y-rowHActual+4, width:tableW, height:rowHActual, color:bg });
+    page.drawRectangle({ x:ML, y:y-rowH+4, width:tableW, height:rowH, color:bg });
     x = ML;
     row.forEach((cell, i) => {
-      const txt  = sanitizePdf(cell);
-      const colW = scaled[i];
-
-      if (i === nombreIdx && tieneDosParts) {
-        // Dibujar apellido arriba y nombre abajo, centrados verticalmente
-        const commaIdx = txt.indexOf(',');
-        const apellido = txt.slice(0, commaIdx).trim();
-        const nombre   = txt.slice(commaIdx + 1).trim();
-        const maxChars = Math.floor(colW / 4.5);
-        const dispAp   = apellido.length > maxChars ? apellido.slice(0, maxChars-1)+'...' : apellido;
-        const dispNom  = nombre.length > maxChars   ? nombre.slice(0, maxChars-1)+'...'   : nombre;
-        const midY     = y - rowHActual / 2 + 4;
-        page.drawText(dispAp,  { x:x+4, y:midY + 4,  font:fontBold, size:8.5, color:rgb(0.1,0.1,0.1) });
-        page.drawText(dispNom, { x:x+4, y:midY - 5,  font,          size:7.5, color:rgb(0.35,0.35,0.35) });
-      } else {
-        const maxChars = Math.floor(colW / 5);
-        const display  = txt.length > maxChars ? txt.slice(0,maxChars-1)+'...' : txt;
-        let xPos = x + 4;
-        if (SHORT_COLS_IDX.has(i)) {
-          const textW = display.length * 4.5;
-          xPos = x + Math.max(4, (colW - textW) / 2);
-        }
-        const centerY     = y - rowHActual + 4 + (rowHActual - 4) / 2 - 3;
-        const resultColor = getResultColor(display);
-        const textColor   = resultColor || rgb(0.1,0.1,0.1);
-        const textFont    = resultColor ? fontBold : font;
-        page.drawText(display, { x:xPos, y:centerY, font:textFont, size:7.5, color:textColor });
+      const txt      = sanitizePdf(cell);
+      const colW     = scaled[i];
+      const maxChars = Math.floor(colW / 5);
+      const display  = txt.length > maxChars ? txt.slice(0,maxChars-1)+'...' : txt;
+      let xPos = x + 4;
+      if (SHORT_COLS_IDX.has(i)) {
+        // Centrar texto en la columna
+        const textW = display.length * 4.5;
+        xPos = x + Math.max(4, (colW - textW) / 2);
       }
+      page.drawText(display, { x:xPos, y:y-rowH+8, font, size:7.5, color:rgb(0.1,0.1,0.1) });
       x += colW;
     });
-    page.drawRectangle({ x:ML, y:y-rowHActual+4, width:tableW, height:0.5, color:rgb(0.88,0.88,0.92) });
-    y -= rowHActual;
+    page.drawRectangle({ x:ML, y:y-rowH+4, width:tableW, height:0.5, color:rgb(0.88,0.88,0.92) });
+    y -= rowH;
   });
 
   // Nota al pie — texto corrido fuera de la tabla
@@ -5993,7 +5937,7 @@ function exportConsolidadoParcial(comId, parcial, fmt='xlsx') {
 
   const titulo    = 'Resultado Consolidado de Parcial';
   const subtitulo = `${materia?.nombre||''} · ${com?.nombre||''} · Ciclo ${año} · ${parcial}`;
-  const headers   = ['Apellido y Nombre', 'Documento', 'Nota Final', 'Estado', 'Fechas rendidas'];
+  const headers   = ['Apellido y Nombre', 'Documento', 'Nota Final', 'Estado', 'Presentaciones'];
 
   const rows = alumnos.map(email => {
     const coms = getComisionesMateriaAlumno(email, materiaId, año);
@@ -6003,20 +5947,17 @@ function exportConsolidadoParcial(comId, parcial, fmt='xlsx') {
       for (const com2 of coms) {
         const rec = parciales[com2.id]?.[parcial]?.[f]?.[email];
         if (!rec) continue;
-        // Contar como presentación cualquier estado que no sea ausente
-        if (rec.estado && rec.estado !== 'ausente') presentaciones++;
         if (rec.estado==='aprobado'||rec.estado==='promocion') {
           notaFinal = rec.nota; estadoFinal = rec.estado==='promocion'?'Promocion':'Aprobado';
         } else if (rec.estado==='desaprobado') {
-          notaFinal = rec.nota; estadoFinal = 'Desaprobado';
+          notaFinal = rec.nota; estadoFinal = 'Desaprobado'; presentaciones++;
         }
         break;
       }
     });
     const entry = Object.entries(ENROLLED_STUDENTS).find(([,s]) => s.email === email);
     const doc   = entry?.[1]?.doc || '—';
-    const notaDisplay = notaFinal ?? '—';
-    return [STUDENT_NAMES[email]||email, doc, notaDisplay, estadoFinal, presentaciones || '—'];
+    return [STUDENT_NAMES[email]||email, doc, notaFinal??'—', estadoFinal, presentaciones];
   });
 
   const nombre = `Consolidado_${materia?.nombre||''}_${parcial}`.replace(/ /g,'_');
@@ -6333,25 +6274,8 @@ function exportResultadoGlobal(comId, fmt='xlsx') {
       const reg = NOMBRES_FECHAS.some(f =>
         coms.some(com2 => parciales[com2.id]?.[p]?.[f]?.[email]!==undefined)
       );
-      // Contar fechas cargadas del parcial
-      const fechasCargadas = NOMBRES_FECHAS.filter(f =>
-        coms.some(com2 => {
-          const d = parciales[com2.id]?.[p]?.[f];
-          return d && Object.keys(d).some(k => !k.startsWith('_'));
-        })
-      ).length;
-      const todasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
-      if (pres >= 3) return 'desaprobado';
-      if (reg && todasAgotadas) {
-        const tuvoPresencia = NOMBRES_FECHAS.some(f =>
-          coms.some(com2 => {
-            const e = parciales[com2.id]?.[p]?.[f]?.[email]?.estado;
-            return e && e !== 'ausente';
-          })
-        );
-        return tuvoPresencia ? 'desaprobado' : 'ausente';
-      }
-      if (reg) return 'en_curso';
+      if (pres>=3) return 'desaprobado';
+      if (reg)     return 'en_curso';
       return 'ausente';
     });
 
@@ -6652,12 +6576,12 @@ function confirmReassign() {
 }
 
 // close reassign modal on overlay click
-document.getElementById('modal-reassign').dataset.closable='true'; document.getElementById('modal-reassign')._closeModal=function(){closeReassignModal()};
+document.getElementById('modal-reassign').addEventListener('click', function(e){ if(e.target===this) closeReassignModal(); });
 document.getElementById('field-fecha').value = new Date().toISOString().split('T')[0];
 
 // close modals on overlay click
-document.getElementById('modal-cargar').dataset.closable='true'; document.getElementById('modal-cargar')._closeModal=function(){closeModal()};
-document.getElementById('modal-reject').dataset.closable='true'; document.getElementById('modal-reject')._closeModal=function(){closeRejectModal()};
+document.getElementById('modal-cargar').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+document.getElementById('modal-reject').addEventListener('click', function(e){ if(e.target===this) closeRejectModal(); });
 
 // ── ATTENDANCE ────────────────────────────────────────────
 let qrInterval = null;
@@ -6903,7 +6827,7 @@ function confirmDeleteRegistro() {
   const today = new Date().toISOString().split('T')[0];
   renderAttendanceView(deleteComId, today, 'manual');
 }
-document.getElementById('modal-delete-registro').dataset.closable='true'; document.getElementById('modal-delete-registro')._closeModal=function(){closeDeleteRegistroModal()};
+document.getElementById('modal-delete-registro').addEventListener('click', function(e){ if(e.target===this) closeDeleteRegistroModal(); });
 
 function showSavedIndicator() {
   const el = document.getElementById('attendance-saved-indicator');
@@ -7005,7 +6929,7 @@ function closeQrModal() {
   renderAttendanceView(activeQrComision, activeQrDate, 'manual');
 }
 
-document.getElementById('modal-qr').dataset.closable='true'; document.getElementById('modal-qr')._closeModal=function(){closeQrModal()};
+document.getElementById('modal-qr').addEventListener('click', function(e){ if(e.target===this) closeQrModal(); });
 
 // ── ACADEMIC MANAGEMENT ───────────────────────────────────
 let selectedAcademicYear = new Date().getFullYear();
@@ -7356,7 +7280,7 @@ function confirmImport() {
   showToast(`Padrón actualizado: ${added} nuevos, ${updated} actualizados`);
 }
 
-document.getElementById('modal-import').dataset.closable='true'; document.getElementById('modal-import')._closeModal=function(){closeImportModal()};
+document.getElementById('modal-import').addEventListener('click', function(e){ if(e.target===this) closeImportModal(); });
 
 function promptAddMateria() { openMateriaModal(); }
 function promptAddComision() { openComisionModal(); }
@@ -7462,7 +7386,7 @@ function confirmAddMateria() {
     showToast('Materia agregada correctamente');
   }
 }
-document.getElementById('modal-nueva-materia').dataset.closable='true'; document.getElementById('modal-nueva-materia')._closeModal=function(){closeMateriaModal()};
+document.getElementById('modal-nueva-materia').addEventListener('click', function(e){ if(e.target===this) closeMateriaModal(); });
 
 function populateAñoSelect(selectedAño) {
   const years = getAvailableYears();
@@ -7576,7 +7500,7 @@ function confirmAddComision() {
     showToast('Comisión agregada correctamente');
   }
 }
-document.getElementById('modal-nueva-comision').dataset.closable='true'; document.getElementById('modal-nueva-comision')._closeModal=function(){closeComisionModal()};
+document.getElementById('modal-nueva-comision').addEventListener('click', function(e){ if(e.target===this) closeComisionModal(); });
 
 // Gestionar alumnos modal
 let gestionComisionId = null;
@@ -7711,24 +7635,23 @@ function parseAlumno(raw) {
 }
 
 function processImportRows(data) {
+  // data: array de objetos con las filas del archivo
+  // Busca columnas por nombre (insensible a mayúsculas)
   if (data.length === 0) return [];
-  const alumnoKey = Object.keys(data[0]).find(k => k.trim().toLowerCase().includes('alumno'));
-  const docKey    = Object.keys(data[0]).find(k => k.trim().toLowerCase().includes('documento') || k.trim().toLowerCase().includes('dni'));
-  const legajoKey = Object.keys(data[0]).find(k => k.trim().toLowerCase().includes('legajo'));
-  const emailKey  = Object.keys(data[0]).find(k => k.trim().toLowerCase().includes('email') || k.trim().toLowerCase().includes('mail'));
+  const headers = Object.keys(data[0]).map(h => h.trim().toLowerCase());
+  const alumnoKey   = Object.keys(data[0]).find(k => k.trim().toLowerCase().includes('alumno'));
+  const docKey      = Object.keys(data[0]).find(k => k.trim().toLowerCase().includes('documento') || k.trim().toLowerCase().includes('dni'));
 
-  if (!alumnoKey && !docKey) return null;
+  if (!alumnoKey && !docKey) return null; // columnas no encontradas
 
   const rows = [];
   data.forEach(row => {
     const rawDoc    = docKey    ? String(row[docKey]    || '').trim() : '';
     const rawAlumno = alumnoKey ? String(row[alumnoKey] || '').trim() : '';
-    const rawLegajo = legajoKey ? String(row[legajoKey] || '').trim() : '';
-    const rawEmail  = emailKey  ? String(row[emailKey]  || '').trim().toLowerCase() : '';
     const dni = parseDni(rawDoc);
-    if (!rawAlumno && !rawLegajo) return;
+    if (!dni) return;
     const { apellido, nombre } = parseAlumno(rawAlumno);
-    rows.push({ dni: dni || '', nombre, apellido, legajo: rawLegajo || '', email: rawEmail || null });
+    rows.push({ dni, nombre, apellido });
   });
   return rows;
 }
@@ -7811,47 +7734,32 @@ function confirmComisionImport() {
   const upsertComAlumnos = [];
 
   importedRows.forEach(r => {
-    // Usar legajo del archivo si existe, sino usar DNI normalizado
     const legajoNorm = normalizeLegajo(r.legajo || r.dni || '');
-    if (!legajoNorm) return;
-
     if (!ENROLLED_STUDENTS[legajoNorm]) {
-      ENROLLED_STUDENTS[legajoNorm] = {
-        nombre: r.nombre, apellido: r.apellido,
-        email: r.email || null, legajo: legajoNorm, doc: r.dni || ''
-      };
+      ENROLLED_STUDENTS[legajoNorm] = { nombre: r.nombre, apellido: r.apellido, email: null, legajo: r.legajo || r.dni };
       upsertAlumnos.push({
-        legajo: legajoNorm, legajo_completo: r.legajo || legajoNorm,
-        nombre: r.nombre, apellido: r.apellido,
-        email: r.email || null, dni: r.dni || null
+        legajo: legajoNorm, legajo_completo: r.legajo || r.dni,
+        nombre: r.nombre, apellido: r.apellido, email: null, dni: r.dni || null
       });
     }
-
-    const email = ENROLLED_STUDENTS[legajoNorm]?.email || `legajo_${legajoNorm}`;
+    const email = ENROLLED_STUDENTS[legajoNorm].email || `legajo_${legajoNorm}`;
     if (!STUDENT_NAMES[email]) STUDENT_NAMES[email] = `${r.apellido}, ${r.nombre}`;
-
     if (!comision.alumnos.includes(email)) {
       comision.alumnos.push(email);
       added++;
-      upsertComAlumnos.push({ comision_id: gestionComisionId, legajo: legajoNorm });
+      if (legajoNorm) upsertComAlumnos.push({ comision_id: gestionComisionId, legajo: legajoNorm });
     }
   });
 
   // Guardar en Supabase
-  const saveToSupabase = async () => {
-    if (upsertAlumnos.length > 0) {
-      const { error } = await _supabase.from('alumnos')
-        .upsert(upsertAlumnos, { onConflict: 'legajo' });
-      if (error) console.warn('Error importando alumnos a padrón:', error);
-    }
-    if (upsertComAlumnos.length > 0) {
-      const { error } = await _supabase.from('comision_alumnos')
-        .upsert(upsertComAlumnos, { onConflict: 'comision_id,legajo' });
-      if (error) console.warn('Error importando alumnos a comisión:', error);
-      else console.log(`${upsertComAlumnos.length} alumnos guardados en comision_alumnos`);
-    }
-  };
-  saveToSupabase();
+  if (upsertAlumnos.length > 0) {
+    _supabase.from('alumnos').upsert(upsertAlumnos, { onConflict: 'legajo' })
+      .then(({ error }) => { if (error) console.warn('Error importando alumnos a padrón:', error); });
+  }
+  if (upsertComAlumnos.length > 0) {
+    _supabase.from('comision_alumnos').upsert(upsertComAlumnos, { onConflict: 'comision_id,legajo' })
+      .then(({ error }) => { if (error) console.warn('Error importando alumnos a comisión:', error); });
+  }
 
   document.getElementById('modal-comision-sub').textContent = `${comision.alumnos.length} alumno/s inscripto/s`;
   showToast(`${added} alumno/s agregados a la comisión`);
