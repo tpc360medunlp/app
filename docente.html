@@ -55,14 +55,13 @@
     font-family: var(--font);
     background: var(--gray-50);
     color: var(--gray-800);
-    margin: 0;
+    min-height: 100vh;
     font-size: 15px;
     line-height: 1.6;
   }
 
   /* ── SCREENS ── */
-  .screen { display: none; }
-  #screen-login.active { min-height: 100vh; }
+  .screen { display: none; min-height: 100vh; }
   .screen.active { display: block; }
 
   /* ── LOGIN ── */
@@ -160,16 +159,16 @@
   }
 
   /* ── APP SHELL ── */
-  /* App shell — flexbox puro */
-  #screen-app { display: flex; flex-direction: column; }
-  .app-shell { display: flex; flex: 1; overflow: hidden; min-height: 100vh; }
+  .app-shell { display: flex; min-height: 100vh; }
 
-  /* sidebar — ya NO usa position:fixed */
+  /* sidebar */
   .sidebar {
     width: 240px; flex-shrink: 0;
     background: var(--navy);
     display: flex; flex-direction: column;
     padding: 1.5rem 0;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100;
     transition: width 0.25s ease;
     overflow: hidden;
   }
@@ -259,12 +258,13 @@
   .btn-logout:hover { color: rgba(255,255,255,0.7); }
   .btn-logout svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* main content — flex:1 en lugar de margin-left */
+  /* main content */
   .main-content {
+    margin-left: 240px;
     flex: 1;
     padding: 2rem 2.5rem;
-    overflow-y: auto;
-    min-height: 0;
+    min-height: 100vh;
+    transition: margin-left 0.25s ease;
   }
 
   /* page header */
@@ -578,61 +578,26 @@
   .sidebar-overlay.open { display: block; }
 
   @media (max-width: 768px) {
-    /* Contener SOLO la app screen (no el login) */
-    #screen-app.active {
-      height: 100dvh !important;
-      min-height: 0 !important;
-      overflow: hidden !important;
-      display: flex !important;
-      flex-direction: column !important;
+    .hamburger-btn { display: flex; }
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease, width 0.25s ease;
+      width: 240px !important;
     }
-    .app-shell {
-      flex-direction: column-reverse !important;
-      flex: 1 !important;
-      overflow: hidden !important;
-      min-height: 0 !important;
-    }
+    .sidebar.mobile-open { transform: translateX(0); }
+    .sidebar.collapsed { width: 240px !important; transform: translateX(-100%); }
+    .sidebar.mobile-open .sidebar-logo-text,
+    .sidebar.mobile-open .sidebar-logo-sub,
+    .sidebar.mobile-open .nav-item span,
+    .sidebar.mobile-open .nav-section-label,
+    .sidebar.mobile-open .user-name,
+    .sidebar.mobile-open .user-role { display: block; }
+    .sidebar.mobile-open .sidebar-collapse-btn { display: none; }
+    .sidebar-logo { padding-top: 3.5rem !important; }
     .main-content {
       margin-left: 0 !important;
-      padding: 1rem 1rem 1.5rem !important;
-      overflow-y: auto !important;
-      flex: 1 !important;
-      min-height: 0 !important;
-      height: auto !important;
+      padding: 4rem 1rem 1.5rem;
     }
-    .hamburger-btn { display: none !important; }
-    .sidebar-overlay { display: none !important; }
-    .sidebar {
-      width: 100% !important; height: 56px !important;
-      flex-direction: row !important;
-      padding: 0 !important; overflow: visible !important;
-      border-top: 1px solid rgba(255,255,255,0.1) !important;
-      flex-shrink: 0 !important;
-    }
-    .sidebar.collapsed { width: 100% !important; }
-    .sidebar-nav { flex-direction: row !important; padding: 0 !important; gap: 0 !important; flex: 1 !important; }
-    .sidebar-logo, .sidebar-collapse-btn, .sidebar-user, .nav-section-label { display: none !important; }
-    .nav-item {
-      flex: 1 !important; flex-direction: column !important;
-      justify-content: center !important; align-items: center !important;
-      gap: 3px !important; padding: 6px 2px 4px !important;
-      border-radius: 0 !important; border-left: none !important;
-      border-top: 3px solid transparent !important;
-      font-size: 9px !important; min-width: 0 !important; height: 56px !important;
-    }
-    .nav-item.active {
-      border-left-color: transparent !important;
-      border-top-color: var(--teal-mid) !important;
-      background: rgba(255,255,255,0.05) !important;
-    }
-    .nav-item svg { width: 20px !important; height: 20px !important; }
-    .nav-item span { display: block !important; font-size: 9px !important; }
-    #aulas-badge-teacher, #aulas-badge-coord { display: none !important; }
-    .mobile-drawer-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(11,31,58,0.5); z-index: 499;
-    }
-    .mobile-drawer-overlay.open { display: block; }
     .page-header { flex-direction: column; gap: 10px; }
     .page-title { font-size: 18px; }
     .stats-row { grid-template-columns: 1fr 1fr; }
@@ -640,7 +605,6 @@
     .area-header { flex-wrap: wrap; gap: 8px; }
     .skill-row { flex-wrap: wrap; }
     .validation-card { flex-direction: column; }
-    .modal { max-height: 92vh; overflow-y: auto; }
   }
 </style>
 </head>
@@ -1681,20 +1645,6 @@
   </div>
 </div>
 
-<!-- MOBILE DRAWER OVERLAY -->
-<div class="mobile-drawer-overlay" id="mobile-drawer-overlay" onclick="closeMobileDrawer()"></div>
-
-<!-- MOBILE DRAWER (elemento dedicado, independiente del sidebar) -->
-<div id="mobile-drawer" style="
-  display:none;
-  position:fixed;top:0;left:0;bottom:0;
-  width:270px;height:100%;
-  background:var(--navy);
-  flex-direction:column;
-  z-index:600;
-  overflow-y:auto;overflow-x:hidden;
-"></div>
-
 <!-- TOAST -->
 <div class="toast" id="toast">
   <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2190,10 +2140,12 @@ let selectedEvalValue = null;
 let rejectingPendingId = null;
 
 function toggleSidebar() {
+  // Solo en desktop
   if (window.innerWidth <= 768) return;
   const sidebar = document.getElementById('main-sidebar');
+  const main    = document.querySelector('.main-content');
   sidebar.classList.toggle('collapsed');
-  // Flexbox maneja el layout automáticamente — no se necesita margin-left
+  main.style.marginLeft = sidebar.classList.contains('collapsed') ? '60px' : '240px';
 }
 
 function toggleMobileSidebar() {
@@ -2487,7 +2439,7 @@ async function enterApp() {
     document.getElementById('user-avatar-sidebar').textContent = currentUser?.initials || '?';
 
   // Los datos ya fueron cargados en onAuthStateChange — no recargar
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
 
   if (currentRole === 'student') {
     switchStudentView('student');
@@ -2529,113 +2481,6 @@ function doLogout() {
 
 // ── SIDEBAR ──────────────────────────────────────────────
 
-
-// ── MOBILE NAV ──────────────────────────────────────────────
-function renderMobileNav() {
-  if (window.innerWidth > 768) return;
-
-  const nav = document.getElementById('sidebar-nav');
-  if (!nav) return;
-
-  // Obtener todos los nav-items actualmente en el sidebar
-  const allItems = Array.from(nav.querySelectorAll('.nav-item[id]'));
-  if (allItems.length === 0) return;
-
-  // Separar los visibles (4) del resto (para "Más")
-  const MAX_VISIBLE = 4;
-  const visible = allItems.slice(0, MAX_VISIBLE);
-  const extras  = allItems.slice(MAX_VISIBLE);
-
-  // Ocultar los extras de la barra (siguen en el DOM para el drawer)
-  extras.forEach(el => el.style.display = 'none');
-  visible.forEach(el => el.style.display = '');
-
-  // Agregar botón "Más" si hay extras y aún no existe
-  if (extras.length > 0 && !nav.querySelector('.nav-item-mas')) {
-    const mas = document.createElement('button');
-    mas.className = 'nav-item nav-item-mas';
-    mas.onclick = openMobileDrawer;
-    mas.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg><span>Más</span>`;
-    nav.appendChild(mas);
-  }
-}
-
-function openMobileDrawer() {
-  if (window.innerWidth > 768) return;
-  const drawer  = document.getElementById('mobile-drawer');
-  const overlay = document.getElementById('mobile-drawer-overlay');
-  const nav     = document.getElementById('sidebar-nav');
-  const sidebar = document.getElementById('main-sidebar');
-  if (!drawer) return;
-
-  // Clonar el contenido del sidebar en el drawer
-  const logo = sidebar?.querySelector('.sidebar-logo');
-  const user = sidebar?.querySelector('.sidebar-user');
-  let html = '';
-
-  // Logo
-  if (logo) html += `<div style="display:flex;align-items:center;gap:10px;padding:0 1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.08)">${logo.innerHTML}</div>`;
-
-  // Nav items (todos, incluyendo los ocultos)
-  html += '<div style="flex:1;padding:1rem 0.75rem;display:flex;flex-direction:column;gap:2px">';
-  Array.from(nav.querySelectorAll('.nav-item:not(.nav-item-mas)')).forEach(item => {
-    const isActive = item.classList.contains('active');
-    const onclick  = item.getAttribute('onclick') || '';
-    html += `<button onclick="closeMobileDrawer();${onclick}"
-      style="display:flex;align-items:center;gap:12px;padding:10px 12px;
-      border-radius:8px;cursor:pointer;font-size:15px;font-weight:400;
-      color:${isActive ? 'var(--teal-mid)' : 'rgba(255,255,255,0.55)'};
-      border:none;background:${isActive ? 'rgba(0,168,150,0.18)' : 'none'};
-      width:100%;text-align:left;font-family:var(--font);
-      ${isActive ? 'border-left:3px solid var(--teal-mid);' : 'border-left:3px solid transparent;'}">
-      ${item.innerHTML}
-    </button>`;
-  });
-  html += '</div>';
-
-  // Usuario
-  if (user) html += `<div style="padding:1rem 1.25rem 0;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:10px">${user.innerHTML}</div>`;
-
-  drawer.innerHTML = html;
-  drawer.style.display = 'flex';
-  overlay?.classList.add('open');
-}
-
-function closeMobileDrawer() {
-  const drawer  = document.getElementById('mobile-drawer');
-  const overlay = document.getElementById('mobile-drawer-overlay');
-  if (drawer) drawer.style.display = 'none';
-  overlay?.classList.remove('open');
-  // Remover clase si quedó
-  document.getElementById('main-sidebar')?.classList.remove('mobile-drawer-active');
-}
-
-function restoreSidebarDesktop() {
-  const nav = document.getElementById('sidebar-nav');
-  const sidebar = document.getElementById('main-sidebar');
-  if (!nav || !sidebar) return;
-  // Limpiar inline styles
-  sidebar.style.cssText = '';
-  nav.style.cssText = '';
-  const logo = sidebar.querySelector('.sidebar-logo');
-  const user = sidebar.querySelector('.sidebar-user');
-  if (logo) logo.style.display = '';
-  if (user) user.style.display = '';
-  // Restaurar todos los items y quitar "Más"
-  Array.from(nav.querySelectorAll('.nav-item')).forEach(el => el.style.display = '');
-  const mas = nav.querySelector('.nav-item-mas');
-  if (mas) mas.remove();
-  document.getElementById('mobile-drawer-overlay')?.classList.remove('open');
-}
-
-// Listener de resize para manejar cambio desktop ↔ mobile
-window.addEventListener('resize', () => {
-  if (window.innerWidth > 768) {
-    restoreSidebarDesktop();
-  } else {
-    renderMobileNav();
-  }
-});
 
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
@@ -2756,7 +2601,6 @@ function renderSidebar() {
 }
 
 function switchCoordView(section) {
-  if (window.innerWidth <= 768) closeMobileDrawer();
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const viewEl = document.getElementById('view-coord-' + section);
@@ -2776,7 +2620,6 @@ function switchCoordView(section) {
 }
 
 function switchStudentView(view) {
-  if (window.innerWidth <= 768) closeMobileDrawer();
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
@@ -4285,7 +4128,6 @@ function renderStudentNotasView() {
 }
 
 function switchTeacherView(view) {
-  if (window.innerWidth <= 768) closeMobileDrawer();
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
@@ -5111,7 +4953,7 @@ function confirmApprove() {
   const card = document.getElementById('vc-' + approvingPendingId);
   if (card) card.style.opacity = '0.4';
   setTimeout(() => renderTeacherView(), 400);
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   showToast('Práctica validada correctamente');
 }
 
@@ -5156,7 +4998,7 @@ function confirmReject() {
   }
   closeRejectModal();
   renderTeacherView();
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   showToast('Práctica devuelta con observaciones');
 }
 
@@ -11117,7 +10959,7 @@ function toggleStudentView(key) {
     { clave: 'studentViewConfig', valor: studentViewConfig },
     { onConflict: 'clave' }
   ).then(({ error }) => { if (error) console.warn('Error guardando config alumno:', error); });
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   // Refrescar vista activa si corresponde
   const certContainer = document.getElementById('student-certificados-container');
   if (certContainer && document.getElementById('view-student-certificados')?.classList.contains('active')) {
@@ -11146,7 +10988,7 @@ function toggleTeacherView(key) {
     { clave: 'teacherViewConfig', valor: teacherViewConfig },
     { onConflict: 'clave' }
   ).then(({ error }) => { if (error) console.warn('Error guardando config docente:', error); });
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   renderConfigView();
 }
 
