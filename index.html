@@ -55,13 +55,14 @@
     font-family: var(--font);
     background: var(--gray-50);
     color: var(--gray-800);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     font-size: 15px;
     line-height: 1.6;
   }
 
   /* ── SCREENS ── */
-  .screen { display: none; min-height: 100vh; }
+  .screen { display: none; }
   .screen.active { display: block; }
 
   /* ── LOGIN ── */
@@ -160,7 +161,7 @@
 
   /* ── APP SHELL ── */
   /* App shell — flexbox puro, igual que MODI ROSSI */
-  #screen-app { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  #screen-app { height: 100%; display: flex; flex-direction: column; }
   .app-shell { display: flex; flex: 1; overflow: hidden; }
 
   /* sidebar — ya NO usa position:fixed */
@@ -577,45 +578,27 @@
   .sidebar-overlay.open { display: block; }
 
   @media (max-width: 768px) {
-    /* MODI ROSSI pattern: columna invertida, sidebar abajo */
-    #screen-app {
-      height: 100dvh !important;
-      min-height: 0 !important;
-      overflow: hidden !important;
-      display: flex !important;
-      flex-direction: column !important;
-    }
-    .app-shell { flex-direction: column-reverse; flex: 1; overflow: hidden; }
+    body { overflow: auto; }
+    .app-shell { flex-direction: column-reverse; }
     .hamburger-btn { display: none !important; }
     .sidebar-overlay { display: none !important; }
-
-    /* Sidebar → barra inferior */
     .sidebar {
-      width: 100% !important;
-      height: 56px !important;
+      width: 100% !important; height: 56px !important;
       flex-direction: row !important;
-      padding: 0 !important;
-      overflow: visible !important;
+      padding: 0 !important; overflow: visible !important;
       border-top: 1px solid rgba(255,255,255,0.1) !important;
       flex-shrink: 0 !important;
     }
     .sidebar.collapsed { width: 100% !important; }
-
-    .sidebar-nav {
-      flex-direction: row !important;
-      padding: 0 !important; gap: 0 !important;
-      flex: 1 !important;
-    }
-    .sidebar-logo, .sidebar-collapse-btn,
-    .sidebar-user, .nav-section-label { display: none !important; }
-
+    .sidebar-nav { flex-direction: row !important; padding: 0 !important; gap: 0 !important; flex: 1 !important; }
+    .sidebar-logo, .sidebar-collapse-btn, .sidebar-user, .nav-section-label { display: none !important; }
     .nav-item {
       flex: 1 !important; flex-direction: column !important;
       justify-content: center !important; align-items: center !important;
       gap: 3px !important; padding: 6px 2px 4px !important;
-      border-radius: 0 !important; font-size: 9px !important;
-      min-width: 0 !important; height: 56px !important;
-      border-left: none !important; border-top: 3px solid transparent !important;
+      border-radius: 0 !important; border-left: none !important;
+      border-top: 3px solid transparent !important;
+      font-size: 9px !important; min-width: 0 !important; height: 56px !important;
     }
     .nav-item.active {
       border-left-color: transparent !important;
@@ -625,62 +608,12 @@
     .nav-item svg { width: 20px !important; height: 20px !important; }
     .nav-item span { display: block !important; font-size: 9px !important; }
     #aulas-badge-teacher, #aulas-badge-coord { display: none !important; }
-
-    /* main-content */
-    .main-content {
-      padding: 1rem 1rem 1.5rem !important;
-      overflow-y: auto;
-      flex: 1;
-      min-height: 0;
-    }
-
-    /* Drawer (Más) — posición absoluta sobre la barra */
+    .main-content { margin-left: 0 !important; padding: 1rem 1rem 1.5rem !important; }
     .mobile-drawer-overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(11,31,58,0.5); z-index: 499;
     }
     .mobile-drawer-overlay.open { display: block; }
-
-    /* Drawer — specificità alta para override del media query */
-    .sidebar.mobile-drawer-active {
-      position: fixed !important;
-      top: 0 !important; left: 0 !important;
-      right: auto !important; bottom: 0 !important;
-      width: 270px !important; height: 100vh !important;
-      flex-direction: column !important;
-      padding: 1.5rem 0 !important;
-      z-index: 500 !important;
-      overflow-y: auto !important; overflow-x: hidden !important;
-      border-top: none !important;
-    }
-    .sidebar.mobile-drawer-active .sidebar-logo { display: flex !important; padding-top: 0 !important; }
-    .sidebar.mobile-drawer-active .sidebar-user { display: flex !important; }
-    .sidebar.mobile-drawer-active .sidebar-nav {
-      flex-direction: column !important;
-      padding: 1rem 0.75rem !important;
-      gap: 2px !important; min-height: auto !important;
-    }
-    .sidebar.mobile-drawer-active .nav-section-label { display: block !important; }
-    .sidebar.mobile-drawer-active .nav-item {
-      flex-direction: row !important;
-      justify-content: flex-start !important;
-      border-left: 3px solid transparent !important;
-      border-top: none !important;
-      border-radius: 8px !important;
-      padding: 10px 12px !important;
-      height: auto !important; font-size: 15px !important;
-      gap: 12px !important;
-    }
-    .sidebar.mobile-drawer-active .nav-item.active {
-      border-left-color: var(--teal-mid) !important;
-      border-top-color: transparent !important;
-    }
-    .sidebar.mobile-drawer-active .nav-item svg { width: 18px !important; height: 18px !important; }
-    .sidebar.mobile-drawer-active .nav-item-mas { display: none !important; }
-    .sidebar.mobile-drawer-active #aulas-badge-teacher,
-    .sidebar.mobile-drawer-active #aulas-badge-coord { display: inline !important; }
-
-    #screen-app { overflow: hidden; }
     .page-header { flex-direction: column; gap: 10px; }
     .page-title { font-size: 18px; }
     .stats-row { grid-template-columns: 1fr 1fr; }
