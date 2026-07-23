@@ -577,23 +577,6 @@
   }
   .sidebar-overlay.open { display: block; }
 
-
-    .hamburger-btn { display: none !important; }
-    .sidebar { display: none !important; }
-    .main-content {
-      margin-left: 0 !important;
-      padding: 1rem 1rem 5rem !important;
-    }
-    .page-header { flex-direction: column; gap: 10px; }
-    .page-title { font-size: 18px; }
-    .stats-row { grid-template-columns: 1fr 1fr; }
-    .coord-grid { grid-template-columns: 1fr; }
-    .area-header { flex-wrap: wrap; gap: 8px; }
-    .skill-row { flex-wrap: wrap; }
-    .validation-card { flex-direction: column; }
-    .modal { max-height: 92vh; overflow-y: auto; }
-    #screen-app { overflow-x: hidden; }
-  }
   @media (max-width: 768px) {
     .hamburger-btn { display: flex; }
     .sidebar {
@@ -601,7 +584,15 @@
       transition: transform 0.25s ease, width 0.25s ease;
       width: 240px !important;
     }
+    .sidebar.mobile-open { transform: translateX(0); }
     .sidebar.collapsed { width: 240px !important; transform: translateX(-100%); }
+    .sidebar.mobile-open .sidebar-logo-text,
+    .sidebar.mobile-open .sidebar-logo-sub,
+    .sidebar.mobile-open .nav-item span,
+    .sidebar.mobile-open .nav-section-label,
+    .sidebar.mobile-open .user-name,
+    .sidebar.mobile-open .user-role { display: block; }
+    .sidebar.mobile-open .sidebar-collapse-btn { display: none; }
     .sidebar-logo { padding-top: 3.5rem !important; }
     .main-content {
       margin-left: 0 !important;
