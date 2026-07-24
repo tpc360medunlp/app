@@ -11,12 +11,40 @@
 <meta name="apple-mobile-web-app-title" content="TPC360">
 <meta name="theme-color" content="#0B1F3A">
 <title>TPC360 · Plataforma de Seguimiento Académico</title>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/docxtemplater@3.45.1/build/docxtemplater.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── CARGA DINÁMICA DE LIBRERÍAS PESADAS (solo cuando se usan) ──
+const _loadedScripts = new Map();
+function loadScript(src) {
+  if (_loadedScripts.has(src)) return _loadedScripts.get(src);
+  const promise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+    document.head.appendChild(s);
+  });
+  _loadedScripts.set(src, promise);
+  return promise;
+}
+async function ensureXLSX() {
+  if (typeof XLSX !== 'undefined') return;
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+}
+async function ensurePDFLib() {
+  if (typeof PDFLib !== 'undefined') return;
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js');
+}
+async function ensurePizZipDocx() {
+  if (typeof PizZip !== 'undefined' && typeof docxtemplater !== 'undefined') return;
+  await loadScript('https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js');
+  await loadScript('https://cdn.jsdelivr.net/npm/docxtemplater@3.45.1/build/docxtemplater.js');
+}
+async function ensureQRCode() {
+  if (typeof QRCode !== 'undefined') return;
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -5953,7 +5981,8 @@ function triggerDownload(blob, filename) {
 }
 
 // ── Excel builder ─────────────────────────────────────────
-function buildXlsx(titulo, subtitulo, headers, rows, sheetName = 'Datos') {
+async function buildXlsx(titulo, subtitulo, headers, rows, sheetName = 'Datos') {
+  await ensureXLSX();
   const XLSX = window.XLSX;
   const wb   = XLSX.utils.book_new();
 
@@ -6012,6 +6041,7 @@ function sanitizePdf(text) {
 }
 
 async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, landscape = false, dynamicNombre = false, footerNote = null) {
+  await ensurePDFLib();
   const { PDFDocument, rgb, StandardFonts } = PDFLib;
   const A4portrait  = [595.28, 841.89];
   const A4landscape = [841.89, 595.28];
@@ -6254,7 +6284,7 @@ async function buildPdf(titulo, subtitulo, headers, rows, membrete = null, lands
 
 // ── Export wrappers ───────────────────────────────────────
 async function exportarXlsx(titulo, subtitulo, headers, rows, nombre) {
-  const blob = buildXlsx(titulo, subtitulo, headers, rows, nombre);
+  const blob = await buildXlsx(titulo, subtitulo, headers, rows, nombre);
   triggerDownload(blob, exportFilename(nombre) + '.xlsx');
   showToast('Excel generado correctamente');
 }
@@ -7327,7 +7357,8 @@ function openQrModal(comId, date) {
   startQrIntervals(comId, date);
 }
 
-function renderQr() {
+async function renderQr() {
+  await ensureQRCode();
   const container = document.getElementById('qr-container');
   container.innerHTML = '';
   const token = generateQrToken(activeQrComision, activeQrDate);
@@ -7610,7 +7641,8 @@ function closeImportModal() {
 }
 
 let importedRows = [];
-function handleImportFile(input) {
+async function handleImportFile(input) {
+  await ensureXLSX();
   const file = input.files[0];
   if (!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
@@ -8136,7 +8168,8 @@ function showComisionImportPreview(rows) {
   document.getElementById('comision-import-error').style.display = 'none';
 }
 
-function handleComisionCsv(input) {
+async function handleComisionCsv(input) {
+  await ensureXLSX();
   const file = input.files[0];
   if (!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
@@ -8779,7 +8812,8 @@ function borrarMesa() {
   showToast('Resultados borrados');
 }
 
-function procesarExcelMesa(input) {
+async function procesarExcelMesa(input) {
+  await ensureXLSX();
   const file = input.files[0];
   if (!file) return;
   document.getElementById('mesa-file-label').textContent = file.name;
@@ -10754,6 +10788,7 @@ async function subirPlantillaAulas(input) {
 }
 
 async function descargarPlanillaAula(id) {
+  await ensurePizZipDocx();
   const sol = solicitudesAulas.find(s => s.id === id);
   if (!sol) return;
 
@@ -11735,6 +11770,7 @@ async function handleMembreteUpload(input, tab = 'parciales') {
 // renderStudentCertificadosView moved to bottom (with tabs support)
 
 async function previsualizarCertificado(tab = 'parciales') {
+  await ensurePDFLib();
   const campo = document.getElementById('field-texto-base');
   if (campo) {
     if (tab === 'parciales') certConfig.textoBase = campo.value;
@@ -11864,6 +11900,7 @@ async function previsualizarCertificado(tab = 'parciales') {
 }
 
 async function generarCertificado(comId, parcial, fechaParcial, email) {
+  await ensurePDFLib();
   const comision = COMISIONES.find(c => c.id === comId);
   const materia  = MATERIAS.find(m => m.id === comision?.materiaId);
   const rec      = parciales[comId]?.[parcial]?.[fechaParcial]?.[email];
@@ -12009,7 +12046,8 @@ function excelSerialToDate(serial) {
   return `${String(date.getUTCDate()).padStart(2,'0')}/${String(date.getUTCMonth()+1).padStart(2,'0')}/${date.getUTCFullYear()}`;
 }
 
-function handleCronogramaUpload(input, materiaId, periodo = 1) {
+async function handleCronogramaUpload(input, materiaId, periodo = 1) {
+  await ensureXLSX();
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -12786,6 +12824,7 @@ function confirmarRechazo() {
 document.getElementById('modal-rechazar-cert').dataset.closable='true'; document.getElementById('modal-rechazar-cert')._closeModal=function(){closeRechazarCertModal()};
 
 async function descargarCertFinal(id) {
+  await ensurePDFLib();
   const s = solicitudesCertFinales.find(s => s.id === id);
   if (!s) return;
   const materia = MATERIAS.find(m => m.id === s.materiaId);
