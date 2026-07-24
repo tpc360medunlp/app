@@ -615,25 +615,50 @@
   .mnav-btn span { white-space: nowrap; display: block; }
 
   #mobile-drawer-overlay {
-    display: none;
+    display: block;
     position: fixed; inset: 0;
     background: rgba(11,31,58,0.5);
-    z-index: 498;
+    z-index: 500;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease, visibility 0s linear 150ms;
   }
-  #mobile-drawer-overlay.open { display: block; }
+  #mobile-drawer-overlay.open {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 150ms ease, visibility 0s;
+  }
+  body.mobile-menu-open { overflow: hidden; touch-action: none; }
+  #mobile-bottom-sheet { touch-action: pan-y; }
   #mobile-bottom-sheet {
-    display: none;
+    display: flex;
     position: fixed;
-    bottom: 0; left: 0; right: 0;
+    left: 0; right: 0; bottom: 0;
     background: var(--navy);
-    z-index: 499;
+    z-index: 501;
     border-radius: 16px 16px 0 0;
     padding: 1rem 0 2rem;
     flex-direction: column;
-    max-height: 70vh;
+    max-height: 70dvh;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(100%);
+    transition: transform 180ms ease-out, opacity 150ms ease-out, visibility 0s linear 180ms;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
-  #mobile-bottom-sheet.open { display: flex; }
+  #mobile-bottom-sheet.open {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition: transform 180ms ease-out, opacity 150ms ease-out, visibility 0s;
+  }
   .msheet-handle {
     width: 36px; height: 4px;
     background: rgba(255,255,255,0.2);
@@ -661,7 +686,6 @@
       margin-left: 0 !important;
       padding: 1rem 1rem 5rem !important;
       -webkit-overflow-scrolling: touch;
-      will-change: scroll-position;
     }
     .page-header { flex-direction: column; gap: 10px; }
     .login-bg-lines { display: none; }
@@ -2583,31 +2607,65 @@ function doLogout() {
 
 
 // Forzar repintado en Android Chrome via micro-scroll
-function forceRepaint(el) {
-  if (window.innerWidth > 768) return;
-  const target = el || document.querySelector('.main-content');
-  if (!target) return;
-  const prev = target.scrollTop;
-  target.scrollTop = prev + 1;
-  target.scrollTop = prev;
-  target.style.opacity = '0.999';
-  setTimeout(() => { target.style.opacity = ''; }, 16);
-}
+// ── ICONOS COMPARTIDOS PARA NAVEGACIÓN MOBILE ──────────────────
+const NAV_ICONS = {
+  portfolio:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
+  asistencia: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
+  notas:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  cert:       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  calendario: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  aulas:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  stats:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
+  materias:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  docentes:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  cartelera:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  cude:       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+  config:     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  mas:        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
+};
 
-// En mobile: activar la vista primero, luego renderizar en el siguiente frame
-function mobileRender(activateFn, renderFn) {
-  if (window.innerWidth > 768) {
-    activateFn();
-    renderFn();
-    return;
+// ── CONFIGURACIÓN ÚNICA DE NAVEGACIÓN POR ROL ───────────────────
+function getNavItems() {
+  const c = studentViewConfig;
+  const t = teacherViewConfig;
+  if (currentRole === 'student') {
+    const all = [];
+    if (c.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchStudentView('student')`,             id:'nav-student-portfolio'});
+    if (c.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchStudentView('student-attendance')`,  id:'nav-student-attendance'});
+    if (c.notas_parciales?.enabled||c.notas_finales?.enabled)
+                                all.push({i:'notas',     l:'Notas',        fn:`switchStudentView('student-notas')`,       id:'nav-student-notas'});
+    if (c.certificados_parciales?.enabled||c.certificados_finales?.enabled)
+                                all.push({i:'cert',      l:'Certificados', fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados'});
+    if (c.cronograma?.enabled)  all.push({i:'calendario',l:'Cronograma',   fn:`switchStudentView('student-cronograma')`,  id:'nav-student-cronograma'});
+    if (c.cartelera?.enabled)   all.push({i:'cartelera', l:'Cartelera',    fn:`switchStudentView('student-cartelera')`,   id:'nav-student-cartelera'});
+    if (c.cude?.enabled)        all.push({i:'cude',      l:'Mi CUdE',      fn:`switchStudentView('student-cude')`,        id:'nav-student-cude'});
+    return all;
   }
-  activateFn();
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      renderFn();
-      forceRepaint();
-    });
-  });
+  if (currentRole === 'teacher') {
+    const all = [];
+    if (t.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchTeacherView('teacher')`,             id:'nav-validaciones'});
+    if (t.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchTeacherView('attendance')`,          id:'nav-asistencia'});
+    if (t.calificaciones?.enabled) all.push({i:'notas',  l:'Notas',        fn:`switchTeacherView('notas')`,               id:'nav-notas'});
+    if (t.certificados?.enabled)all.push({i:'cert',      l:'Certificados', fn:`switchTeacherView('cert-requests')`,        id:'nav-cert-requests'});
+    if (t.cronograma?.enabled)  all.push({i:'calendario',l:'Cronogramas',  fn:`switchTeacherView('teacher-cronograma')`,  id:'nav-teacher-cronograma'});
+    if (t.solicitudAulas?.enabled!==false) all.push({i:'aulas',l:'Aulas',  fn:`switchTeacherView('teacher-aulas')`,       id:'nav-teacher-aulas'});
+    return all;
+  }
+  if (currentRole === 'coordinator') {
+    return [
+      {i:'stats',     l:'Estadísticas', fn:`switchCoordView('stats')`,        id:'nav-coord-stats'},
+      {i:'materias',  l:'Materias',     fn:`switchCoordView('academic')`,     id:'nav-coord-academic'},
+      {i:'docentes',  l:'Docentes',     fn:`switchCoordView('teachers')`,     id:'nav-coord-teachers'},
+      {i:'cartelera', l:'Cartelera',    fn:`switchCoordView('cartelera')`,    id:'nav-coord-cartelera'},
+      {i:'portfolio', l:'Portfolio',    fn:`switchCoordView('portfolio')`,    id:'nav-coord-portfolio'},
+      {i:'docentes',  l:'Cuentas',      fn:`switchCoordView('accounts')`,     id:'nav-coord-accounts'},
+      {i:'cert',      l:'Certificados', fn:`switchCoordView('certificados')`, id:'nav-coord-certificados'},
+      {i:'config',    l:'Configuración',fn:`switchCoordView('config')`,       id:'nav-coord-config'},
+      {i:'cude',      l:'CUdE',         fn:`switchCoordView('cude')`,         id:'nav-coord-cude'},
+      {i:'aulas',     l:'Aulas',        fn:`switchCoordView('aulas')`,        id:'nav-coord-aulas'},
+    ];
+  }
+  return [];
 }
 
 function renderMobileNav() {
@@ -2615,69 +2673,23 @@ function renderMobileNav() {
   const nav = document.getElementById('mobile-nav');
   if (!nav) return;
 
-  const ico = {
-    portfolio: `<svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
-    asistencia:`<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
-    notas:     `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    cert:      `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
-    calendario:`<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-    aulas:     `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-    stats:     `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
-    materias:  `<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-    docentes:  `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    cartelera: `<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
-    mas:       `<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
-  };
-
-  let items = [];
-  if (currentRole === 'student') {
-    const c = studentViewConfig;
-    if (c.portfolio?.enabled)   items.push({i:ico.portfolio,  l:'Portfolio',   fn:`switchStudentView('student')`,          id:'nav-student-portfolio'});
-    if (c.asistencia?.enabled)  items.push({i:ico.asistencia, l:'Asistencia',  fn:`switchStudentView('student-attendance')`,id:'nav-student-attendance'});
-    if (c.notas_parciales?.enabled||c.notas_finales?.enabled)
-                                items.push({i:ico.notas,      l:'Notas',       fn:`switchStudentView('student-notas')`,    id:'nav-student-notas'});
-    if (c.certificados_parciales?.enabled||c.certificados_finales?.enabled)
-                                items.push({i:ico.cert,       l:'Certificados',fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados'});
-    if (c.cronograma?.enabled)  items.push({i:ico.calendario, l:'Cronograma',  fn:`switchStudentView('student-cronograma')`,id:'nav-student-cronograma'});
-    if (c.cartelera?.enabled)   items.push({i:ico.cartelera,  l:'Cartelera',   fn:`switchStudentView('student-cartelera')`,  id:'nav-student-cartelera'});
-    if (c.cude?.enabled)        items.push({i:ico.cude,       l:'Mi CUdE',     fn:`switchStudentView('student-cude')`,       id:'nav-student-cude'});
-  } else if (currentRole === 'teacher') {
-    const t = teacherViewConfig;
-    if (t.portfolio?.enabled)   items.push({i:ico.portfolio,  l:'Portfolio',   fn:`switchTeacherView('teacher')`,         id:'nav-validaciones'});
-    if (t.asistencia?.enabled)  items.push({i:ico.asistencia, l:'Asistencia',  fn:`switchTeacherView('attendance')`,      id:'nav-asistencia'});
-    if (t.calificaciones?.enabled) items.push({i:ico.notas,   l:'Notas',       fn:`switchTeacherView('notas')`,          id:'nav-notas'});
-    if (t.certificados?.enabled)items.push({i:ico.cert,       l:'Certificados',fn:`switchTeacherView('cert-requests')`,   id:'nav-cert-requests'});
-    if (t.cronograma?.enabled)  items.push({i:ico.calendario, l:'Cronogramas', fn:`switchTeacherView('teacher-cronograma')`,id:'nav-teacher-cronograma'});
-    if (t.solicitudAulas?.enabled!==false) items.push({i:ico.aulas,l:'Aulas', fn:`switchTeacherView('teacher-aulas')`,   id:'nav-teacher-aulas'});
-  } else if (currentRole === 'coordinator') {
-    items.push({i:ico.stats,     l:'Estadísticas',fn:`switchCoordView('stats')`,      id:'nav-coord-stats'});
-    items.push({i:ico.materias,  l:'Materias',    fn:`switchCoordView('academic')`,   id:'nav-coord-academic'});
-    items.push({i:ico.docentes,  l:'Docentes',    fn:`switchCoordView('teachers')`,   id:'nav-coord-teachers'});
-    items.push({i:ico.cartelera, l:'Cartelera',   fn:`switchCoordView('cartelera')`,  id:'nav-coord-cartelera'});
-    items.push({i:ico.portfolio2,l:'Portfolio',   fn:`switchCoordView('portfolio')`,  id:'nav-coord-portfolio'});
-    items.push({i:ico.cert,      l:'Certificados',fn:`switchCoordView('certificados')`,id:'nav-coord-certificados'});
-    items.push({i:ico.aulas,     l:'Aulas',       fn:`switchCoordView('aulas')`,      id:'nav-coord-aulas'});
-    items.push({i:ico.stats,     l:'Cuentas',     fn:`switchCoordView('accounts')`,   id:'nav-coord-accounts'});
-    items.push({i:ico.cude,      l:'CUdE',        fn:`switchCoordView('cude')`,       id:'nav-coord-cude'});
-  }
-
+  const all = getNavItems();
   const MAX = 4;
-  const visible = items.slice(0, MAX);
-  const extra   = items.slice(MAX);
+  const visible = all.slice(0, MAX);
+  const extra   = all.slice(MAX);
 
   let html = visible.map(it => {
     const active = it.id && document.getElementById(it.id)?.classList.contains('active');
     return `<button class="mnav-btn${active?' active':''}" onclick="${it.fn};syncMobileNav()">
-      ${it.i}<span>${it.l}</span>
+      ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
     </button>`;
   }).join('');
 
   if (extra.length > 0) {
     html += `<button class="mnav-btn" onclick="openMobileDrawer()">
-      ${ico.mas}<span>Más</span>
+      ${NAV_ICONS.mas}<span>Más</span>
     </button>`;
   }
-
   nav.innerHTML = html;
 }
 
@@ -2695,82 +2707,36 @@ function syncMobileNav() {
 function openMobileDrawer() {
   const sheet   = document.getElementById('mobile-bottom-sheet');
   const overlay = document.getElementById('mobile-drawer-overlay');
-  const sidebar = document.getElementById('main-sidebar');
-  if (!sheet || !sidebar) return;
+  if (!sheet || !overlay) return;
 
-  const nav = sidebar.querySelector('.sidebar-nav');
-  const ico = {
-    portfolio: `<svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
-    asistencia:`<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
-    notas:     `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-    cert:      `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
-    calendario:`<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-    aulas:     `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-    stats:     `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
-    materias:  `<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-    docentes:  `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    cartelera: `<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
-    cude:      `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
-    portfolio2:`<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
-  };
-
-  // Build items for extra nav items (those beyond MAX=4)
-  let items = [];
-  if (currentRole === 'student') {
-    const c = studentViewConfig;
-    const all = [];
-    if (c.portfolio?.enabled)   all.push({i:ico.portfolio,  l:'Portfolio',   fn:`switchStudentView('student')`,             id:'nav-student-portfolio'});
-    if (c.asistencia?.enabled)  all.push({i:ico.asistencia, l:'Asistencia',  fn:`switchStudentView('student-attendance')`,  id:'nav-student-attendance'});
-    if (c.notas_parciales?.enabled||c.notas_finales?.enabled) all.push({i:ico.notas,l:'Notas',fn:`switchStudentView('student-notas')`,id:'nav-student-notas'});
-    if (c.certificados_parciales?.enabled||c.certificados_finales?.enabled) all.push({i:ico.cert,l:'Certificados',fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados'});
-    if (c.cronograma?.enabled)  all.push({i:ico.calendario, l:'Cronograma',  fn:`switchStudentView('student-cronograma')`,  id:'nav-student-cronograma'});
-    if (c.cartelera?.enabled)   all.push({i:ico.cartelera,  l:'Cartelera',   fn:`switchStudentView('student-cartelera')`,   id:'nav-student-cartelera'});
-    if (c.cude?.enabled)        all.push({i:ico.cude,       l:'Mi CUdE',     fn:`switchStudentView('student-cude')`,        id:'nav-student-cude'});
-    items = all.slice(4);
-  } else if (currentRole === 'teacher') {
-    const t = teacherViewConfig;
-    const all = [];
-    if (t.portfolio?.enabled)   all.push({i:ico.portfolio,  l:'Portfolio',   fn:`switchTeacherView('teacher')`,             id:'nav-validaciones'});
-    if (t.asistencia?.enabled)  all.push({i:ico.asistencia, l:'Asistencia',  fn:`switchTeacherView('attendance')`,          id:'nav-asistencia'});
-    if (t.calificaciones?.enabled) all.push({i:ico.notas,   l:'Notas',       fn:`switchTeacherView('notas')`,               id:'nav-notas'});
-    if (t.certificados?.enabled)all.push({i:ico.cert,       l:'Certificados',fn:`switchTeacherView('cert-requests')`,        id:'nav-cert-requests'});
-    if (t.cronograma?.enabled)  all.push({i:ico.calendario, l:'Cronogramas', fn:`switchTeacherView('teacher-cronograma')`,  id:'nav-teacher-cronograma'});
-    if (t.solicitudAulas?.enabled!==false) all.push({i:ico.aulas,l:'Aulas',  fn:`switchTeacherView('teacher-aulas')`,       id:'nav-teacher-aulas'});
-    items = all.slice(4);
-  } else if (currentRole === 'coordinator') {
-    const all = [
-      {i:ico.stats,     l:'Estadísticas',fn:`switchCoordView('stats')`,     id:'nav-coord-stats'},
-      {i:ico.materias,  l:'Materias',    fn:`switchCoordView('academic')`,  id:'nav-coord-academic'},
-      {i:ico.docentes,  l:'Docentes',    fn:`switchCoordView('teachers')`,  id:'nav-coord-teachers'},
-      {i:ico.cartelera, l:'Cartelera',   fn:`switchCoordView('cartelera')`, id:'nav-coord-cartelera'},
-      {i:ico.portfolio2,l:'Portfolio',   fn:`switchCoordView('portfolio')`, id:'nav-coord-portfolio'},
-      {i:ico.cert,      l:'Certificados',fn:`switchCoordView('certificados')`,id:'nav-coord-certificados'},
-      {i:ico.aulas,     l:'Aulas',       fn:`switchCoordView('aulas')`,     id:'nav-coord-aulas'},
-    ];
-    items = all.slice(4);
-  }
+  const all   = getNavItems();
+  const extra = all.slice(4);
 
   let html = '<div class="msheet-handle"></div>';
-  items.forEach(it => {
+  extra.forEach(it => {
     const active = it.id && document.getElementById(it.id)?.classList.contains('active');
-    html += `<button class="msheet-item${active?' active':''}" onclick="closeMobileDrawer();${it.fn};syncMobileNav()">
-      ${it.i}<span>${it.l}</span>
+    html += `<button class="msheet-item${active?' active':''}"
+      onclick="closeMobileDrawer();${it.fn};syncMobileNav()">
+      ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
     </button>`;
   });
-
   sheet.innerHTML = html;
-  sheet.classList.add('open');
-  overlay.classList.add('open');
-  // Forzar repintado del bottom sheet
-  void sheet.offsetHeight;
-  sheet.style.opacity = '0.999';
-  setTimeout(() => { sheet.style.opacity = ''; }, 16);
+
+  requestAnimationFrame(() => {
+    overlay.classList.add('open');
+    requestAnimationFrame(() => {
+      sheet.classList.add('open');
+    });
+  });
+  document.body.classList.add('mobile-menu-open');
 }
 
 function closeMobileDrawer() {
   document.getElementById('mobile-bottom-sheet')?.classList.remove('open');
   document.getElementById('mobile-drawer-overlay')?.classList.remove('open');
+  document.body.classList.remove('mobile-menu-open');
 }
+
 
 function renderSidebar() {
   const nav = document.getElementById('sidebar-nav');
@@ -2914,11 +2880,7 @@ function switchCoordView(section) {
     if (section === 'aulas')         renderCoordAulasView();
   };
 
-  if (window.innerWidth <= 768) {
-    requestAnimationFrame(() => requestAnimationFrame(() => { doRender(); forceRepaint(); }));
-  } else {
-    doRender();
-  }
+  doRender();
 }
 
 function switchStudentView(view) {
@@ -2978,11 +2940,7 @@ function switchStudentView(view) {
     if (view === 'student-cude')         renderStudentCudeView();
   };
 
-  if (window.innerWidth <= 768) {
-    requestAnimationFrame(() => requestAnimationFrame(() => { doRender(); forceRepaint(); }));
-  } else {
-    doRender();
-  }
+  doRender();
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -4469,11 +4427,7 @@ function switchTeacherView(view) {
     if (view === 'teacher-aulas')       renderTeacherAulasView();
   };
 
-  if (window.innerWidth <= 768) {
-    requestAnimationFrame(() => requestAnimationFrame(() => { doRender(); forceRepaint(); }));
-  } else {
-    doRender();
-  }
+  doRender();
 }
 
 // Obtener las materiaIds que puede validar el docente actual
