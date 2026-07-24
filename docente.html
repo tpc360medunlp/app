@@ -538,22 +538,6 @@
   .page-view { display: none; }
   .page-view.active { display: block; }
 
-  /* Mobile: usar opacity en vez de display para repintado inmediato en Android */
-  @media (max-width: 768px) {
-    .page-view {
-      display: block !important;
-      opacity: 0;
-      pointer-events: none;
-      position: absolute;
-      left: -9999px;
-    }
-    .page-view.active {
-      opacity: 1;
-      pointer-events: auto;
-      position: static;
-    }
-  }
-
   .section-title { font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 1rem; }
 
   /* ── LUGAR POPOVER ── */
@@ -678,12 +662,6 @@
       padding: 1rem 1rem 5rem !important;
       -webkit-overflow-scrolling: touch;
       will-change: scroll-position;
-    }
-    /* Forzar capa GPU en vistas activas para repintado inmediato en Android */
-    .page-view.active {
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-      will-change: transform;
     }
     .page-header { flex-direction: column; gap: 10px; }
     .login-bg-lines { display: none; }
@@ -2662,7 +2640,8 @@ function renderMobileNav() {
     if (c.certificados_parciales?.enabled||c.certificados_finales?.enabled)
                                 items.push({i:ico.cert,       l:'Certificados',fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados'});
     if (c.cronograma?.enabled)  items.push({i:ico.calendario, l:'Cronograma',  fn:`switchStudentView('student-cronograma')`,id:'nav-student-cronograma'});
-    if (c.cartelera?.enabled)   items.push({i:ico.cartelera,  l:'Cartelera',   fn:`switchStudentView('student-cartelera')`,id:'nav-student-cartelera'});
+    if (c.cartelera?.enabled)   items.push({i:ico.cartelera,  l:'Cartelera',   fn:`switchStudentView('student-cartelera')`,  id:'nav-student-cartelera'});
+    if (c.cude?.enabled)        items.push({i:ico.cude,       l:'Mi CUdE',     fn:`switchStudentView('student-cude')`,       id:'nav-student-cude'});
   } else if (currentRole === 'teacher') {
     const t = teacherViewConfig;
     if (t.portfolio?.enabled)   items.push({i:ico.portfolio,  l:'Portfolio',   fn:`switchTeacherView('teacher')`,         id:'nav-validaciones'});
@@ -2672,10 +2651,15 @@ function renderMobileNav() {
     if (t.cronograma?.enabled)  items.push({i:ico.calendario, l:'Cronogramas', fn:`switchTeacherView('teacher-cronograma')`,id:'nav-teacher-cronograma'});
     if (t.solicitudAulas?.enabled!==false) items.push({i:ico.aulas,l:'Aulas', fn:`switchTeacherView('teacher-aulas')`,   id:'nav-teacher-aulas'});
   } else if (currentRole === 'coordinator') {
-    items.push({i:ico.stats,    l:'Estadísticas',fn:`switchCoordView('stats')`,    id:'nav-coord-stats'});
-    items.push({i:ico.materias, l:'Materias',    fn:`switchCoordView('academic')`, id:'nav-coord-academic'});
-    items.push({i:ico.docentes, l:'Docentes',    fn:`switchCoordView('teachers')`, id:'nav-coord-teachers'});
-    items.push({i:ico.cartelera,l:'Cartelera',   fn:`switchCoordView('cartelera')`,id:'nav-coord-cartelera'});
+    items.push({i:ico.stats,     l:'Estadísticas',fn:`switchCoordView('stats')`,      id:'nav-coord-stats'});
+    items.push({i:ico.materias,  l:'Materias',    fn:`switchCoordView('academic')`,   id:'nav-coord-academic'});
+    items.push({i:ico.docentes,  l:'Docentes',    fn:`switchCoordView('teachers')`,   id:'nav-coord-teachers'});
+    items.push({i:ico.cartelera, l:'Cartelera',   fn:`switchCoordView('cartelera')`,  id:'nav-coord-cartelera'});
+    items.push({i:ico.portfolio2,l:'Portfolio',   fn:`switchCoordView('portfolio')`,  id:'nav-coord-portfolio'});
+    items.push({i:ico.cert,      l:'Certificados',fn:`switchCoordView('certificados')`,id:'nav-coord-certificados'});
+    items.push({i:ico.aulas,     l:'Aulas',       fn:`switchCoordView('aulas')`,      id:'nav-coord-aulas'});
+    items.push({i:ico.stats,     l:'Cuentas',     fn:`switchCoordView('accounts')`,   id:'nav-coord-accounts'});
+    items.push({i:ico.cude,      l:'CUdE',        fn:`switchCoordView('cude')`,       id:'nav-coord-cude'});
   }
 
   const MAX = 4;
