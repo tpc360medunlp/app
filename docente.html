@@ -1793,6 +1793,7 @@ async function getLegajoSupabase(email) {
   return data?.legajo || null;
 }
 async function loadDataFromSupabase() {
+  console.time('⏱️ loadDataFromSupabase');
   try {
     // Ejecutar todas las queries en paralelo
     const results = await Promise.all([
@@ -1923,6 +1924,7 @@ async function loadDataFromSupabase() {
     }
 
     console.log('✅ Datos cargados desde Supabase');
+    console.timeEnd('⏱️ loadDataFromSupabase');
 
     // Cargar asistencia (convertir legajo a email para el frontend)
     if (asistenciaData) {
@@ -2569,6 +2571,7 @@ function doLogin() {
 }
 
 async function enterApp() {
+  console.time('⏱️ enterApp (render inicial)');
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
 
@@ -2596,6 +2599,7 @@ async function enterApp() {
     }
     else switchCoordView('stats');
 
+    console.timeEnd('⏱️ enterApp (render inicial)');
   } catch(err) {
     console.error('Error al cargar la vista:', err);
     // Mostrar mensaje de error visible en lugar de pantalla en blanco
