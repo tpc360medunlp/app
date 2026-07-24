@@ -621,17 +621,36 @@
     z-index: 498;
   }
   #mobile-drawer-overlay.open { display: block; }
-  #mobile-drawer {
+  #mobile-bottom-sheet {
     display: none;
     position: fixed;
-    top: 0; left: 0; bottom: 0;
-    width: 270px;
+    bottom: 0; left: 0; right: 0;
     background: var(--navy);
     z-index: 499;
+    border-radius: 16px 16px 0 0;
+    padding: 1rem 0 2rem;
     flex-direction: column;
+    max-height: 70vh;
     overflow-y: auto;
   }
-  #mobile-drawer.open { display: flex; }
+  #mobile-bottom-sheet.open { display: flex; }
+  .msheet-handle {
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 0 auto 1rem;
+  }
+  .msheet-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 1.5rem;
+    border: none; background: none;
+    color: rgba(255,255,255,0.75);
+    font-family: var(--font); font-size: 15px; font-weight: 500;
+    cursor: pointer; width: 100%; text-align: left;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .msheet-item.active { color: var(--teal-mid); }
+  .msheet-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
   @media (max-width: 768px) {
     .hamburger-btn { display: none !important; }
@@ -1694,7 +1713,7 @@
 <!-- MOBILE NAV -->
 <div id="mobile-nav"></div>
 <div id="mobile-drawer-overlay" onclick="closeMobileDrawer()"></div>
-<div id="mobile-drawer"></div>
+<div id="mobile-bottom-sheet"></div>
 
 <!-- TOAST -->
 <div class="toast" id="toast">
@@ -2610,38 +2629,78 @@ function syncMobileNav() {
 }
 
 function openMobileDrawer() {
-  const drawer  = document.getElementById('mobile-drawer');
+  const sheet   = document.getElementById('mobile-bottom-sheet');
   const overlay = document.getElementById('mobile-drawer-overlay');
   const sidebar = document.getElementById('main-sidebar');
-  if (!drawer || !sidebar) return;
+  if (!sheet || !sidebar) return;
 
-  const nav  = sidebar.querySelector('.sidebar-nav');
-  const logo = sidebar.querySelector('.sidebar-logo');
-  const user = sidebar.querySelector('.sidebar-user');
+  const nav = sidebar.querySelector('.sidebar-nav');
+  const ico = {
+    portfolio: `<svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
+    asistencia:`<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
+    notas:     `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    cert:      `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+    calendario:`<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    aulas:     `<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+    stats:     `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
+    materias:  `<svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+    docentes:  `<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    cartelera: `<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+    cude:      `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    portfolio2:`<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
+  };
 
-  let html = '<div style="display:flex;flex-direction:column;height:100%">';
-  if (logo) html += `<div style="padding:1.25rem;border-bottom:1px solid rgba(255,255,255,0.08)">${logo.outerHTML}</div>`;
-  html += '<div style="flex:1;padding:0.75rem;overflow-y:auto">';
-  if (nav) {
-    nav.querySelectorAll('.nav-item').forEach(item => {
-      const active = item.classList.contains('active');
-      const onclick = item.getAttribute('onclick') || '';
-      const svg = item.querySelector('svg')?.outerHTML || '';
-      const label = item.querySelector('span:not(.nav-badge)')?.textContent.trim() || '';
-      html += `<button onclick="closeMobileDrawer();${onclick}" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);font-size:14px;font-weight:500;width:100%;text-align:left;color:${active?'var(--teal-mid)':'rgba(255,255,255,0.7)'};background:${active?'rgba(0,168,150,0.15)':'transparent'};margin-bottom:2px">${svg}<span>${label}</span></button>`;
-    });
+  // Build items for extra nav items (those beyond MAX=4)
+  let items = [];
+  if (currentRole === 'student') {
+    const c = studentViewConfig;
+    const all = [];
+    if (c.portfolio?.enabled)   all.push({i:ico.portfolio,  l:'Portfolio',   fn:`switchStudentView('student')`,             id:'nav-student-portfolio'});
+    if (c.asistencia?.enabled)  all.push({i:ico.asistencia, l:'Asistencia',  fn:`switchStudentView('student-attendance')`,  id:'nav-student-attendance'});
+    if (c.notas_parciales?.enabled||c.notas_finales?.enabled) all.push({i:ico.notas,l:'Notas',fn:`switchStudentView('student-notas')`,id:'nav-student-notas'});
+    if (c.certificados_parciales?.enabled||c.certificados_finales?.enabled) all.push({i:ico.cert,l:'Certificados',fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados'});
+    if (c.cronograma?.enabled)  all.push({i:ico.calendario, l:'Cronograma',  fn:`switchStudentView('student-cronograma')`,  id:'nav-student-cronograma'});
+    if (c.cartelera?.enabled)   all.push({i:ico.cartelera,  l:'Cartelera',   fn:`switchStudentView('student-cartelera')`,   id:'nav-student-cartelera'});
+    if (c.cude?.enabled)        all.push({i:ico.cude,       l:'Mi CUdE',     fn:`switchStudentView('student-cude')`,        id:'nav-student-cude'});
+    items = all.slice(4);
+  } else if (currentRole === 'teacher') {
+    const t = teacherViewConfig;
+    const all = [];
+    if (t.portfolio?.enabled)   all.push({i:ico.portfolio,  l:'Portfolio',   fn:`switchTeacherView('teacher')`,             id:'nav-validaciones'});
+    if (t.asistencia?.enabled)  all.push({i:ico.asistencia, l:'Asistencia',  fn:`switchTeacherView('attendance')`,          id:'nav-asistencia'});
+    if (t.calificaciones?.enabled) all.push({i:ico.notas,   l:'Notas',       fn:`switchTeacherView('notas')`,               id:'nav-notas'});
+    if (t.certificados?.enabled)all.push({i:ico.cert,       l:'Certificados',fn:`switchTeacherView('cert-requests')`,        id:'nav-cert-requests'});
+    if (t.cronograma?.enabled)  all.push({i:ico.calendario, l:'Cronogramas', fn:`switchTeacherView('teacher-cronograma')`,  id:'nav-teacher-cronograma'});
+    if (t.solicitudAulas?.enabled!==false) all.push({i:ico.aulas,l:'Aulas',  fn:`switchTeacherView('teacher-aulas')`,       id:'nav-teacher-aulas'});
+    items = all.slice(4);
+  } else if (currentRole === 'coordinator') {
+    const all = [
+      {i:ico.stats,     l:'Estadísticas',fn:`switchCoordView('stats')`,     id:'nav-coord-stats'},
+      {i:ico.materias,  l:'Materias',    fn:`switchCoordView('academic')`,  id:'nav-coord-academic'},
+      {i:ico.docentes,  l:'Docentes',    fn:`switchCoordView('teachers')`,  id:'nav-coord-teachers'},
+      {i:ico.cartelera, l:'Cartelera',   fn:`switchCoordView('cartelera')`, id:'nav-coord-cartelera'},
+      {i:ico.portfolio2,l:'Portfolio',   fn:`switchCoordView('portfolio')`, id:'nav-coord-portfolio'},
+      {i:ico.cert,      l:'Certificados',fn:`switchCoordView('certificados')`,id:'nav-coord-certificados'},
+      {i:ico.aulas,     l:'Aulas',       fn:`switchCoordView('aulas')`,     id:'nav-coord-aulas'},
+    ];
+    items = all.slice(4);
   }
-  html += '</div>';
-  if (user) html += `<div style="padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,0.08)">${user.outerHTML}</div>`;
-  html += '</div>';
 
-  drawer.innerHTML = html;
-  drawer.classList.add('open');
+  let html = '<div class="msheet-handle"></div>';
+  items.forEach(it => {
+    const active = it.id && document.getElementById(it.id)?.classList.contains('active');
+    html += `<button class="msheet-item${active?' active':''}" onclick="closeMobileDrawer();${it.fn};syncMobileNav()">
+      ${it.i}<span>${it.l}</span>
+    </button>`;
+  });
+
+  sheet.innerHTML = html;
+  sheet.classList.add('open');
   overlay.classList.add('open');
 }
 
 function closeMobileDrawer() {
-  document.getElementById('mobile-drawer')?.classList.remove('open');
+  document.getElementById('mobile-bottom-sheet')?.classList.remove('open');
   document.getElementById('mobile-drawer-overlay')?.classList.remove('open');
 }
 
