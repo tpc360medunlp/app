@@ -663,6 +663,12 @@
       -webkit-overflow-scrolling: touch;
       will-change: scroll-position;
     }
+    /* Forzar capa GPU en vistas activas para repintado inmediato en Android */
+    .page-view.active {
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      will-change: transform;
+    }
     .page-header { flex-direction: column; gap: 10px; }
     .login-bg-lines { display: none; }
     .page-title { font-size: 18px; }
