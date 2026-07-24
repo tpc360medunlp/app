@@ -2594,13 +2594,27 @@ function forceRepaint(el) {
   if (window.innerWidth > 768) return;
   const target = el || document.querySelector('.main-content');
   if (!target) return;
-  // Micro-scroll fuerza repintado del contenedor de scroll
   const prev = target.scrollTop;
   target.scrollTop = prev + 1;
   target.scrollTop = prev;
-  // Respaldo: opacity
   target.style.opacity = '0.999';
   setTimeout(() => { target.style.opacity = ''; }, 16);
+}
+
+// En mobile: activar la vista primero, luego renderizar en el siguiente frame
+function mobileRender(activateFn, renderFn) {
+  if (window.innerWidth > 768) {
+    activateFn();
+    renderFn();
+    return;
+  }
+  activateFn();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      renderFn();
+      forceRepaint();
+    });
+  });
 }
 
 function renderMobileNav() {
@@ -2884,17 +2898,25 @@ function switchCoordView(section) {
   const navEl  = document.getElementById('nav-coord-' + section);
   if (viewEl) viewEl.classList.add('active');
   if (navEl)  navEl.classList.add('active');
-  if (section === 'stats')         renderCoordinatorView();
-  if (section === 'portfolio')     renderCoordPortfolioView();
-  if (section === 'accounts')      renderAccountsView();
-  if (section === 'academic')      renderAcademicView();
-  if (section === 'teachers')      renderTeachersView();
-  if (section === 'certificados')  renderCertificadosCoordView();
-  if (section === 'config')        renderConfigView();
-  if (section === 'cartelera')     renderCartelaView('coord-cartelera-container');
-  if (section === 'cude')          renderCoordCudeView();
-  if (section === 'aulas')         renderCoordAulasView();
-  forceRepaint();
+
+  const doRender = () => {
+    if (section === 'stats')         renderCoordinatorView();
+    if (section === 'portfolio')     renderCoordPortfolioView();
+    if (section === 'accounts')      renderAccountsView();
+    if (section === 'academic')      renderAcademicView();
+    if (section === 'teachers')      renderTeachersView();
+    if (section === 'certificados')  renderCertificadosCoordView();
+    if (section === 'config')        renderConfigView();
+    if (section === 'cartelera')     renderCartelaView('coord-cartelera-container');
+    if (section === 'cude')          renderCoordCudeView();
+    if (section === 'aulas')         renderCoordAulasView();
+  };
+
+  if (window.innerWidth <= 768) {
+    requestAnimationFrame(() => requestAnimationFrame(() => { doRender(); forceRepaint(); }));
+  } else {
+    doRender();
+  }
 }
 
 function switchStudentView(view) {
@@ -2912,48 +2934,50 @@ function switchStudentView(view) {
   };
   const navEl = document.getElementById(navMap[view]);
   if (navEl) navEl.classList.add('active');
-  if (view === 'student') {
-    renderStudentView();
-    // Solo marcar como visto si ya se mostraron las notificaciones (no en el login inicial)
-    if (window._notifShown) {
-      markAllAsSeen(currentUser.email);
-      const banner = document.getElementById('inapp-notif-banner');
-      if (banner) banner.remove();
+
+  const doRender = () => {
+    if (view === 'student') {
+      renderStudentView();
+      if (window._notifShown) {
+        markAllAsSeen(currentUser.email);
+        const banner = document.getElementById('inapp-notif-banner');
+        if (banner) banner.remove();
+      }
     }
-  }
-  if (view === 'student-attendance')   renderStudentAttendanceView();
-  if (view === 'student-notas') {
-    // Determinar tab inicial según config
-    const showParciales = studentViewConfig.notas_parciales.enabled;
-    const showFinales   = studentViewConfig.notas_finales.enabled;
-    _studentNotasTab = showParciales ? 'parciales' : 'finales';
-
-    // Renderizar tabs dinámicamente
-    const tabsEl = document.getElementById('student-notas-tabs');
-    if (tabsEl) {
-      tabsEl.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:1.25rem">
-        ${showParciales ? `<button id="notas-tab-parciales" onclick="switchNotasTab('parciales')"
-          style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${_studentNotasTab==='parciales'?'var(--navy)':'var(--gray-100)'};color:${_studentNotasTab==='parciales'?'white':'var(--gray-600)'}">
-          Parciales</button>` : ''}
-        ${showFinales ? `<button id="notas-tab-finales" onclick="switchNotasTab('finales')"
-          style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${_studentNotasTab==='finales'?'var(--navy)':'var(--gray-100)'};color:${_studentNotasTab==='finales'?'white':'var(--gray-600)'}">
-          Finales</button>` : ''}
-      </div>`;
+    if (view === 'student-attendance')   renderStudentAttendanceView();
+    if (view === 'student-notas') {
+      const showParciales = studentViewConfig.notas_parciales.enabled;
+      const showFinales   = studentViewConfig.notas_finales.enabled;
+      _studentNotasTab = showParciales ? 'parciales' : 'finales';
+      const tabsEl = document.getElementById('student-notas-tabs');
+      if (tabsEl) {
+        tabsEl.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:1.25rem">
+          ${showParciales ? `<button id="notas-tab-parciales" onclick="switchNotasTab('parciales')"
+            style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${_studentNotasTab==='parciales'?'var(--navy)':'var(--gray-100)'};color:${_studentNotasTab==='parciales'?'white':'var(--gray-600)'}">
+            Parciales</button>` : ''}
+          ${showFinales ? `<button id="notas-tab-finales" onclick="switchNotasTab('finales')"
+            style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${_studentNotasTab==='finales'?'var(--navy)':'var(--gray-100)'};color:${_studentNotasTab==='finales'?'white':'var(--gray-600)'}">
+            Finales</button>` : ''}
+        </div>`;
+      }
+      const cp = document.getElementById('student-notas-container');
+      const cf = document.getElementById('student-finales-container');
+      if (cp) cp.style.display = _studentNotasTab==='parciales' ? 'block' : 'none';
+      if (cf) cf.style.display = _studentNotasTab==='finales'   ? 'block' : 'none';
+      if (_studentNotasTab === 'parciales') renderStudentNotasView();
+      else renderStudentFinalesView();
     }
+    if (view === 'student-certificados') renderStudentCertificadosView();
+    if (view === 'student-cronograma')   renderStudentCronogramaView();
+    if (view === 'student-cartelera')    renderCartelaView('student-cartelera-container');
+    if (view === 'student-cude')         renderStudentCudeView();
+  };
 
-    const cp = document.getElementById('student-notas-container');
-    const cf = document.getElementById('student-finales-container');
-    if (cp) cp.style.display = _studentNotasTab==='parciales' ? 'block' : 'none';
-    if (cf) cf.style.display = _studentNotasTab==='finales'   ? 'block' : 'none';
-
-    if (_studentNotasTab === 'parciales') renderStudentNotasView();
-    else renderStudentFinalesView();
+  if (window.innerWidth <= 768) {
+    requestAnimationFrame(() => requestAnimationFrame(() => { doRender(); forceRepaint(); }));
+  } else {
+    doRender();
   }
-  if (view === 'student-certificados') renderStudentCertificadosView();
-  if (view === 'student-cronograma')   renderStudentCronogramaView();
-  if (view === 'student-cartelera')    renderCartelaView('student-cartelera-container');
-  if (view === 'student-cude')         renderStudentCudeView();
-  forceRepaint();
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -4419,21 +4443,29 @@ function switchTeacherView(view) {
     'teacher-aulas':      'nav-teacher-aulas',
   };
   document.getElementById(navMap[view]).classList.add('active');
-  if (view === 'teacher') {
-    renderTeacherView();
-    const dni = getTeacherDni();
-    if (dni) { markTeacherAsSeen(dni); const b=document.getElementById('inapp-notif-banner'); if(b) b.remove(); }
+
+  const doRender = () => {
+    if (view === 'teacher') {
+      renderTeacherView();
+      const dni = getTeacherDni();
+      if (dni) { markTeacherAsSeen(dni); const b=document.getElementById('inapp-notif-banner'); if(b) b.remove(); }
+    }
+    if (view === 'attendance')          renderAttendanceView();
+    if (view === 'notas')               renderNotasView();
+    if (view === 'cert-requests') {
+      renderCertRequestsView();
+      const dni = getTeacherDni();
+      if (dni) markTeacherAsSeen(dni);
+    }
+    if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
+    if (view === 'teacher-aulas')       renderTeacherAulasView();
+  };
+
+  if (window.innerWidth <= 768) {
+    requestAnimationFrame(() => requestAnimationFrame(() => { doRender(); forceRepaint(); }));
+  } else {
+    doRender();
   }
-  if (view === 'attendance')          renderAttendanceView();
-  if (view === 'notas')               renderNotasView();
-  if (view === 'cert-requests') {
-    renderCertRequestsView();
-    const dni = getTeacherDni();
-    if (dni) markTeacherAsSeen(dni);
-  }
-  if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
-  if (view === 'teacher-aulas')       renderTeacherAulasView();
-  forceRepaint();
 }
 
 // Obtener las materiaIds que puede validar el docente actual
