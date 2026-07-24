@@ -53,11 +53,11 @@
 
   body {
     font-family: var(--font);
-    background: var(--navy);
+    background: var(--gray-50);
     color: var(--gray-800);
+    min-height: 100vh;
     font-size: 15px;
     line-height: 1.6;
-    margin: 0;
   }
 
   /* ── SCREENS ── */
@@ -65,32 +65,35 @@
   .screen.active { display: block; }
 
   /* ── LOGIN ── */
-  #screen-login.active {
-    display: flex !important;
-  }
-
   #screen-login {
     background: var(--navy);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    display: none;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 2rem;
+    position: fixed;
+    inset: 0;
+    overflow: auto;
+    box-sizing: border-box;
+    z-index: 1000;
   }
+  #screen-login.active { display: flex; }
 
-
-  .login-bg-lines { display: none; }
-
+  .login-bg-lines {
+    position: absolute; inset: 0; pointer-events: none;
+    z-index: 0;
+  }
+  .login-bg-lines svg { width: 100%; height: 100%; opacity: 0.07; }
 
   .login-card {
     background: var(--white);
     border-radius: var(--radius-xl);
-    padding: 2.5rem 2rem;
+    padding: 3rem 2.5rem;
     width: 100%;
     max-width: 420px;
+    position: relative;
+    z-index: 2;
     box-shadow: var(--shadow-lg);
-    flex-shrink: 0;
   }
 
   .login-logo {
@@ -160,7 +163,7 @@
   }
 
   /* ── APP SHELL ── */
-  .app-shell { display: flex; min-height: 100vh; background: var(--gray-50); }
+  .app-shell { display: flex; min-height: 100vh; }
 
   /* sidebar */
   .sidebar {
