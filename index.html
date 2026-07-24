@@ -584,7 +584,8 @@
     display: none;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 58px;
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--navy);
     z-index: 300;
     border-top: 1px solid rgba(255,255,255,0.08);
@@ -630,7 +631,7 @@
     pointer-events: auto;
     transition: opacity 150ms ease, visibility 0s;
   }
-  body.mobile-menu-open { overflow: hidden; touch-action: none; }
+  body.mobile-menu-open { overflow: hidden; }
   #mobile-bottom-sheet { touch-action: pan-y; }
   #mobile-bottom-sheet {
     display: flex;
@@ -639,7 +640,7 @@
     background: var(--navy);
     z-index: 501;
     border-radius: 16px 16px 0 0;
-    padding: 1rem 0 2rem;
+    padding: 1rem 0 calc(2rem + env(safe-area-inset-bottom, 0px));
     flex-direction: column;
     max-height: 70dvh;
     overflow-y: auto;
@@ -2716,7 +2717,7 @@ function openMobileDrawer() {
   extra.forEach(it => {
     const active = it.id && document.getElementById(it.id)?.classList.contains('active');
     html += `<button class="msheet-item${active?' active':''}"
-      onclick="closeMobileDrawer();${it.fn};syncMobileNav()">
+      onclick="closeMobileDrawer(); requestAnimationFrame(() => { ${it.fn}; syncMobileNav(); })">
       ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
     </button>`;
   });
@@ -2857,13 +2858,16 @@ function renderSidebar() {
 }
 
 function switchCoordView(section) {
+  const viewEl = document.getElementById('view-coord-' + section);
+  if (!viewEl) {
+    console.error('Vista de coordinación inexistente:', section);
+    return;
+  }
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const viewEl = document.getElementById('view-coord-' + section);
-  const navEl  = document.getElementById('nav-coord-' + section);
-  if (viewEl) viewEl.classList.add('active');
-  if (navEl)  navEl.classList.add('active');
-  // Resetear scroll al cambiar de vista
+  viewEl.classList.add('active');
+  const navEl = document.getElementById('nav-coord-' + section);
+  if (navEl) navEl.classList.add('active');
   const mc = document.querySelector('.main-content');
   if (mc) mc.scrollTop = 0;
 
@@ -2884,9 +2888,14 @@ function switchCoordView(section) {
 }
 
 function switchStudentView(view) {
+  const viewEl = document.getElementById('view-' + view);
+  if (!viewEl) {
+    console.error('Vista de estudiante inexistente:', view);
+    return;
+  }
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('view-' + view).classList.add('active');
+  viewEl.classList.add('active');
   const navMap = {
     'student':               'nav-student-portfolio',
     'student-attendance':    'nav-student-attendance',
