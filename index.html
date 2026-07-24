@@ -2580,13 +2580,16 @@ function doLogout() {
 // ── SIDEBAR ──────────────────────────────────────────────
 
 
-// Forzar repintado en Android Chrome (evita pantalla en blanco hasta tocar)
+// Forzar repintado en Android Chrome
 function forceRepaint(el) {
   if (window.innerWidth > 768) return;
   const target = el || document.querySelector('.main-content') || document.body;
+  // Leer offsetHeight fuerza un reflow sincrónico
+  void target.offsetHeight;
+  // Luego cambiar opacity para forzar un repaint en el compositor
+  target.style.opacity = '0.999';
   requestAnimationFrame(() => {
-    target.style.transform = 'translateZ(0)';
-    requestAnimationFrame(() => { target.style.transform = ''; });
+    target.style.opacity = '';
   });
 }
 
