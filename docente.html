@@ -9098,10 +9098,11 @@ function initLoginScreen() {
 // Inicializar al cargar
 window.addEventListener('DOMContentLoaded', () => {
   initLoginScreen();
-  // Ocultar pantalla de carga PWA una vez que el DOM está listo
-  setTimeout(() => {
-
-  }, 300);
+  // En mobile, limpiar inline margin-left que puede quedar de sesiones desktop
+  if (window.innerWidth <= 768) {
+    const main = document.querySelector('.main-content');
+    if (main) main.style.marginLeft = '';
+  }
 });
 
 function getCudeBadge(email) {
