@@ -1809,31 +1809,7 @@ async function loadDataFromSupabase() {
     }
 
     // Cargar comisiones
-    if (comisiones) {
-      COMISIONES.length = 0;
-      comisiones.forEach(c => {
-        // Convertir legajos a emails para compatibilidad con el frontend
-        const alumnos = comAlumnos
-          ? comAlumnos.filter(ca => ca.comision_id === c.id).map(ca => {
-              // Buscar email por legajo
-              const legajoNorm = normalizeLegajo(ca.legajo);
-              const alumno = ENROLLED_STUDENTS[legajoNorm];
-              return alumno ? alumno.email : null;
-            }).filter(Boolean)
-          : [];
-        COMISIONES.push({
-          id: c.id,
-          materiaId: c.materia_id,
-          nombre: c.nombre,
-          docenteDni: c.docente_dni,
-          año: c.año,
-          periodo: c.periodo || 1,
-          alumnos,
-        });
-      });
-    }
-
-    // Cargar alumnos
+    // ── Primero alumnos (necesario para resolver emails en comisiones) ──
     if (alumnos) {
       Object.keys(ENROLLED_STUDENTS).forEach(k => delete ENROLLED_STUDENTS[k]);
       alumnos.forEach(a => {
@@ -1847,6 +1823,36 @@ async function loadDataFromSupabase() {
           cude: a.cude || null,
         };
         STUDENT_NAMES[a.email] = `${a.apellido}, ${a.nombre}`;
+      });
+    }
+
+    // ── Luego comisiones (ya puede resolver emails correctamente) ──
+    if (comisiones) {
+      // Índice legajo→emails por comisión para evitar O(n²)
+      const alumnosPorComision = new Map();
+      if (comAlumnos) {
+        comAlumnos.forEach(ca => {
+          if (!alumnosPorComision.has(ca.comision_id))
+            alumnosPorComision.set(ca.comision_id, []);
+          alumnosPorComision.get(ca.comision_id).push(ca.legajo);
+        });
+      }
+
+      COMISIONES.length = 0;
+      comisiones.forEach(c => {
+        const legajos = alumnosPorComision.get(c.id) || [];
+        const emails = legajos
+          .map(legajo => ENROLLED_STUDENTS[normalizeLegajo(legajo)]?.email)
+          .filter(Boolean);
+        COMISIONES.push({
+          id: c.id,
+          materiaId: c.materia_id,
+          nombre: c.nombre,
+          docenteDni: c.docente_dni,
+          año: c.año,
+          periodo: c.periodo || 1,
+          alumnos: emails,
+        });
       });
     }
 
