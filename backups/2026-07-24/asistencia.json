@@ -1,0 +1,380 @@
+[
+  {
+    "id": 5,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "41184/1",
+    "estado": "presente"
+  },
+  {
+    "id": 6,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63305/1",
+    "estado": "presente"
+  },
+  {
+    "id": 7,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "68858/4",
+    "estado": "presente"
+  },
+  {
+    "id": 8,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "68867/5",
+    "estado": "presente"
+  },
+  {
+    "id": 9,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "68902/0",
+    "estado": "presente"
+  },
+  {
+    "id": 10,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "59532/2",
+    "estado": "presente"
+  },
+  {
+    "id": 11,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66355/5",
+    "estado": "presente"
+  },
+  {
+    "id": 12,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66356/6",
+    "estado": "presente"
+  },
+  {
+    "id": 13,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63431/6",
+    "estado": "presente"
+  },
+  {
+    "id": 14,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63441/8",
+    "estado": "presente"
+  },
+  {
+    "id": 15,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66263/1",
+    "estado": "presente"
+  },
+  {
+    "id": 16,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "48314/3",
+    "estado": "presente"
+  },
+  {
+    "id": 17,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66385/1",
+    "estado": "presente"
+  },
+  {
+    "id": 18,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "68965/6",
+    "estado": "presente"
+  },
+  {
+    "id": 19,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "68977/0",
+    "estado": "presente"
+  },
+  {
+    "id": 20,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66410/4",
+    "estado": "presente"
+  },
+  {
+    "id": 21,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63525/2",
+    "estado": "presente"
+  },
+  {
+    "id": 22,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63531/9",
+    "estado": "presente"
+  },
+  {
+    "id": 23,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "68990/7",
+    "estado": "presente"
+  },
+  {
+    "id": 24,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "48798/8",
+    "estado": "presente"
+  },
+  {
+    "id": 25,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "69015/0",
+    "estado": "presente"
+  },
+  {
+    "id": 26,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "69023/0",
+    "estado": "presente"
+  },
+  {
+    "id": 27,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "69024/1",
+    "estado": "presente"
+  },
+  {
+    "id": 28,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "47324/1",
+    "estado": "presente"
+  },
+  {
+    "id": 29,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "48059/7",
+    "estado": "presente"
+  },
+  {
+    "id": 30,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "50990/6",
+    "estado": "presente"
+  },
+  {
+    "id": 31,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "69036/5",
+    "estado": "presente"
+  },
+  {
+    "id": 32,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63410/1",
+    "estado": "presente"
+  },
+  {
+    "id": 33,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66477/5",
+    "estado": "presente"
+  },
+  {
+    "id": 34,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63606/2",
+    "estado": "presente"
+  },
+  {
+    "id": 35,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66500/5",
+    "estado": "presente"
+  },
+  {
+    "id": 36,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63537/7",
+    "estado": "presente"
+  },
+  {
+    "id": 37,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63558/2",
+    "estado": "presente"
+  },
+  {
+    "id": 38,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63651/7",
+    "estado": "presente"
+  },
+  {
+    "id": 39,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "51001/2",
+    "estado": "presente"
+  },
+  {
+    "id": 40,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "69096/8",
+    "estado": "presente"
+  },
+  {
+    "id": 41,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "69117/5",
+    "estado": "presente"
+  },
+  {
+    "id": 42,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "54677/8",
+    "estado": "presente"
+  },
+  {
+    "id": 43,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "69122/2",
+    "estado": "presente"
+  },
+  {
+    "id": 44,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63654/1",
+    "estado": "presente"
+  },
+  {
+    "id": 45,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66571/2",
+    "estado": "presente"
+  },
+  {
+    "id": 46,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "54140/7",
+    "estado": "presente"
+  },
+  {
+    "id": 47,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66594/0",
+    "estado": "presente"
+  },
+  {
+    "id": 48,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "49498/3",
+    "estado": "presente"
+  },
+  {
+    "id": 49,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "54454/3",
+    "estado": "presente"
+  },
+  {
+    "id": 50,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66614/5",
+    "estado": "presente"
+  },
+  {
+    "id": 51,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "49725/4",
+    "estado": "presente"
+  },
+  {
+    "id": 52,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66617/8",
+    "estado": "presente"
+  },
+  {
+    "id": 53,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "66619/0",
+    "estado": "presente"
+  },
+  {
+    "id": 54,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63572/9",
+    "estado": "presente"
+  },
+  {
+    "id": 56,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "58000/2",
+    "estado": "presente"
+  },
+  {
+    "id": 57,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63532/1",
+    "estado": "presente"
+  },
+  {
+    "id": 58,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "55854/0",
+    "estado": "presente"
+  },
+  {
+    "id": 55,
+    "comision_id": "c1784681924691",
+    "fecha": "2026-07-24",
+    "legajo": "63391/6",
+    "estado": "presente"
+  }
+]
