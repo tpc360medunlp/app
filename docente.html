@@ -2898,6 +2898,9 @@ function switchCoordView(section) {
   const navEl  = document.getElementById('nav-coord-' + section);
   if (viewEl) viewEl.classList.add('active');
   if (navEl)  navEl.classList.add('active');
+  // Resetear scroll al cambiar de vista
+  const mc = document.querySelector('.main-content');
+  if (mc) mc.scrollTop = 0;
 
   const doRender = () => {
     if (section === 'stats')         renderCoordinatorView();
@@ -2934,6 +2937,9 @@ function switchStudentView(view) {
   };
   const navEl = document.getElementById(navMap[view]);
   if (navEl) navEl.classList.add('active');
+  // Resetear scroll al cambiar de vista
+  const mc = document.querySelector('.main-content');
+  if (mc) mc.scrollTop = 0;
 
   const doRender = () => {
     if (view === 'student') {
@@ -4443,6 +4449,9 @@ function switchTeacherView(view) {
     'teacher-aulas':      'nav-teacher-aulas',
   };
   document.getElementById(navMap[view]).classList.add('active');
+  // Resetear scroll al cambiar de vista
+  const mc = document.querySelector('.main-content');
+  if (mc) mc.scrollTop = 0;
 
   const doRender = () => {
     if (view === 'teacher') {
