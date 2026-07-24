@@ -1740,25 +1740,7 @@ async function getLegajoSupabase(email) {
 async function loadDataFromSupabase() {
   try {
     // Ejecutar todas las queries en paralelo
-    const [
-      { data: materias },
-      { data: staff },
-      { data: comisiones },
-      { data: comAlumnos },
-      { data: alumnos },
-      { data: asistenciaData },
-      { data: parcialesData },
-      { data: configData },
-      { data: mesasData },
-      { data: selfData },
-      { data: solCambioData },
-      { data: periodosData },
-      { data: certData },
-      { data: historialData },
-      { data: recordsData },
-      { data: areasData },
-      { data: aulasData },
-    ] = await Promise.all([
+    const results = await Promise.all([
       _supabase.from('materias').select('*'),
       _supabase.from('staff').select('*'),
       _supabase.from('comisiones').select('*'),
@@ -1777,6 +1759,35 @@ async function loadDataFromSupabase() {
       _supabase.from('skills_areas').select('*, skills(*)').order('orden'),
       _supabase.from('solicitudes_aulas').select('*'),
     ]);
+
+    // Detectar errores individuales de Supabase
+    const nombres = ['materias','staff','comisiones','comision_alumnos','alumnos',
+      'asistencia','parciales','config_sistema','mesas_examen','self_reported_finales',
+      'solicitudes_cambio_comision','periodos_cambio_comision','solicitudes_cert_finales',
+      'historial_cambios_comision','student_records','skills_areas','solicitudes_aulas'];
+    results.forEach((r, i) => {
+      if (r.error) console.warn(`⚠️ Error en query '${nombres[i]}':`, r.error.message);
+    });
+
+    const [
+      { data: materias },
+      { data: staff },
+      { data: comisiones },
+      { data: comAlumnos },
+      { data: alumnos },
+      { data: asistenciaData },
+      { data: parcialesData },
+      { data: configData },
+      { data: mesasData },
+      { data: selfData },
+      { data: solCambioData },
+      { data: periodosData },
+      { data: certData },
+      { data: historialData },
+      { data: recordsData },
+      { data: areasData },
+      { data: aulasData },
+    ] = results;
     if (materias) {
       MATERIAS.length = 0;
       materias.forEach(m => MATERIAS.push({
@@ -2514,21 +2525,33 @@ async function enterApp() {
   if (document.getElementById('user-avatar-sidebar'))
     document.getElementById('user-avatar-sidebar').textContent = currentUser?.initials || '?';
 
-  // Los datos ya fueron cargados en onAuthStateChange — no recargar
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  try {
+    renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
 
-  if (currentRole === 'student') {
-    switchStudentView('student');
-    setTimeout(() => {
-      showInAppNotifications(currentUser.email);
-      window._notifShown = true;
-    }, 600);
+    if (currentRole === 'student') {
+      switchStudentView('student');
+      setTimeout(() => {
+        showInAppNotifications(currentUser.email);
+        window._notifShown = true;
+      }, 600);
+    }
+    else if (currentRole === 'teacher') {
+      switchTeacherView('teacher');
+      setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
+    }
+    else switchCoordView('stats');
+
+  } catch(err) {
+    console.error('Error al cargar la vista:', err);
+    // Mostrar mensaje de error visible en lugar de pantalla en blanco
+    const main = document.querySelector('.main-content');
+    if (main) main.innerHTML = `
+      <div style="padding:2rem;text-align:center;color:var(--gray-500)">
+        <p style="font-size:1.1rem;margin-bottom:0.5rem">Hubo un problema al cargar la pantalla.</p>
+        <p style="font-size:0.9rem">Intentá recargar la página.</p>
+        <button onclick="location.reload()" style="margin-top:1rem;padding:8px 20px;background:var(--navy);color:white;border:none;border-radius:8px;cursor:pointer;font-family:var(--font)">Recargar</button>
+      </div>`;
   }
-  else if (currentRole === 'teacher') {
-    switchTeacherView('teacher');
-    setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
-  }
-  else switchCoordView('stats');
 }
 
 function doLogout() {
