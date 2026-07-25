@@ -4670,7 +4670,7 @@ function renderStudentView() {
           <div style="display:flex;align-items:center;width:100%">
             <div style="flex:1;min-width:0">
               <span class="skill-name">${skill.name}</span>
-              ${skill.descripcion ? `<div class="skill-desc">${skill.descripcion}</div>` : ''}
+              ${skill.descripcion ? `<div class="skill-desc">${escapeHtml(skill.descripcion)}</div>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
               <div class="skill-meta" style="text-align:right">${rec.date}<br>${rec.teacher}</div>
@@ -4684,7 +4684,7 @@ function renderStudentView() {
         html += `<div class="skill-row">
           <div style="flex:1;min-width:0">
             <span class="skill-name">${skill.name}</span>
-            ${skill.descripcion ? `<div class="skill-desc">${skill.descripcion}</div>` : ''}
+            ${skill.descripcion ? `<div class="skill-desc">${escapeHtml(skill.descripcion)}</div>` : ''}
           </div>
           <div class="skill-meta">Cargada el ${rec.date}</div>
           <span class="badge badge-pending">Pendiente de validación</span>
@@ -4696,7 +4696,7 @@ function renderStudentView() {
               <span class="skill-dot" style="background:var(--red)"></span>
               <span class="skill-name">${skill.name}</span>
             </div>
-            ${skill.descripcion ? `<div class="skill-desc" style="margin-left:20px">${skill.descripcion}</div>` : ''}
+            ${skill.descripcion ? `<div class="skill-desc" style="margin-left:20px">${escapeHtml(skill.descripcion)}</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
             <span class="badge badge-rejected">Devuelta</span>
@@ -4708,7 +4708,7 @@ function renderStudentView() {
         html += `<div class="skill-row">
           <div style="flex:1;min-width:0">
             <span class="skill-name">${skill.name}</span>
-            ${skill.descripcion ? `<div class="skill-desc">${skill.descripcion}</div>` : ''}
+            ${skill.descripcion ? `<div class="skill-desc">${escapeHtml(skill.descripcion)}</div>` : ''}
           </div>
           <span class="badge badge-empty">No realizada</span>
           <button class="btn-cargar" onclick="openModal('${skill.id}','${skill.name.replace(/'/g,"\\'")}')">Cargar</button>
@@ -5471,7 +5471,7 @@ function renderCoordStudentPortfolio(email) {
       html += `<div class="skill-row" style="align-items:center;flex-wrap:wrap;gap:8px">
         <div style="flex:1;min-width:140px">
           <div style="font-size:14px;font-weight:500;color:var(--navy)">${skill.name}</div>
-          ${skill.descripcion ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${skill.descripcion}</div>` : ''}
+          ${skill.descripcion ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${escapeHtml(skill.descripcion)}</div>` : ''}
           ${rec?.date ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">📅 ${rec.date}${rec.teacher ? ` · ${rec.teacher}` : ''}</div>` : ''}
           ${rec?.teacherObs ? `<div style="font-size:12px;color:#1a7a35;margin-top:2px">💬 "${escapeHtml(rec.teacherObs)}"</div>` : ''}
           ${rec?.obs ? `<div style="font-size:12px;color:var(--gray-600);margin-top:2px">Alumno: "${escapeHtml(rec.obs)}"</div>` : ''}
@@ -10172,8 +10172,8 @@ function renderCoordCudeSolicitudes() {
             <div style="font-size:12px;color:var(--gray-400);margin-top:2px">
               ${comOrig?.nombre || 'Sin comisión'} → ${comDest?.nombre || ''}
             </div>
-            <div style="font-size:12px;color:var(--gray-500);margin-top:4px;font-style:italic">"${s.motivo}"</div>
-            ${s.motivoRechazo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Rechazado: ${s.motivoRechazo}</div>` : ''}
+            <div style="font-size:12px;color:var(--gray-500);margin-top:4px;font-style:italic">"${escapeHtml(s.motivo)}"</div>
+            ${s.motivoRechazo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Rechazado: ${escapeHtml(s.motivoRechazo)}</div>` : ''}
           </div>
           <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:${estadoStyle.bg};color:${estadoStyle.color};white-space:nowrap">${estadoStyle.label}</span>
         </div>
@@ -13088,7 +13088,7 @@ function renderStudentCertFinalesView(tabsHtml = '', subtitulo = '') {
           <div style="flex:1;min-width:150px">
             <div style="font-size:14px;font-weight:500;color:var(--navy)">${materia?.nombre||s.materiaId}</div>
             <div style="font-size:12px;color:var(--gray-400);margin-top:2px">Fecha examen: ${s.fechaExamen} · Solicitado: ${s.fechaSolicitud}</div>
-            ${s.motivo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Motivo de rechazo: ${s.motivo}</div>` : ''}
+            ${s.motivo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Motivo de rechazo: ${escapeHtml(s.motivo)}</div>` : ''}
           </div>
           ${estadoBadge(s.estado)}
           ${s.estado === 'aprobado'
@@ -13223,7 +13223,7 @@ function renderCertRequestsView() {
             <span class="badge ${s.estado==='aprobado'?'badge-validated':'badge-rejected'}">
               ${s.estado==='aprobado'?'Aprobado':'Rechazado'}
             </span>
-            ${s.motivo ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px">${s.motivo}</span>` : ''}
+            ${s.motivo ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px">${escapeHtml(s.motivo)}</span>` : ''}
           </div>`
         }
       </div>
@@ -13579,7 +13579,7 @@ function renderCoordPortfolioView(selectedAreaId = null) {
               <span style="font-size:14px;font-weight:500;color:var(--navy)">${s.name}</span>
               ${archivada ? `<span style="font-size:11px;background:var(--amber-light);color:#b05a10;border-radius:var(--radius-sm);padding:2px 8px">Archivada</span>` : ''}
             </div>
-            ${s.descripcion ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${s.descripcion}</div>` : ''}
+            ${s.descripcion ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${escapeHtml(s.descripcion)}</div>` : ''}
             <div style="font-size:12px;color:var(--teal);margin-top:3px">
               ${docentesNombres || '<span style="color:var(--gray-400)">Sin docente asignado</span>'}
             </div>
