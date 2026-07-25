@@ -44,6 +44,11 @@ async function ensureQRCode() {
   if (typeof QRCode !== 'undefined') return;
   await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
 }
+
+async function ensureJsQR() {
+  if (typeof jsQR !== 'undefined') return;
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js');
+}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1268,6 +1273,20 @@ async function ensureQRCode() {
   </div>
 </div>
 
+<!-- MODAL: escanear QR de asistencia (alumno) -->
+<div class="modal-overlay" id="modal-escanear-qr">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <h2 class="modal-title">Escanear QR de asistencia</h2>
+    <p class="modal-sub" id="escaner-qr-sub">Apuntá la cámara al código que muestra el docente.</p>
+    <div style="position:relative;border-radius:var(--radius-md);overflow:hidden;background:#000;margin:1rem 0;aspect-ratio:1/1">
+      <video id="escaner-qr-video" playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+      <div style="position:absolute;inset:0;pointer-events:none;border:3px solid rgba(255,255,255,0.4);border-radius:var(--radius-md);margin:12%"></div>
+    </div>
+    <div id="escaner-qr-error" style="display:none;background:var(--red-light);border:1px solid #f5b8be;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:#b02030;margin-bottom:1rem;text-align:left"></div>
+    <button class="btn-secondary" style="width:100%" onclick="cerrarEscanerQr()">Cancelar</button>
+  </div>
+</div>
+
 <!-- MODAL: solicitar certificado final -->
 <div class="modal-overlay" id="modal-solicitud-final">
   <div class="modal">
@@ -2359,6 +2378,12 @@ const USERS = {
 let currentRole = "student";
 // Leer rol guardado al inicio ANTES de que initLoginScreen lo borre
 const _savedRoleAtStart = localStorage.getItem('tpc360_role');
+// Capturar token de asistencia por QR (si el alumno escaneó y aún no está logueado,
+// el login con Google hace un redirect que perdería este query param — lo guardamos ya).
+(function() {
+  const tokenParam = new URLSearchParams(window.location.search).get('token');
+  if (tokenParam) localStorage.setItem('tpc360_qr_token', tokenParam);
+})();
 let currentUser = USERS.student;
 let selectedSkillId = null;
 let selectedEvalValue = null;
@@ -2650,6 +2675,153 @@ function doLogin() {
   enterApp();
 }
 
+// Procesa el token de asistencia por QR (si el alumno llegó acá escaneando un código
+// con la cámara nativa del celular, vía URL). Se guarda en localStorage al cargar la
+// página para sobrevivir el redirect de login con Google.
+async function procesarTokenQrSiExiste() {
+  const token = localStorage.getItem('tpc360_qr_token');
+  if (!token) return;
+  localStorage.removeItem('tpc360_qr_token'); // de un solo uso
+  await registrarAsistenciaPorToken(token);
+}
+
+// Lógica compartida de validación y registro — la usan tanto la llegada por URL
+// (cámara nativa) como el escáner integrado en la app (botón "Escanear QR").
+async function registrarAsistenciaPorToken(token) {
+  const m = token.match(/^asistencia_(.+)_(\d{4}-\d{2}-\d{2})_(\d+)$/);
+  if (!m) {
+    showToast('El código escaneado no es un QR de asistencia válido.', true);
+    return;
+  }
+
+  const [, comId, fecha, slotStr] = m;
+  const slot = parseInt(slotStr);
+  const slotActual = Math.floor(Date.now() / 30000);
+  // Aceptar el slot actual o el inmediato anterior (margen por si tardó en loguearse)
+  if (slot !== slotActual && slot !== slotActual - 1) {
+    showToast('El código QR ya expiró. Pedile al docente que lo vuelva a mostrar.', true);
+    return;
+  }
+
+  const comision = COMISIONES.find(c => c.id === comId);
+  if (!comision) {
+    showToast('No se encontró la comisión del código QR.', true);
+    return;
+  }
+  if (!comision.alumnos.includes(currentUser.email)) {
+    showToast('No estás inscripto en esta comisión.', true);
+    return;
+  }
+
+  const legajo = getLegajoByEmail(currentUser.email);
+  if (!legajo) {
+    showToast('No se pudo registrar tu asistencia (falta legajo asociado a tu cuenta).', true);
+    return;
+  }
+
+  if (!asistencia[comId]) asistencia[comId] = {};
+  if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
+  if (asistencia[comId][fecha][currentUser.email] === 'presente') {
+    showToast('Ya estabas registrado como presente.');
+    return;
+  }
+  asistencia[comId][fecha][currentUser.email] = 'presente';
+
+  const { error } = await _supabase.from('asistencia').upsert({
+    comision_id: comId, fecha, legajo, estado: 'presente'
+  }, { onConflict: 'comision_id,fecha,legajo' });
+
+  if (error) {
+    console.warn('Error registrando asistencia por QR:', error);
+    delete asistencia[comId][fecha][currentUser.email];
+    showToast('No se pudo registrar tu asistencia. Intentá de nuevo o avisale al docente.', true);
+    return;
+  }
+  showToast('✓ Asistencia registrada correctamente');
+}
+
+// ── ESCÁNER DE QR INTEGRADO (botón "Escanear QR" en Asistencia del alumno) ──
+let _escanerQrStream = null;
+let _escanerQrRafId  = null;
+
+async function abrirEscanerQr() {
+  const modal = document.getElementById('modal-escanear-qr');
+  const errEl = document.getElementById('escaner-qr-error');
+  errEl.style.display = 'none';
+  modal.classList.add('open');
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    errEl.textContent = 'Tu navegador no permite acceder a la cámara desde acá. Probá escanear el código directamente con la app de cámara del celular.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    await ensureJsQR();
+  } catch (e) {
+    errEl.textContent = 'No se pudo cargar el lector de QR. Verificá tu conexión e intentá de nuevo.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    _escanerQrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  } catch (e) {
+    errEl.textContent = 'No se pudo acceder a la cámara. Revisá que le hayas dado permiso a esta página, o escaneá el código con la app de cámara del celular.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const video = document.getElementById('escaner-qr-video');
+  video.srcObject = _escanerQrStream;
+  await video.play();
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const tick = () => {
+    if (!_escanerQrStream) return; // el modal se cerró
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code && code.data) {
+        procesarQrEscaneado(code.data);
+        return;
+      }
+    }
+    _escanerQrRafId = requestAnimationFrame(tick);
+  };
+  _escanerQrRafId = requestAnimationFrame(tick);
+}
+
+function cerrarEscanerQr() {
+  document.getElementById('modal-escanear-qr').classList.remove('open');
+  if (_escanerQrRafId) { cancelAnimationFrame(_escanerQrRafId); _escanerQrRafId = null; }
+  if (_escanerQrStream) {
+    _escanerQrStream.getTracks().forEach(t => t.stop());
+    _escanerQrStream = null;
+  }
+  const video = document.getElementById('escaner-qr-video');
+  if (video) video.srcObject = null;
+}
+
+async function procesarQrEscaneado(rawData) {
+  cerrarEscanerQr();
+  // El QR codifica una URL completa (para que también funcione con la cámara nativa) —
+  // extraemos el parámetro token de ahí.
+  let token = rawData;
+  try {
+    const url = new URL(rawData);
+    token = url.searchParams.get('token') || rawData;
+  } catch (e) {
+    // No era una URL válida — usar el texto tal cual, por si el QR codificara el token directo.
+  }
+  await registrarAsistenciaPorToken(token);
+}
+
 async function enterApp() {
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
@@ -2672,6 +2844,7 @@ async function enterApp() {
         showInAppNotifications(currentUser.email);
         window._notifShown = true;
       }, 600);
+      procesarTokenQrSiExiste();
     }
     else if (currentRole === 'teacher') {
       const firstGroup = getOrderedTeacherGroups().find(g => g.enabled);
@@ -3160,8 +3333,13 @@ function renderStudentAttendanceView() {
         </select>
       </div>` : '';
 
+  const scanBtnHTML = `<button class="btn-cargar" onclick="abrirEscanerQr()" style="margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;width:fit-content">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>
+    Escanear QR de asistencia
+  </button>`;
+
   if (misComisiones.length === 0) {
-    document.getElementById('student-attendance-container').innerHTML = selectorHTML +
+    document.getElementById('student-attendance-container').innerHTML = selectorHTML + scanBtnHTML +
       `<div class="empty-state">
         <div class="empty-icon">📋</div>
         <p>No tenés comisiones asignadas para ${selCiclo}.</p>
@@ -3171,7 +3349,7 @@ function renderStudentAttendanceView() {
   }
 
   // Lista plana de materias sin agrupar por año
-  let html = selectorHTML;
+  let html = selectorHTML + scanBtnHTML;
 
   misComisiones.forEach(comision => {
     const materia    = MATERIAS.find(m => m.id === comision.materiaId);
@@ -7395,28 +7573,44 @@ function startQrIntervals(comId, date) {
     }
   }, 1000);
 
-  // Simulación: un alumno escanea cada 5 segundos (demo)
-  const comision = COMISIONES.find(c => c.id === comId);
-  qrInterval = setInterval(() => {
-    const unregistered = (comision?.alumnos || []).filter(e => !qrRegistered.has(e));
-    if (unregistered.length > 0) {
-      const email = unregistered[Math.floor(Math.random() * unregistered.length)];
-      qrRegistered.add(email);
-      if (!asistencia[comId]) asistencia[comId] = {};
-      if (!asistencia[comId][date]) asistencia[comId][date] = {};
+  // Consultar Supabase periódicamente para detectar alumnos que efectivamente escanearon el QR
+  qrInterval = setInterval(async () => {
+    const { data, error } = await _supabase
+      .from('asistencia')
+      .select('legajo, estado')
+      .eq('comision_id', comId)
+      .eq('fecha', date);
+
+    if (error) { console.warn('Error consultando asistencia QR:', error); return; }
+    if (!asistencia[comId]) asistencia[comId] = {};
+    if (!asistencia[comId][date]) asistencia[comId][date] = {};
+
+    let nuevoRegistrado = null;
+    (data || []).forEach(row => {
+      if (row.estado !== 'presente') return;
+      const email = getEmailByLegajo(row.legajo);
+      if (!email) return;
       asistencia[comId][date][email] = 'presente';
-      const elCount = document.getElementById('qr-registered');
-      if (elCount) elCount.textContent = qrRegistered.size;
+      if (!qrRegistered.has(email)) {
+        qrRegistered.add(email);
+        nuevoRegistrado = email;
+      }
+    });
+
+    const elCount = document.getElementById('qr-registered');
+    if (elCount) elCount.textContent = qrRegistered.size;
+
+    if (nuevoRegistrado) {
       const elLast = document.getElementById('qr-last-registered');
       if (elLast) {
-        const name = STUDENT_NAMES[email] || email;
-        elLast.innerHTML = `<span style="color:#1a7a35;font-weight:500">✓ Guardado</span> · ${name}`;
+        const name = STUDENT_NAMES[nuevoRegistrado] || nuevoRegistrado;
+        elLast.innerHTML = `<span style="color:#1a7a35;font-weight:500">✓ Presente</span> · ${name}`;
         elLast.style.opacity = '1';
         clearTimeout(elLast._timeout);
         elLast._timeout = setTimeout(() => { elLast.style.opacity = '0.4'; }, 2500);
       }
     }
-  }, 5000);
+  }, 4000);
 }
 
 function closeQrModal() {
