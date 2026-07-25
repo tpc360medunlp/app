@@ -7425,6 +7425,14 @@ async function iniciarRegistro(comId, fecha, tipo) {
   if (!asistencia[comId]) asistencia[comId] = {};
   asistencia[comId][fecha] = {};
   const comision = COMISIONES.find(c => c.id === comId);
+
+  if (tipo === 'qr') {
+    // En modo QR nadie arranca presente — cada alumno se marca solo al escanear.
+    openQrModal(comId, fecha);
+    return;
+  }
+
+  // Modo manual: arranca con todos presentes, el docente desmarca los ausentes.
   const rows = [];
   (comision?.alumnos || []).forEach(e => {
     asistencia[comId][fecha][e] = 'presente';
@@ -7440,11 +7448,7 @@ async function iniciarRegistro(comId, fecha, tipo) {
       return;
     }
   }
-  if (tipo === 'qr') {
-    openQrModal(comId, fecha);
-  } else {
-    renderAttendanceView(comId, fecha, 'manual');
-  }
+  renderAttendanceView(comId, fecha, 'manual');
 }
 
 async function toggleAsistencia(comId, fecha, email, estado) {
@@ -7613,7 +7617,7 @@ function startQrIntervals(comId, date) {
   }, 4000);
 }
 
-function closeQrModal() {
+async function closeQrModal() {
   clearInterval(qrInterval);
   clearInterval(qrCountdownInterval);
   document.getElementById('modal-qr').classList.remove('open');
@@ -7621,9 +7625,21 @@ function closeQrModal() {
   if (comision && activeQrDate) {
     if (!asistencia[activeQrComision]) asistencia[activeQrComision] = {};
     if (!asistencia[activeQrComision][activeQrDate]) asistencia[activeQrComision][activeQrDate] = {};
+    const rows = [];
     comision.alumnos.forEach(email => {
-      if (!qrRegistered.has(email)) asistencia[activeQrComision][activeQrDate][email] = 'ausente';
+      if (!qrRegistered.has(email)) {
+        asistencia[activeQrComision][activeQrDate][email] = 'ausente';
+        const legajo = getLegajoByEmail(email);
+        if (legajo) rows.push({ comision_id: activeQrComision, fecha: activeQrDate, legajo, estado: 'ausente' });
+      }
     });
+    if (rows.length > 0) {
+      const { error } = await _supabase.from('asistencia').upsert(rows, { onConflict: 'comision_id,fecha,legajo' });
+      if (error) {
+        console.warn('Error guardando ausentes al cerrar QR:', error);
+        showToast('Los ausentes se marcaron acá, pero no se pudieron guardar. Verificá tu conexión.', true);
+      }
+    }
   }
   renderAttendanceView(activeQrComision, activeQrDate, 'manual');
 }
