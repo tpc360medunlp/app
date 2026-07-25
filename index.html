@@ -6276,12 +6276,13 @@ async function exportarXlsx(titulo, subtitulo, headers, rows, nombre) {
 }
 
 async function exportarPdf(titulo, subtitulo, headers, rows, nombre, landscape = false, dynamicNombre = false, footerNote = null) {
-  if (typeof PDFLib === 'undefined') {
-    showToast('La libreria PDF no esta disponible. Verifica tu conexion a internet.', true);
-    return;
-  }
   showToast('Generando PDF...');
   try {
+    await ensurePDFLib();
+    if (typeof PDFLib === 'undefined') {
+      showToast('La libreria PDF no esta disponible. Verifica tu conexion a internet.', true);
+      return;
+    }
     const membrete = (typeof certConfig !== 'undefined' && certConfig?.membrete) ? certConfig.membrete : null;
     const bytes    = await buildPdf(titulo, subtitulo, headers, rows, membrete, landscape, dynamicNombre, footerNote);
     const blob     = new Blob([bytes], { type:'application/pdf' });
