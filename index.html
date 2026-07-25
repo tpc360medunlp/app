@@ -6339,28 +6339,23 @@ function exportConsolidadoParcial(comId, parcial, fmt='xlsx') {
   const subtitulo = `${materia?.nombre||''} · ${com?.nombre||''} · Ciclo ${año} · ${parcial}`;
   const headers   = ['Apellido y Nombre', 'Documento', 'Nota Final', 'Estado', 'Fechas rendidas'];
 
+  // Misma lógica que la vista en pantalla (docente/coordinación)
+  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
+  const todasFechasAgotadas = getFechasAgotadasPorParcial(comsMateria, [parcial])[parcial];
+
+  const estadoLabels = {
+    promocion: 'Promocion', aprobado: 'Aprobado', desaprobado: 'Desaprobado',
+    en_curso: 'En curso', ausente: 'Ausente',
+  };
+
   const rows = alumnos.map(email => {
     const coms = getComisionesMateriaAlumno(email, materiaId, año);
-    let notaFinal = null, estadoFinal = 'Ausente';
-    let presentaciones = 0;
-    NOMBRES_FECHAS.forEach(f => {
-      for (const com2 of coms) {
-        const rec = parciales[com2.id]?.[parcial]?.[f]?.[email];
-        if (!rec) continue;
-        // Contar como presentación cualquier estado que no sea ausente
-        if (rec.estado && rec.estado !== 'ausente') presentaciones++;
-        if (rec.estado==='aprobado'||rec.estado==='promocion') {
-          notaFinal = rec.nota; estadoFinal = rec.estado==='promocion'?'Promocion':'Aprobado';
-        } else if (rec.estado==='desaprobado') {
-          notaFinal = rec.nota; estadoFinal = 'Desaprobado';
-        }
-        break;
-      }
-    });
+    const { estado, nota, presentaciones } =
+      getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadas);
     const entry = Object.entries(ENROLLED_STUDENTS).find(([,s]) => s.email === email);
     const doc   = entry?.[1]?.doc || '—';
-    const notaDisplay = notaFinal ?? '—';
-    return [STUDENT_NAMES[email]||email, doc, notaDisplay, estadoFinal, presentaciones || '—'];
+    const notaDisplay = nota ?? '—';
+    return [STUDENT_NAMES[email]||email, doc, notaDisplay, estadoLabels[estado] || 'Ausente', presentaciones || '—'];
   });
 
   const nombre = `Consolidado_${materia?.nombre||''}_${parcial}`.replace(/ /g,'_');
@@ -6480,7 +6475,7 @@ function exportEstadisticasCalif(fmt='xlsx') {
     const promocion = estados.filter(e=>e==='promocion').length;
     const pPres = total>0     ? Math.round(presentes/total*100)+'%'    : '—';
     const pApro = presentes>0 ? Math.round(aprobados/presentes*100)+'%': '—';
-    const pProm = conPromocion && presentes>0 ? Math.round(promocion/presentes*100)+'%' : '—';
+    const pProm = conPromocion && aprobados>0 ? Math.round(promocion/aprobados*100)+'%' : '—';
     const notasV = notas.filter(n=>n!==null&&!isNaN(n));
     const prom   = notasV.length>0 ? (notasV.reduce((s,n)=>s+n,0)/notasV.length).toFixed(1) : '—';
     return [materia?.nombre||'', comNombre, parcial, instancia, pPres, pApro, pProm, prom];
