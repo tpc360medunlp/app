@@ -644,25 +644,15 @@ async function ensureQRCode() {
   .mnav-btn span { white-space: nowrap; display: block; }
 
   #mobile-drawer-overlay {
-    display: block;
+    display: none;
     position: fixed; inset: 0;
     background: rgba(11,31,58,0.5);
     z-index: 500;
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 150ms ease, visibility 0s linear 150ms;
   }
-  #mobile-drawer-overlay.open {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-    transition: opacity 150ms ease, visibility 0s;
-  }
+  #mobile-drawer-overlay.open { display: block; }
   body.mobile-menu-open { overflow: hidden; }
-  #mobile-bottom-sheet { touch-action: pan-y; }
   #mobile-bottom-sheet {
-    display: flex;
+    display: none;
     position: fixed;
     left: 0; right: 0; bottom: 0;
     background: var(--navy);
@@ -672,22 +662,8 @@ async function ensureQRCode() {
     flex-direction: column;
     max-height: 70dvh;
     overflow-y: auto;
-    overscroll-behavior: contain;
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(100%);
-    transition: transform 180ms ease-out, opacity 150ms ease-out, visibility 0s linear 180ms;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
   }
-  #mobile-bottom-sheet.open {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-    transition: transform 180ms ease-out, opacity 150ms ease-out, visibility 0s;
-  }
+  #mobile-bottom-sheet.open { display: flex; }
   .msheet-handle {
     width: 36px; height: 4px;
     background: rgba(255,255,255,0.2);
@@ -725,14 +701,6 @@ async function ensureQRCode() {
     .skill-row { flex-wrap: wrap; }
     .validation-card { flex-direction: column; }
     .modal { max-height: 92vh; overflow-y: auto; }
-  }
-  /* Animación CSS real para forzar tick del compositor en Android Chrome */
-  @keyframes forceRepaintTick {
-    from { opacity: 0.9999; }
-    to   { opacity: 1; }
-  }
-  .force-repaint-anim {
-    animation: forceRepaintTick 0.05s linear;
   }
 </style>
 </head>
@@ -2650,16 +2618,6 @@ function doLogout() {
 
 // Forzar repintado en Android Chrome via micro-scroll
 // ── ICONOS COMPARTIDOS PARA NAVEGACIÓN MOBILE ──────────────────
-// Forzar tick del compositor en Android via animación CSS real
-function forceRepaint(el) {
-  if (window.innerWidth > 768) return;
-  const target = el || document.querySelector('.page-view.active') || document.querySelector('.main-content');
-  if (!target) return;
-  target.classList.remove('force-repaint-anim');
-  void target.offsetHeight; // forzar reflow para reiniciar la animación
-  target.classList.add('force-repaint-anim');
-  setTimeout(() => target.classList.remove('force-repaint-anim'), 100);
-}
 
 const NAV_ICONS = {
   portfolio:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
@@ -2774,15 +2732,8 @@ function openMobileDrawer() {
     </button>`;
   });
   sheet.innerHTML = html;
-
-  requestAnimationFrame(() => {
-    overlay.classList.add('open');
-    forceRepaint(overlay);
-    requestAnimationFrame(() => {
-      sheet.classList.add('open');
-      forceRepaint(sheet);
-    });
-  });
+  overlay.classList.add('open');
+  sheet.classList.add('open');
   document.body.classList.add('mobile-menu-open');
 }
 
@@ -2939,7 +2890,6 @@ function switchCoordView(section) {
   };
 
   doRender();
-  forceRepaint();
 }
 
 function switchStudentView(view) {
@@ -3005,7 +2955,6 @@ function switchStudentView(view) {
   };
 
   doRender();
-  forceRepaint();
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -4493,7 +4442,6 @@ function switchTeacherView(view) {
   };
 
   doRender();
-  forceRepaint();
 }
 
 // Obtener las materiaIds que puede validar el docente actual
