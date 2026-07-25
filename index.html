@@ -7554,7 +7554,10 @@ async function renderQr() {
   const container = document.getElementById('qr-container');
   container.innerHTML = '';
   const token = generateQrToken(activeQrComision, activeQrDate);
-  const url = `${location.origin}${location.pathname}?token=${token}`;
+  // El QR lo escanea el alumno — siempre debe apuntar a la página de estudiante (index.html),
+  // sin importar si el docente lo está generando desde docente.html o coordinacion.html.
+  const studentPath = location.pathname.replace(/[^/]*$/, 'index.html');
+  const url = `${location.origin}${studentPath}?token=${token}`;
   try {
     new QRCode(container, { text: url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
   } catch(e) {
