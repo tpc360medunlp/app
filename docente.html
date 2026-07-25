@@ -3390,18 +3390,11 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
   }).join('');
 
   // Notas para el promedio global: nota final de cada alumno en cada parcial
-  const notasGlobal = alumnos.flatMap(email => {
-    return parcialesConNotas.map(p => {
-      let notaDesap = null;
-      for (const f of NOMBRES_FECHAS) {
-        const rec = parciales[comId]?.[p]?.[f]?.[email];
-        if (!rec) continue;
-        if (rec.estado==='promocion'||rec.estado==='aprobado') return rec.nota ?? null;
-        if (rec.estado==='desaprobado') notaDesap = rec.nota ?? null;
-      }
-      return notaDesap;
-    });
-  }).filter(n => n !== null && !isNaN(n));
+  const notasGlobal = alumnos.flatMap(email =>
+    parcialesConNotas.map(p =>
+      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcial[p]).nota
+    )
+  ).filter(n => n !== null && !isNaN(n));
 
   return `
     <div class="area-card" style="margin-top:1rem">
@@ -3467,17 +3460,9 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
     </div>`;
   }).join('');
 
-  const notasParcial = alumnos.map(email => {
-    // Nota final: la de aprobado/promocion si existe, si no la última desaprobada
-    let notaDesap = null;
-    for (const f of NOMBRES_FECHAS) {
-      const rec = parciales[comId]?.[parcial]?.[f]?.[email];
-      if (!rec) continue;
-      if (rec.estado==='promocion'||rec.estado==='aprobado') return rec.nota ?? null;
-      if (rec.estado==='desaprobado') notaDesap = rec.nota ?? null;
-    }
-    return notaDesap;
-  }).filter(n => n !== null && !isNaN(n));
+  const notasParcial = alumnos
+    .map(email => getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadasParc).nota)
+    .filter(n => n !== null && !isNaN(n));
 
   return `
     <div class="area-card" style="margin-top:1rem">
