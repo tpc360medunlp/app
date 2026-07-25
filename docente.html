@@ -2027,12 +2027,18 @@ async function loadDataFromSupabase() {
       configData.forEach(c => {
         if (c.clave === 'studentViewConfig' && c.valor) {
           Object.keys(c.valor).forEach(k => {
-            if (studentViewConfig[k]) studentViewConfig[k].enabled = c.valor[k].enabled;
+            if (studentViewConfig[k]) {
+              studentViewConfig[k].enabled = c.valor[k].enabled;
+              if (c.valor[k].orden !== undefined) studentViewConfig[k].orden = c.valor[k].orden;
+            }
           });
         }
         if (c.clave === 'teacherViewConfig' && c.valor) {
           Object.keys(c.valor).forEach(k => {
-            if (teacherViewConfig[k]) teacherViewConfig[k].enabled = c.valor[k].enabled;
+            if (teacherViewConfig[k]) {
+              teacherViewConfig[k].enabled = c.valor[k].enabled;
+              if (c.valor[k].orden !== undefined) teacherViewConfig[k].orden = c.valor[k].orden;
+            }
           });
         }
         if (c.clave === 'certConfig' && c.valor) {
@@ -2714,25 +2720,27 @@ function getNavItems() {
   const t = teacherViewConfig;
   if (currentRole === 'student') {
     const all = [];
-    if (c.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchStudentView('student')`,             id:'nav-student-portfolio'});
-    if (c.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchStudentView('student-attendance')`,  id:'nav-student-attendance'});
+    if (c.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchStudentView('student')`,             id:'nav-student-portfolio', orden:c.portfolio.orden});
+    if (c.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchStudentView('student-attendance')`,  id:'nav-student-attendance', orden:c.asistencia.orden});
     if (c.notas_parciales?.enabled||c.notas_finales?.enabled)
-                                all.push({i:'notas',     l:'Notas',        fn:`switchStudentView('student-notas')`,       id:'nav-student-notas'});
+                                all.push({i:'notas',     l:'Notas',        fn:`switchStudentView('student-notas')`,       id:'nav-student-notas', orden:(c.notas_parciales?.orden ?? c.notas_finales?.orden)});
     if (c.certificados_parciales?.enabled||c.certificados_finales?.enabled)
-                                all.push({i:'cert',      l:'Certificados', fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados'});
-    if (c.cronograma?.enabled)  all.push({i:'calendario',l:'Cronograma',   fn:`switchStudentView('student-cronograma')`,  id:'nav-student-cronograma'});
-    if (c.cartelera?.enabled)   all.push({i:'cartelera', l:'Cartelera',    fn:`switchStudentView('student-cartelera')`,   id:'nav-student-cartelera'});
-    if (c.cude?.enabled)        all.push({i:'cude',      l:'Mi CUdE',      fn:`switchStudentView('student-cude')`,        id:'nav-student-cude'});
+                                all.push({i:'cert',      l:'Certificados', fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados', orden:(c.certificados_parciales?.orden ?? c.certificados_finales?.orden)});
+    if (c.cronograma?.enabled)  all.push({i:'calendario',l:'Cronograma',   fn:`switchStudentView('student-cronograma')`,  id:'nav-student-cronograma', orden:c.cronograma.orden});
+    if (c.cartelera?.enabled)   all.push({i:'cartelera', l:'Cartelera',    fn:`switchStudentView('student-cartelera')`,   id:'nav-student-cartelera', orden:c.cartelera.orden});
+    if (c.cude?.enabled)        all.push({i:'cude',      l:'Mi CUdE',      fn:`switchStudentView('student-cude')`,        id:'nav-student-cude', orden:c.cude.orden});
+    all.sort((a,b) => a.orden - b.orden);
     return all;
   }
   if (currentRole === 'teacher') {
     const all = [];
-    if (t.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchTeacherView('teacher')`,             id:'nav-validaciones'});
-    if (t.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchTeacherView('attendance')`,          id:'nav-asistencia'});
-    if (t.calificaciones?.enabled) all.push({i:'notas',  l:'Notas',        fn:`switchTeacherView('notas')`,               id:'nav-notas'});
-    if (t.certificados?.enabled)all.push({i:'cert',      l:'Certificados', fn:`switchTeacherView('cert-requests')`,        id:'nav-cert-requests'});
-    if (t.cronograma?.enabled)  all.push({i:'calendario',l:'Cronogramas',  fn:`switchTeacherView('teacher-cronograma')`,  id:'nav-teacher-cronograma'});
-    if (t.solicitudAulas?.enabled!==false) all.push({i:'aulas',l:'Aulas',  fn:`switchTeacherView('teacher-aulas')`,       id:'nav-teacher-aulas'});
+    if (t.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchTeacherView('teacher')`,             id:'nav-validaciones', orden:t.portfolio.orden});
+    if (t.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchTeacherView('attendance')`,          id:'nav-asistencia', orden:t.asistencia.orden});
+    if (t.calificaciones?.enabled) all.push({i:'notas',  l:'Notas',        fn:`switchTeacherView('notas')`,               id:'nav-notas', orden:t.calificaciones.orden});
+    if (t.certificados?.enabled)all.push({i:'cert',      l:'Certificados', fn:`switchTeacherView('cert-requests')`,        id:'nav-cert-requests', orden:t.certificados.orden});
+    if (t.cronograma?.enabled)  all.push({i:'calendario',l:'Cronogramas',  fn:`switchTeacherView('teacher-cronograma')`,  id:'nav-teacher-cronograma', orden:t.cronograma.orden});
+    if (t.solicitudAulas?.enabled!==false) all.push({i:'aulas',l:'Aulas',  fn:`switchTeacherView('teacher-aulas')`,       id:'nav-teacher-aulas', orden:t.solicitudAulas?.orden ?? 6});
+    all.sort((a,b) => a.orden - b.orden);
     return all;
   }
   if (currentRole === 'coordinator') {
@@ -2857,68 +2865,82 @@ function renderSidebar() {
   let html = '';
   if (currentRole === 'student') {
     const cfg = studentViewConfig;
-    html = `
-      <div class="nav-section-label">Mi espacio</div>
-      ${cfg.portfolio.enabled ? `<button class="nav-item active" id="nav-student-portfolio" onclick="switchStudentView('student')">
+    const snippets = {
+      portfolio: `<button class="nav-item active" id="nav-student-portfolio" onclick="switchStudentView('student')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>
         <span>Portfolio</span>
-      </button>` : ''}
-      ${cfg.asistencia.enabled ? `<button class="nav-item" id="nav-student-attendance" onclick="switchStudentView('student-attendance')">
+      </button>`,
+      asistencia: `<button class="nav-item" id="nav-student-attendance" onclick="switchStudentView('student-attendance')">
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
         <span>Asistencia</span>
-      </button>` : ''}
-      ${(cfg.notas_parciales?.enabled || cfg.notas_finales?.enabled) ? `<button class="nav-item" id="nav-student-notas" onclick="switchStudentView('student-notas')">
+      </button>`,
+      notas: `<button class="nav-item" id="nav-student-notas" onclick="switchStudentView('student-notas')">
         <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>Calificaciones</span>
-      </button>` : ''}
-      ${(cfg.certificados_parciales?.enabled || cfg.certificados_finales?.enabled) ? `<button class="nav-item" id="nav-student-certificados" onclick="switchStudentView('student-certificados')">
+        <span>Calificaciones/Notas</span>
+      </button>`,
+      certificados: `<button class="nav-item" id="nav-student-certificados" onclick="switchStudentView('student-certificados')">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="12" cy="15" r="2"/><path d="M12 17v2"/></svg>
         <span>Certificados</span>
-      </button>` : ''}
-      ${cfg.cronograma?.enabled ? `<button class="nav-item" id="nav-student-cronograma" onclick="switchStudentView('student-cronograma')">
+      </button>`,
+      cronograma: `<button class="nav-item" id="nav-student-cronograma" onclick="switchStudentView('student-cronograma')">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Cronogramas</span>
-      </button>` : ''}
-      ${cfg.cartelera?.enabled ? `<button class="nav-item" id="nav-student-cartelera" onclick="switchStudentView('student-cartelera')">
+      </button>`,
+      cartelera: `<button class="nav-item" id="nav-student-cartelera" onclick="switchStudentView('student-cartelera')">
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span>Cartelera</span>
         <span id="cartelera-badge-student" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
-      </button>` : ''}
-      ${cfg.cude?.enabled ? `<button class="nav-item" id="nav-student-cude" onclick="switchStudentView('student-cude')">
+      </button>`,
+      cude: `<button class="nav-item" id="nav-student-cude" onclick="switchStudentView('student-cude')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         <span>Mi CUdE</span>
-      </button>` : ''}`;
+      </button>`,
+    };
+    const orderedHtml = getOrderedStudentGroups()
+      .filter(g => g.enabled)
+      .map(g => snippets[g.key] || '')
+      .join('');
+    html = `
+      <div class="nav-section-label">Mi espacio</div>
+      ${orderedHtml}`;
   } else if (currentRole === 'teacher') {
     const tcfg = teacherViewConfig;
-    html = `
-      <div class="nav-section-label">Docente</div>
-      ${tcfg.portfolio?.enabled ? `<button class="nav-item active" id="nav-validaciones" onclick="switchTeacherView('teacher')">
+    const tsnippets = {
+      portfolio: `<button class="nav-item active" id="nav-validaciones" onclick="switchTeacherView('teacher')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>
         <span>Portfolio</span>
         ${pendingCount > 0 ? `<span class="nav-badge">${pendingCount}</span>` : ''}
-      </button>` : ''}
-      ${tcfg.asistencia?.enabled ? `<button class="nav-item" id="nav-asistencia" onclick="switchTeacherView('attendance')">
+      </button>`,
+      asistencia: `<button class="nav-item" id="nav-asistencia" onclick="switchTeacherView('attendance')">
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
         <span>Asistencia</span>
-      </button>` : ''}
-      ${tcfg.calificaciones?.enabled ? `<button class="nav-item" id="nav-notas" onclick="switchTeacherView('notas')">
+      </button>`,
+      calificaciones: `<button class="nav-item" id="nav-notas" onclick="switchTeacherView('notas')">
         <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>Calificaciones</span>
-      </button>` : ''}
-      ${tcfg.certificados?.enabled ? `<button class="nav-item" id="nav-cert-requests" onclick="switchTeacherView('cert-requests')">
+        <span>Calificaciones/Notas</span>
+      </button>`,
+      certificados: `<button class="nav-item" id="nav-cert-requests" onclick="switchTeacherView('cert-requests')">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="12" cy="15" r="2"/><path d="M12 17v2"/></svg>
         <span>Certificados</span>
         ${getPendingCertCount() > 0 ? `<span class="nav-badge">${getPendingCertCount()}</span>` : ''}
-      </button>` : ''}
-      ${tcfg.cronograma?.enabled ? `<button class="nav-item" id="nav-teacher-cronograma" onclick="switchTeacherView('teacher-cronograma')">
+      </button>`,
+      cronograma: `<button class="nav-item" id="nav-teacher-cronograma" onclick="switchTeacherView('teacher-cronograma')">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Cronogramas</span>
-      </button>` : ''}
-      ${tcfg.solicitudAulas?.enabled !== false ? `<button class="nav-item" id="nav-teacher-aulas" onclick="switchTeacherView('teacher-aulas')">
+      </button>`,
+      solicitudAulas: `<button class="nav-item" id="nav-teacher-aulas" onclick="switchTeacherView('teacher-aulas')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Solicitud de aulas</span>
         <span id="aulas-badge-teacher" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
-      </button>` : ''}`;
+      </button>`,
+    };
+    const torderedHtml = getOrderedTeacherGroups()
+      .filter(g => g.enabled)
+      .map(g => tsnippets[g.key] || '')
+      .join('');
+    html = `
+      <div class="nav-section-label">Docente</div>
+      ${torderedHtml}`;
   } else {
     html = `
       <div class="nav-section-label">Coordinación</div>
@@ -11348,25 +11370,93 @@ async function loadMembreteBytes(membrete) {
 
 // ── CONFIGURACIÓN DEL SISTEMA ─────────────────────────────
 let studentViewConfig = {
-  portfolio:              { label: 'Portfolio',                       enabled: true  },
-  asistencia:             { label: 'Asistencia',                      enabled: true  },
-  notas_parciales:        { label: 'Calificaciones · Parciales',      enabled: true  },
-  notas_finales:          { label: 'Calificaciones · Finales',        enabled: true  },
-  certificados_parciales: { label: 'Certificados · Parciales',        enabled: true  },
-  certificados_finales:   { label: 'Certificados · Finales',          enabled: true  },
-  cronograma:             { label: 'Cronogramas',                     enabled: true  },
-  cartelera:              { label: 'Cartelera',                       enabled: true  },
-  cude:                   { label: 'Mi CUdE',                         enabled: true  },
+  portfolio:              { label: 'Portfolio',                       enabled: true, orden: 1 },
+  asistencia:             { label: 'Asistencia',                      enabled: true, orden: 2 },
+  notas_parciales:        { label: 'Calificaciones · Parciales',      enabled: true, orden: 3 },
+  notas_finales:          { label: 'Calificaciones · Finales',        enabled: true, orden: 3 },
+  certificados_parciales: { label: 'Certificados · Parciales',        enabled: true, orden: 4 },
+  certificados_finales:   { label: 'Certificados · Finales',          enabled: true, orden: 4 },
+  cronograma:             { label: 'Cronogramas',                     enabled: true, orden: 5 },
+  cartelera:              { label: 'Cartelera',                       enabled: true, orden: 6 },
+  cude:                   { label: 'Mi CUdE',                         enabled: true, orden: 7 },
 };
 
 let teacherViewConfig = {
-  portfolio:      { label: 'Portfolio',          enabled: true },
-  asistencia:     { label: 'Asistencia',         enabled: true },
-  calificaciones: { label: 'Calificaciones',     enabled: true },
-  certificados:   { label: 'Certificados',       enabled: true },
-  cronograma:     { label: 'Cronogramas',        enabled: true },
-  solicitudAulas: { label: 'Solicitud de aulas', enabled: true },
+  portfolio:      { label: 'Portfolio',          enabled: true, orden: 1 },
+  asistencia:     { label: 'Asistencia',         enabled: true, orden: 2 },
+  calificaciones: { label: 'Calificaciones',     enabled: true, orden: 3 },
+  certificados:   { label: 'Certificados',       enabled: true, orden: 4 },
+  cronograma:     { label: 'Cronogramas',        enabled: true, orden: 5 },
+  solicitudAulas: { label: 'Solicitud de aulas', enabled: true, orden: 6 },
 };
+
+// ── Grupos de navegación (para reordenar) ──────────────────
+const STUDENT_NAV_GROUPS = [
+  { key:'portfolio',    label:'Portfolio',            configKeys:['portfolio'] },
+  { key:'asistencia',   label:'Asistencia',           configKeys:['asistencia'] },
+  { key:'notas',        label:'Calificaciones/Notas', configKeys:['notas_parciales','notas_finales'] },
+  { key:'certificados', label:'Certificados',         configKeys:['certificados_parciales','certificados_finales'] },
+  { key:'cronograma',   label:'Cronogramas',          configKeys:['cronograma'] },
+  { key:'cartelera',    label:'Cartelera',            configKeys:['cartelera'] },
+  { key:'cude',         label:'Mi CUdE',              configKeys:['cude'] },
+];
+const TEACHER_NAV_GROUPS = [
+  { key:'portfolio',      label:'Portfolio',            configKeys:['portfolio'] },
+  { key:'asistencia',     label:'Asistencia',           configKeys:['asistencia'] },
+  { key:'calificaciones', label:'Calificaciones/Notas', configKeys:['calificaciones'] },
+  { key:'certificados',   label:'Certificados',         configKeys:['certificados'] },
+  { key:'cronograma',     label:'Cronogramas',          configKeys:['cronograma'] },
+  { key:'solicitudAulas', label:'Solicitud de aulas',   configKeys:['solicitudAulas'] },
+];
+
+function getOrderedStudentGroups() {
+  return STUDENT_NAV_GROUPS.map(g => ({
+    ...g,
+    orden: studentViewConfig[g.configKeys[0]]?.orden ?? 999,
+    enabled: g.configKeys.some(k => studentViewConfig[k]?.enabled),
+  })).sort((a,b) => a.orden - b.orden);
+}
+function getOrderedTeacherGroups() {
+  return TEACHER_NAV_GROUPS.map(g => ({
+    ...g,
+    orden: teacherViewConfig[g.configKeys[0]]?.orden ?? 999,
+    enabled: g.configKeys.some(k => k === 'solicitudAulas' ? teacherViewConfig[k]?.enabled !== false : teacherViewConfig[k]?.enabled),
+  })).sort((a,b) => a.orden - b.orden);
+}
+
+function moverStudentView(groupKey, dir) {
+  const groups = getOrderedStudentGroups();
+  const idx = groups.findIndex(g => g.key === groupKey);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= groups.length) return;
+  const a = groups[idx], b = groups[newIdx];
+  const ordenA = a.orden, ordenB = b.orden;
+  a.configKeys.forEach(k => { if (studentViewConfig[k]) studentViewConfig[k].orden = ordenB; });
+  b.configKeys.forEach(k => { if (studentViewConfig[k]) studentViewConfig[k].orden = ordenA; });
+  _supabase.from('config_sistema').upsert(
+    { clave: 'studentViewConfig', valor: studentViewConfig },
+    { onConflict: 'clave' }
+  ).then(({ error }) => { if (error) console.warn('Error guardando orden alumno:', error); });
+  renderSidebar(); if(window.innerWidth<=768) { renderMobileNav(); renderMobileHeader(); }
+  renderConfigView();
+}
+
+function moverTeacherView(groupKey, dir) {
+  const groups = getOrderedTeacherGroups();
+  const idx = groups.findIndex(g => g.key === groupKey);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= groups.length) return;
+  const a = groups[idx], b = groups[newIdx];
+  const ordenA = a.orden, ordenB = b.orden;
+  a.configKeys.forEach(k => { if (teacherViewConfig[k]) teacherViewConfig[k].orden = ordenB; });
+  b.configKeys.forEach(k => { if (teacherViewConfig[k]) teacherViewConfig[k].orden = ordenA; });
+  _supabase.from('config_sistema').upsert(
+    { clave: 'teacherViewConfig', valor: teacherViewConfig },
+    { onConflict: 'clave' }
+  ).then(({ error }) => { if (error) console.warn('Error guardando orden docente:', error); });
+  renderSidebar(); if(window.innerWidth<=768) { renderMobileNav(); renderMobileHeader(); }
+  renderConfigView();
+}
 
 function toggleStudentView(key) {
   studentViewConfig[key].enabled = !studentViewConfig[key].enabled;
@@ -11408,20 +11498,39 @@ function toggleTeacherView(key) {
   renderConfigView();
 }
 
-function buildConfigSection(title, subtitle, config, toggleFn) {
-  const rows = Object.entries(config).map(([key, cfg]) => {
-    const isOn = cfg.enabled;
-    return `<div class="skill-row" style="align-items:center">
-      <div style="flex:1">
-        <div style="font-size:14px;color:var(--navy)">${cfg.label}</div>
+function buildConfigSection(title, subtitle, config, toggleFn, groups, moverFn) {
+  const rows = groups.map((g, idx) => {
+    const isFirst = idx === 0;
+    const isLast  = idx === groups.length - 1;
+    const subRows = g.configKeys.map(key => {
+      const cfg = config[key];
+      if (!cfg) return '';
+      const isOn = cfg.enabled;
+      return `<div class="skill-row" style="align-items:center;padding-left:${g.configKeys.length>1?'2rem':'0'}">
+        <div style="flex:1">
+          <div style="font-size:14px;color:var(--navy)">${cfg.label}</div>
+        </div>
+        <button onclick="${toggleFn}('${key}')"
+          style="display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid ${isOn?'var(--teal)':'var(--gray-200)'};cursor:pointer;font-family:var(--font);font-weight:500;background:${isOn?'var(--teal-light)':'white'};color:${isOn?'var(--teal)':'var(--gray-400)'}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            ${isOn ? '<polyline points="20 6 9 17 4 12"/>' : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'}
+          </svg>
+          ${isOn ? 'Habilitado' : 'Deshabilitado'}
+        </button>
+      </div>`;
+    }).join('');
+
+    return `<div style="border-bottom:1px solid var(--gray-100);padding:6px 0 2px">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0 6px">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <button onclick="${moverFn}('${g.key}',-1)" ${isFirst?'disabled':''}
+            style="padding:2px 7px;font-size:11px;background:${isFirst?'var(--gray-100)':'var(--gray-200)'};color:${isFirst?'var(--gray-300)':'var(--navy)'};border:none;border-radius:3px;cursor:${isFirst?'default':'pointer'};font-family:var(--font);line-height:1">▲</button>
+          <button onclick="${moverFn}('${g.key}',1)" ${isLast?'disabled':''}
+            style="padding:2px 7px;font-size:11px;background:${isLast?'var(--gray-100)':'var(--gray-200)'};color:${isLast?'var(--gray-300)':'var(--navy)'};border:none;border-radius:3px;cursor:${isLast?'default':'pointer'};font-family:var(--font);line-height:1">▼</button>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--gray-500)">${g.label}</div>
       </div>
-      <button onclick="${toggleFn}('${key}')"
-        style="display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid ${isOn?'var(--teal)':'var(--gray-200)'};cursor:pointer;font-family:var(--font);font-weight:500;background:${isOn?'var(--teal-light)':'white'};color:${isOn?'var(--teal)':'var(--gray-400)'}">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          ${isOn ? '<polyline points="20 6 9 17 4 12"/>' : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'}
-        </svg>
-        ${isOn ? 'Habilitado' : 'Deshabilitado'}
-      </button>
+      ${subRows}
     </div>`;
   }).join('');
 
@@ -11436,8 +11545,8 @@ function buildConfigSection(title, subtitle, config, toggleFn) {
 
 function renderConfigView() {
   document.getElementById('coord-config-container').innerHTML =
-    buildConfigSection('Vistas del alumno',  'Lo que el alumno puede ver en su portal',  studentViewConfig, 'toggleStudentView') +
-    buildConfigSection('Vistas del docente', 'Lo que el docente puede ver en su portal', teacherViewConfig, 'toggleTeacherView');
+    buildConfigSection('Vistas del alumno',  'Lo que el alumno puede ver en su portal',  studentViewConfig, 'toggleStudentView', getOrderedStudentGroups(), 'moverStudentView') +
+    buildConfigSection('Vistas del docente', 'Lo que el docente puede ver en su portal', teacherViewConfig, 'toggleTeacherView', getOrderedTeacherGroups(), 'moverTeacherView');
 }
 
 // ── TEACHERS VIEW ─────────────────────────────────────────
