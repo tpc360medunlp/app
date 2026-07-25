@@ -2263,9 +2263,8 @@ function toggleSidebar() {
   // Solo en desktop
   if (window.innerWidth <= 768) return;
   const sidebar = document.getElementById('main-sidebar');
-  const main    = document.querySelector('.main-content');
   sidebar.classList.toggle('collapsed');
-  main.style.marginLeft = sidebar.classList.contains('collapsed') ? '60px' : '240px';
+  // El layout flexbox se ajusta solo — no se necesita margin-left
 }
 
 function toggleMobileSidebar() {
@@ -2896,6 +2895,7 @@ function switchCoordView(section) {
   };
 
   doRender();
+  if(window.innerWidth<=768) renderMobileNav();
 }
 
 function switchStudentView(view) {
@@ -2962,6 +2962,7 @@ function switchStudentView(view) {
   };
 
   doRender();
+  if(window.innerWidth<=768) renderMobileNav();
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -4450,6 +4451,7 @@ function switchTeacherView(view) {
   };
 
   doRender();
+  if(window.innerWidth<=768) renderMobileNav();
 }
 
 // Obtener las materiaIds que puede validar el docente actual
