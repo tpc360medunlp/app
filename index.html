@@ -3332,61 +3332,15 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
   if (parcialesConNotas.length === 0) return '';
 
   // Pre-calcular fechasCargadas por parcial (una sola vez, no por alumno)
-  const fechasCargadasPorParcial = {};
-  parcialesConNotas.forEach(p => {
-    fechasCargadasPorParcial[p] = NOMBRES_FECHAS.filter(f =>
-      comsMateria.some(com => {
-        const d = parciales[com.id]?.[p]?.[f];
-        return d && Object.keys(d).some(k => !k.startsWith('_'));
-      })
-    ).length;
-  });
-  // Pre-calcular comisiones por alumno
-  const comsCache = {};
+  const fechasAgotadasPorParcial = getFechasAgotadasPorParcial(comsMateria, parcialesConNotas);
 
   const estadosGlobales = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
-    if (!comsCache[email]) comsCache[email] = getComisionesMateriaAlumno(email, materiaId, año);
-    const estadosPorParcial = parcialesConNotas.map(p => {
-      const coms = comsCache[email];
-      const fechasCargadas = fechasCargadasPorParcial[p];
-      const todasFechasAgotadas = fechasCargadas >= NOMBRES_FECHAS.length;
-      const presentaciones = NOMBRES_FECHAS.filter(f => {
-        return coms.some(com => {
-          const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
-          return est === 'aprobado' || est === 'desaprobado' || est === 'promocion';
-        });
-      }).length;
-
-      const tieneRegistro = NOMBRES_FECHAS.some(f =>
-        coms.some(com => parciales[com.id]?.[p]?.[f]?.[email] !== undefined)
-      );
-
-      for (const f of NOMBRES_FECHAS) {
-        for (const com of coms) {
-          const rec = parciales[com.id]?.[p]?.[f]?.[email];
-          if (!rec) continue;
-          const est = rec.estado;
-          if (est === 'promocion' || est === 'aprobado') return est;
-        }
-      }
-      if (presentaciones >= 3) return 'desaprobado';
-      if (tieneRegistro && todasFechasAgotadas) {
-        // Si tuvo al menos una presentación (no solo ausencias) → desaprobado
-        // Si estuvo ausente en todas → ausente
-        const tuvoPresencia = NOMBRES_FECHAS.some(f =>
-          coms.some(com => {
-            const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
-            return est && est !== 'ausente';
-          })
-        );
-        return tuvoPresencia ? 'desaprobado' : 'ausente';
-      }
-      if (tieneRegistro) return 'en_curso';
-      return 'ausente';
-    });
+    const estadosPorParcial = parcialesConNotas.map(p =>
+      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcial[p]).estado
+    );
 
     // Estado global
     let estadoGlobal;
@@ -3483,70 +3437,14 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
     })
   ).length;
   const todasFechasAgotadasParc = fechasCargadasParc >= NOMBRES_FECHAS.length;
-  // Pre-calcular comisiones por alumno
-  const comsCacheParc = {};
 
-    const estadosConsolidados = [];
+  const estadosConsolidados = [];
   const rows = alumnos.map(email => {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
-    // Buscar en todas las comisiones de la materia
-    if (!comsCacheParc[email]) comsCacheParc[email] = getComisionesMateriaAlumno(email, materiaId, año);
-    const coms = comsCacheParc[email];
 
-    const presentaciones = NOMBRES_FECHAS.filter(f =>
-      coms.some(com => {
-        const est = parciales[com.id]?.[parcial]?.[f]?.[email]?.estado;
-        return est === 'aprobado' || est === 'desaprobado' || est === 'promocion';
-      })
-    ).length;
-
-    const tieneRegistro = NOMBRES_FECHAS.some(f =>
-      coms.some(com => parciales[com.id]?.[parcial]?.[f]?.[email] !== undefined)
-    );
-    const todasFechasAgotadas = todasFechasAgotadasParc;
-
-    let notaFinal   = null;
-    let estadoFinal = null;
-
-    for (const f of NOMBRES_FECHAS) {
-      for (const com of coms) {
-        const rec = parciales[com.id]?.[parcial]?.[f]?.[email];
-        if (!rec) continue;
-        const est = rec.estado;
-        if (est === 'promocion' || est === 'aprobado') {
-          notaFinal   = rec.nota;
-          estadoFinal = est;
-          break;
-        } else if (est === 'desaprobado') {
-          notaFinal   = rec.nota;
-          estadoFinal = 'desaprobado';
-        }
-      }
-      if (estadoFinal === 'promocion' || estadoFinal === 'aprobado') break;
-    }
-
-    // Determinar estado consolidado
-    let estado;
-    if (estadoFinal === 'promocion') {
-      estado = 'promocion';
-    } else if (estadoFinal === 'aprobado') {
-      estado = 'aprobado';
-    } else if (estadoFinal === 'desaprobado' && presentaciones >= 3) {
-      estado = 'desaprobado';
-    } else if (tieneRegistro && todasFechasAgotadas) {
-      const tuvoPresencia = NOMBRES_FECHAS.some(f =>
-        coms.some(com => {
-          const est = parciales[com.id]?.[parcial]?.[f]?.[email]?.estado;
-          return est && est !== 'ausente';
-        })
-      );
-      estado = tuvoPresencia ? 'desaprobado' : 'ausente';
-    } else if (tieneRegistro) {
-      estado = 'en_curso';
-    } else {
-      estado = 'ausente';
-    }
+    const { estado, nota: notaFinal, presentaciones } =
+      getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadasParc);
     estadosConsolidados.push(estado);
 
     const cfg = {
@@ -5779,24 +5677,12 @@ function buildCoordCalifStats() {
         });
         if (!tieneNotas) return;
 
-        const estadosCons = alumnos.map(email => {
-          const coms2 = getComisionesMateriaAlumno(email, com.materiaId, com.año);
-          const presentaciones = NOMBRES_FECHAS.filter(f =>
-            coms2.some(c2 => { const est=parciales[c2.id]?.[parc]?.[f]?.[email]?.estado; return est==='aprobado'||est==='desaprobado'||est==='promocion'; })
-          ).length;
-          const tieneReg = NOMBRES_FECHAS.some(f => coms2.some(c2=>parciales[c2.id]?.[parc]?.[f]?.[email]!==undefined));
-          for (const f of NOMBRES_FECHAS) {
-            for (const c2 of coms2) {
-              const rec = parciales[c2.id]?.[parc]?.[f]?.[email];
-              if (!rec) continue;
-              if (rec.estado==='promocion'||rec.estado==='aprobado') return rec.estado;
-            }
-          }
-          const ult = NOMBRES_FECHAS.flatMap(f=>coms2.map(c2=>parciales[c2.id]?.[parc]?.[f]?.[email]?.estado)).filter(Boolean).pop();
-          if (ult==='desaprobado' && presentaciones>=3) return 'desaprobado';
-          if (tieneReg) return 'en_curso';
-          return 'ausente';
-        });
+        // Pre-calcular si todas las fechas de este parcial están agotadas
+        const todasFechasAgotadasThisParc = getFechasAgotadasPorParcial(comsMat, [parc])[parc];
+
+        const estadosCons = alumnos.map(email =>
+          getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).estado
+        );
 
         const notasCons = alumnos.map(email => {
           const coms2 = getComisionesMateriaAlumno(email, com.materiaId, com.año);
@@ -5826,43 +5712,23 @@ function buildCoordCalifStats() {
         }))
       );
       if (parcialesConNotas.length > 0) {
+        // Pre-calcular fechas agotadas por parcial (una sola vez)
+        const fechasAgotadasPorParcialGlob = getFechasAgotadasPorParcial(comsMateria2, parcialesConNotas);
         const estadosGlob = alumnos.map(email => {
-          const coms2 = getComisionesMateriaAlumno(email, com.materiaId, com.año);
-          const porParcial = parcialesConNotas.map(p => {
-            for (const f of NOMBRES_FECHAS) {
-              for (const c2 of coms2) {
-                const rec = parciales[c2.id]?.[p]?.[f]?.[email];
-                if (!rec) continue;
-                if (rec.estado==='promocion'||rec.estado==='aprobado') return rec.estado;
-              }
-            }
-            const pres = NOMBRES_FECHAS.filter(f=>coms2.some(c2=>{const e=parciales[c2.id]?.[p]?.[f]?.[email]?.estado;return e==='aprobado'||e==='desaprobado'||e==='promocion';})).length;
-            const reg  = NOMBRES_FECHAS.some(f=>coms2.some(c2=>parciales[c2.id]?.[p]?.[f]?.[email]!==undefined));
-            if (pres>=3) return 'desaprobado';
-            if (reg)     return 'en_curso';
-            return 'ausente';
-          });
+          const porParcial = parcialesConNotas.map(p =>
+            getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasPorParcialGlob[p]).estado
+          );
           if (porParcial.every(e=>e==='promocion'))               return 'promocion';
           if (porParcial.every(e=>e==='aprobado'||e==='promocion')) return 'aprobado';
           if (porParcial.some(e=>e==='desaprobado'))              return 'desaprobado';
           if (porParcial.some(e=>e==='en_curso'))                 return 'en_curso';
           return 'ausente';
         });
-        const notasGlob = alumnos.flatMap(email => {
-          const coms2 = getComisionesMateriaAlumno(email, com.materiaId, com.año);
-          return parcialesConNotas.map(p => {
-            let notaDesap = null;
-            for (const f of NOMBRES_FECHAS) {
-              for (const c2 of coms2) {
-                const rec = parciales[c2.id]?.[p]?.[f]?.[email];
-                if (!rec) continue;
-                if (rec.estado==='promocion'||rec.estado==='aprobado') return rec.nota ?? null;
-                if (rec.estado==='desaprobado') notaDesap = rec.nota ?? null;
-              }
-            }
-            return notaDesap;
-          });
-        }).filter(n => n !== null && !isNaN(n));
+        const notasGlob = alumnos.flatMap(email =>
+          parcialesConNotas.map(p =>
+            getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasPorParcialGlob[p]).nota
+          )
+        ).filter(n => n !== null && !isNaN(n));
         const pctsGlob = calcPcts(estadosGlob, conPromocion, notasGlob);
         html += `<div style="margin-bottom:6px">
           <div style="font-size:11px;color:var(--gray-400);margin-bottom:4px;font-weight:600">Global · todos los parciales</div>
@@ -5888,45 +5754,24 @@ function buildCoordCalifStats() {
       );
 
       if (parcialesConNotas.length > 0) {
+        // Pre-calcular fechas agotadas por parcial (una sola vez)
+        const fechasAgotadasCiclo = getFechasAgotadasPorParcial(comsMat, parcialesConNotas);
+
         const todosEstadosPorParcial = {};
         parcialesConNotas.forEach(p => { todosEstadosPorParcial[p] = []; });
 
         todosAlumnos.forEach(email => {
-          const com = comsMat.find(c => (c.alumnos||[]).includes(email));
-          if (!com) return;
-
           parcialesConNotas.forEach(p => {
-            for (const f of NOMBRES_FECHAS) {
-              const rec = parciales[com.id]?.[p]?.[f]?.[email];
-              if (!rec) continue;
-              if (rec.estado==='promocion'||rec.estado==='aprobado') {
-                todosEstadosPorParcial[p].push(rec.estado); return;
-              }
-            }
-            const pres = NOMBRES_FECHAS.filter(f=>{const e=parciales[com.id]?.[p]?.[f]?.[email]?.estado;return e==='aprobado'||e==='desaprobado'||e==='promocion';}).length;
-            const reg  = NOMBRES_FECHAS.some(f=>parciales[com.id]?.[p]?.[f]?.[email]!==undefined);
-            if (pres>=3) todosEstadosPorParcial[p].push('desaprobado');
-            else if (reg) todosEstadosPorParcial[p].push('en_curso');
-            else todosEstadosPorParcial[p].push('ausente');
+            const estado = getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).estado;
+            todosEstadosPorParcial[p].push(estado);
           });
         });
 
         // Estado global del ciclo
         const estadosCiclo = todosAlumnos.map(email => {
-          const com = comsMat.find(c => (c.alumnos||[]).includes(email));
-          if (!com) return 'ausente';
-          const porParcial = parcialesConNotas.map(p => {
-            for (const f of NOMBRES_FECHAS) {
-              const rec = parciales[com.id]?.[p]?.[f]?.[email];
-              if (!rec) continue;
-              if (rec.estado==='promocion'||rec.estado==='aprobado') return rec.estado;
-            }
-            const pres = NOMBRES_FECHAS.filter(f=>{const e=parciales[com.id]?.[p]?.[f]?.[email]?.estado;return e==='aprobado'||e==='desaprobado'||e==='promocion';}).length;
-            const reg  = NOMBRES_FECHAS.some(f=>parciales[com.id]?.[p]?.[f]?.[email]!==undefined);
-            if (pres>=3) return 'desaprobado';
-            if (reg)     return 'en_curso';
-            return 'ausente';
-          });
+          const porParcial = parcialesConNotas.map(p =>
+            getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).estado
+          );
           if (porParcial.every(e=>e==='promocion'))                 return 'promocion';
           if (porParcial.every(e=>e==='aprobado'||e==='promocion')) return 'aprobado';
           if (porParcial.some(e=>e==='desaprobado'))                return 'desaprobado';
@@ -5935,37 +5780,19 @@ function buildCoordCalifStats() {
         });
 
         // Notas ciclo global: nota final por alumno por parcial en todas las comisiones
-        const notasCiclo = todosAlumnos.flatMap(email => {
-          const com2 = comsMat.find(c => (c.alumnos||[]).includes(email));
-          if (!com2) return [];
-          return parcialesConNotas.map(p => {
-            let notaDesap = null;
-            for (const f of NOMBRES_FECHAS) {
-              const rec = parciales[com2.id]?.[p]?.[f]?.[email];
-              if (!rec) continue;
-              if (rec.estado==='promocion'||rec.estado==='aprobado') return rec.nota ?? null;
-              if (rec.estado==='desaprobado') notaDesap = rec.nota ?? null;
-            }
-            return notaDesap;
-          });
-        }).filter(n => n !== null && !isNaN(n));
+        const notasCiclo = todosAlumnos.flatMap(email =>
+          parcialesConNotas.map(p =>
+            getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).nota
+          )
+        ).filter(n => n !== null && !isNaN(n));
 
         const pctsCiclo = calcPcts(estadosCiclo, conPromocion, notasCiclo);
 
         // Desglose por parcial con notas
         const desgloseParciales = parcialesConNotas.map(p => {
-          const notasP = todosAlumnos.flatMap(email => {
-            const com2 = comsMat.find(c => (c.alumnos||[]).includes(email));
-            if (!com2) return [];
-            let notaDesap = null;
-            for (const f of NOMBRES_FECHAS) {
-              const rec = parciales[com2.id]?.[p]?.[f]?.[email];
-              if (!rec) continue;
-              if (rec.estado==='promocion'||rec.estado==='aprobado') return [rec.nota ?? null];
-              if (rec.estado==='desaprobado') notaDesap = rec.nota ?? null;
-            }
-            return [notaDesap];
-          }).filter(n => n !== null && !isNaN(n));
+          const notasP = todosAlumnos
+            .map(email => getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).nota)
+            .filter(n => n !== null && !isNaN(n));
           const pcts = calcPcts(todosEstadosPorParcial[p], conPromocion, notasP);
           return `<div style="margin-bottom:6px">
             <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:3px">${p}</div>
@@ -6702,102 +6529,71 @@ function exportEstadisticasCalif(fmt='xlsx') {
           rows.push(calcRow(materia, com.nombre, parc, fecha, estados, notas));
         });
 
-        // Consolidado por parcial — usar helper global para considerar todas las comisiones
+        // Consolidado por parcial — usar helper compartido (misma lógica que docente/coordinación)
         const tieneNotas = NOMBRES_FECHAS.some(f=>{const d=parciales[com.id]?.[parc]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;});
         if (!tieneNotas) return;
-        const estadosCons = alumnos.map(email=>{
-          const coms2 = getComisionesMateriaAlumno(email, com.materiaId, com.año);
-          for(const f of NOMBRES_FECHAS){
-            for(const c2 of coms2){const rec=parciales[c2.id]?.[parc]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado')return rec.estado;}
-          }
-          const pres=NOMBRES_FECHAS.filter(f=>coms2.some(c2=>{const e=parciales[c2.id]?.[parc]?.[f]?.[email]?.estado;return e==='aprobado'||e==='desaprobado'||e==='promocion';})).length;
-          const reg=NOMBRES_FECHAS.some(f=>coms2.some(c2=>parciales[c2.id]?.[parc]?.[f]?.[email]!==undefined));
-          if(pres>=3)return 'desaprobado';if(reg)return 'en_curso';return 'ausente';
-        });
-        const notasCons = alumnos.map(email=>{
-          const coms2=getComisionesMateriaAlumno(email,com.materiaId,com.año);
-          for(const f of NOMBRES_FECHAS){for(const c2 of coms2){const rec=parciales[c2.id]?.[parc]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado'||rec.estado==='desaprobado')return rec.nota??null;}}
-          return null;
-        }).filter(n=>n!==null&&!isNaN(n));
+        const todasFechasAgotadasThisParc = getFechasAgotadasPorParcial(comsMat, [parc])[parc];
+        const estadosCons = alumnos.map(email =>
+          getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).estado
+        );
+        const notasCons = alumnos
+          .map(email => getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).nota)
+          .filter(n=>n!==null&&!isNaN(n));
         rows.push(calcRow(materia, com.nombre, parc, 'Consolidado', estadosCons, notasCons));
       });
 
-      // Global por comisión — usar helper global
+      // Global por comisión — usar helper compartido
+      const comsMateriaExp = COMISIONES.filter(c => c.materiaId === com.materiaId && c.año == com.año);
       const parcialesConNotas = NOMBRES_PARCIALES.filter(p=>
-        getComisionesMateriaAlumno(alumnos[0]||'', com.materiaId, com.año).some(c2=>
-          NOMBRES_FECHAS.some(f=>{const d=parciales[c2.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;})
-        ) || NOMBRES_FECHAS.some(f=>{const d=parciales[com.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;})
+        comsMateriaExp.some(c2 => NOMBRES_FECHAS.some(f=>{const d=parciales[c2.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;}))
       );
       if (parcialesConNotas.length===0) return;
+      const fechasAgotadasGlobExp = getFechasAgotadasPorParcial(comsMateriaExp, parcialesConNotas);
       const estadosGlob = alumnos.map(email=>{
-        const coms2=getComisionesMateriaAlumno(email,com.materiaId,com.año);
-        const pp=parcialesConNotas.map(p=>{
-          for(const f of NOMBRES_FECHAS){for(const c2 of coms2){const rec=parciales[c2.id]?.[p]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado')return rec.estado;}}
-          const pres=NOMBRES_FECHAS.filter(f=>coms2.some(c2=>{const e=parciales[c2.id]?.[p]?.[f]?.[email]?.estado;return e==='aprobado'||e==='desaprobado'||e==='promocion';})).length;
-          const reg=NOMBRES_FECHAS.some(f=>coms2.some(c2=>parciales[c2.id]?.[p]?.[f]?.[email]!==undefined));
-          if(pres>=3)return 'desaprobado';if(reg)return 'en_curso';return 'ausente';
-        });
+        const pp = parcialesConNotas.map(p =>
+          getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasGlobExp[p]).estado
+        );
         if(pp.every(e=>e==='promocion'))return 'promocion';
         if(pp.every(e=>e==='aprobado'||e==='promocion'))return 'aprobado';
         if(pp.some(e=>e==='desaprobado'))return 'desaprobado';
         if(pp.some(e=>e==='en_curso'))return 'en_curso';
         return 'ausente';
       });
-      const notasGlob = alumnos.flatMap(email=>{
-        const coms2=getComisionesMateriaAlumno(email,com.materiaId,com.año);
-        return parcialesConNotas.map(p=>{
-          let nd=null;
-          for(const f of NOMBRES_FECHAS){for(const c2 of coms2){const rec=parciales[c2.id]?.[p]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado')return rec.nota??null;if(rec.estado==='desaprobado')nd=rec.nota??null;}}
-          return nd;
-        });
-      }).filter(n=>n!==null&&!isNaN(n));
+      const notasGlob = alumnos.flatMap(email =>
+        parcialesConNotas.map(p => getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasGlobExp[p]).nota)
+      ).filter(n=>n!==null&&!isNaN(n));
       rows.push(calcRow(materia, com.nombre, 'Todos los parciales', 'Global comision', estadosGlob, notasGlob));
     });
 
-    // Ciclo lectivo — todas las comisiones, usar helper global
+    // Ciclo lectivo — todas las comisiones, usar helper compartido
     if (comsMat.length > 1) {
       const todosAlumnos = [...new Set(comsMat.flatMap(c=>c.alumnos||[]))];
-      const parcialesConNotas = NOMBRES_PARCIALES.filter(p=>comsMat.some(com=>NOMBRES_FECHAS.some(f=>{const d=parciales[com.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;})));
+      const parcialesConNotasCiclo = NOMBRES_PARCIALES.filter(p=>comsMat.some(com=>NOMBRES_FECHAS.some(f=>{const d=parciales[com.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;})));
+      const fechasAgotadasCicloExp = getFechasAgotadasPorParcial(comsMat, parcialesConNotasCiclo);
 
-      parcialesConNotas.forEach(parc => {
-        const estadosCiclo = todosAlumnos.map(email=>{
-          const coms2=getComisionesMateriaAlumno(email,materiaIds[0] ? MATERIAS.find(m=>m.id===materiaIds[0])?.id : comsMat[0]?.materiaId, comsMat[0]?.año);
-          for(const f of NOMBRES_FECHAS){for(const c2 of coms2){const rec=parciales[c2.id]?.[parc]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado')return rec.estado;}}
-          const pres=NOMBRES_FECHAS.filter(f=>coms2.some(c2=>{const e=parciales[c2.id]?.[parc]?.[f]?.[email]?.estado;return e==='aprobado'||e==='desaprobado'||e==='promocion';})).length;
-          const reg=NOMBRES_FECHAS.some(f=>coms2.some(c2=>parciales[c2.id]?.[parc]?.[f]?.[email]!==undefined));
-          if(pres>=3)return 'desaprobado';if(reg)return 'en_curso';return 'ausente';
-        });
-        const notasCiclo = todosAlumnos.flatMap(email=>{
-          const coms2=getComisionesMateriaAlumno(email,comsMat[0]?.materiaId,comsMat[0]?.año);
-          let nd=null;
-          for(const f of NOMBRES_FECHAS){for(const c2 of coms2){const rec=parciales[c2.id]?.[parc]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado')return[rec.nota??null];if(rec.estado==='desaprobado')nd=rec.nota??null;}}
-          return[nd];
-        }).filter(n=>n!==null&&!isNaN(n));
+      parcialesConNotasCiclo.forEach(parc => {
+        const estadosCiclo = todosAlumnos.map(email =>
+          getEstadoYNotaParcial(email, mId, selYear, parc, fechasAgotadasCicloExp[parc]).estado
+        );
+        const notasCiclo = todosAlumnos
+          .map(email => getEstadoYNotaParcial(email, mId, selYear, parc, fechasAgotadasCicloExp[parc]).nota)
+          .filter(n=>n!==null&&!isNaN(n));
         rows.push(calcRow(materia, 'Todas las comisiones', parc, 'Ciclo lectivo', estadosCiclo, notasCiclo));
       });
 
       const estadosGlobCiclo = todosAlumnos.map(email=>{
-        const coms2=getComisionesMateriaAlumno(email,comsMat[0]?.materiaId,comsMat[0]?.año);
-        const pp=parcialesConNotas.map(p=>{
-          for(const f of NOMBRES_FECHAS){for(const c2 of coms2){const rec=parciales[c2.id]?.[p]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado')return rec.estado;}}
-          const pres=NOMBRES_FECHAS.filter(f=>coms2.some(c2=>{const e=parciales[c2.id]?.[p]?.[f]?.[email]?.estado;return e==='aprobado'||e==='desaprobado'||e==='promocion';})).length;
-          const reg=NOMBRES_FECHAS.some(f=>coms2.some(c2=>parciales[c2.id]?.[p]?.[f]?.[email]!==undefined));
-          if(pres>=3)return 'desaprobado';if(reg)return 'en_curso';return 'ausente';
-        });
+        const pp = parcialesConNotasCiclo.map(p =>
+          getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCicloExp[p]).estado
+        );
         if(pp.every(e=>e==='promocion'))return 'promocion';
         if(pp.every(e=>e==='aprobado'||e==='promocion'))return 'aprobado';
         if(pp.some(e=>e==='desaprobado'))return 'desaprobado';
         if(pp.some(e=>e==='en_curso'))return 'en_curso';
         return 'ausente';
       });
-      const notasGlobCiclo = todosAlumnos.flatMap(email=>{
-        const coms2=getComisionesMateriaAlumno(email,comsMat[0]?.materiaId,comsMat[0]?.año);
-        return parcialesConNotas.map(p=>{
-          let nd=null;
-          for(const f of NOMBRES_FECHAS){for(const c2 of coms2){const rec=parciales[c2.id]?.[p]?.[f]?.[email];if(!rec)continue;if(rec.estado==='promocion'||rec.estado==='aprobado')return rec.nota??null;if(rec.estado==='desaprobado')nd=rec.nota??null;}}
-          return nd;
-        });
-      }).filter(n=>n!==null&&!isNaN(n));
+      const notasGlobCiclo = todosAlumnos.flatMap(email =>
+        parcialesConNotasCiclo.map(p => getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCicloExp[p]).nota)
+      ).filter(n=>n!==null&&!isNaN(n));
       rows.push(calcRow(materia, 'Todas las comisiones', 'Todos los parciales', 'Global ciclo lectivo', estadosGlobCiclo, notasGlobCiclo));
     }
   });
@@ -8584,6 +8380,79 @@ function getComisionesMateriaAlumno(email, materiaId, año) {
     .map(h => COMISIONES.find(c => c.id === h.deComId))
     .filter(c => c && c.materiaId === materiaId && c.año == año);
   return [...new Set([...comActual, ...comAnteriores].filter(Boolean))];
+}
+
+// ── LÓGICA COMPARTIDA DE CONSOLIDADO (usada por vista docente y coordinación) ──
+// Calcula, para un grupo de comisiones de una materia, si cada parcial ya
+// agotó todas sus fechas disponibles (tiene datos cargados en todas).
+function getFechasAgotadasPorParcial(comisionesDeLaMateria, listaParciales) {
+  const result = {};
+  listaParciales.forEach(p => {
+    const cargadas = NOMBRES_FECHAS.filter(f =>
+      comisionesDeLaMateria.some(com => {
+        const d = parciales[com.id]?.[p]?.[f];
+        return d && Object.keys(d).some(k => !k.startsWith('_'));
+      })
+    ).length;
+    result[p] = cargadas >= NOMBRES_FECHAS.length;
+  });
+  return result;
+}
+
+// Determina el estado (y la nota asociada) de un alumno en un parcial específico,
+// contemplando todas las comisiones donde cursó esa materia (por si cambió de comisión).
+function getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadas) {
+  const coms = getComisionesMateriaAlumno(email, materiaId, año);
+
+  const presentaciones = NOMBRES_FECHAS.filter(f =>
+    coms.some(com => {
+      const est = parciales[com.id]?.[parcial]?.[f]?.[email]?.estado;
+      return est === 'aprobado' || est === 'desaprobado' || est === 'promocion';
+    })
+  ).length;
+
+  const tieneRegistro = NOMBRES_FECHAS.some(f =>
+    coms.some(com => parciales[com.id]?.[parcial]?.[f]?.[email] !== undefined)
+  );
+
+  let notaFinal   = null;
+  let estadoFinal = null;
+  for (const f of NOMBRES_FECHAS) {
+    for (const com of coms) {
+      const rec = parciales[com.id]?.[parcial]?.[f]?.[email];
+      if (!rec) continue;
+      const est = rec.estado;
+      if (est === 'promocion' || est === 'aprobado') {
+        notaFinal = rec.nota; estadoFinal = est; break;
+      } else if (est === 'desaprobado') {
+        notaFinal = rec.nota; estadoFinal = 'desaprobado';
+      }
+    }
+    if (estadoFinal === 'promocion' || estadoFinal === 'aprobado') break;
+  }
+
+  let estado;
+  if (estadoFinal === 'promocion') {
+    estado = 'promocion';
+  } else if (estadoFinal === 'aprobado') {
+    estado = 'aprobado';
+  } else if (estadoFinal === 'desaprobado' && presentaciones >= 3) {
+    estado = 'desaprobado';
+  } else if (tieneRegistro && todasFechasAgotadas) {
+    const tuvoPresencia = NOMBRES_FECHAS.some(f =>
+      coms.some(com => {
+        const est = parciales[com.id]?.[parcial]?.[f]?.[email]?.estado;
+        return est && est !== 'ausente';
+      })
+    );
+    estado = tuvoPresencia ? 'desaprobado' : 'ausente';
+  } else if (tieneRegistro) {
+    estado = 'en_curso';
+  } else {
+    estado = 'ausente';
+  }
+
+  return { estado, nota: notaFinal, presentaciones };
 }
 
 function getEstadoParcialAlumnoGlobal(email, parcial, fecha, materiaId, año) {
