@@ -1746,10 +1746,6 @@ async function ensureQRCode() {
 <div id="mobile-drawer-overlay" onclick="closeMobileDrawer()"></div>
 <div id="mobile-bottom-sheet"></div>
 
-<!-- PANEL DE ERRORES VISIBLE (debug mobile) -->
-<div id="debug-error-panel" style="display:none;position:fixed;top:0;left:0;right:0;background:#b02030;color:white;padding:12px 16px;font-family:monospace;font-size:12px;z-index:9999;max-height:40vh;overflow-y:auto;white-space:pre-wrap;word-break:break-word;">
-  <button onclick="document.getElementById('debug-error-panel').style.display='none'" style="float:right;background:white;color:#b02030;border:none;border-radius:4px;padding:2px 8px;font-weight:bold;cursor:pointer">X</button>
-  <div id="debug-error-content"></div>
 </div>
 
 <!-- TOAST -->
@@ -1775,7 +1771,6 @@ async function getLegajoSupabase(email) {
   return data?.legajo || null;
 }
 async function loadDataFromSupabase() {
-  console.time('⏱️ loadDataFromSupabase');
   try {
     // Ejecutar todas las queries en paralelo
     const results = await Promise.all([
@@ -1906,7 +1901,6 @@ async function loadDataFromSupabase() {
     }
 
     console.log('✅ Datos cargados desde Supabase');
-    console.timeEnd('⏱️ loadDataFromSupabase');
 
     // Cargar asistencia (convertir legajo a email para el frontend)
     if (asistenciaData) {
@@ -2552,7 +2546,6 @@ function doLogin() {
 }
 
 async function enterApp() {
-  console.time('⏱️ enterApp (render inicial)');
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-app').classList.add('active');
 
@@ -2580,7 +2573,6 @@ async function enterApp() {
     }
     else switchCoordView('stats');
 
-    console.timeEnd('⏱️ enterApp (render inicial)');
   } catch(err) {
     console.error('Error al cargar la vista:', err);
     // Mostrar mensaje de error visible en lugar de pantalla en blanco
@@ -2595,6 +2587,7 @@ async function enterApp() {
 }
 
 function doLogout() {
+  stopQrIntervalsIfRunning();
   const rolAnterior = currentRole; // guardar antes de resetear
   _supabase.auth.signOut(); // cerrar sesión en Supabase
   googleEmail          = '';
@@ -2619,26 +2612,6 @@ function doLogout() {
 }
 
 // ── SIDEBAR ──────────────────────────────────────────────
-
-
-// Forzar repintado en Android Chrome via micro-scroll
-// ── ICONOS COMPARTIDOS PARA NAVEGACIÓN MOBILE ──────────────────
-
-// ── CAPTURA GLOBAL DE ERRORES (visible en pantalla para debug mobile) ──
-function showDebugError(msg) {
-  const panel = document.getElementById('debug-error-panel');
-  const content = document.getElementById('debug-error-content');
-  if (!panel || !content) return;
-  const time = new Date().toLocaleTimeString();
-  content.textContent += `[${time}] ${msg}\n\n`;
-  panel.style.display = 'block';
-}
-window.addEventListener('error', (e) => {
-  showDebugError(`ERROR: ${e.message}\nArchivo: ${e.filename}:${e.lineno}:${e.colno}`);
-});
-window.addEventListener('unhandledrejection', (e) => {
-  showDebugError(`PROMISE RECHAZADA: ${e.reason?.message || e.reason}`);
-});
 
 const NAV_ICONS = {
   portfolio:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
@@ -2725,7 +2698,7 @@ function renderMobileNav() {
     }
     nav.innerHTML = html;
   } catch (err) {
-    showDebugError(`renderMobileNav falló: ${err.message}\n${err.stack}`);
+    console.error('renderMobileNav falló:', err);
   }
 }
 
@@ -2887,7 +2860,14 @@ function renderSidebar() {
   nav.innerHTML = html;
 }
 
+// Limpieza de seguridad: detener intervalos de QR si quedaron corriendo al cambiar de vista
+function stopQrIntervalsIfRunning() {
+  if (typeof qrInterval !== 'undefined' && qrInterval) { clearInterval(qrInterval); qrInterval = null; }
+  if (typeof qrCountdownInterval !== 'undefined' && qrCountdownInterval) { clearInterval(qrCountdownInterval); qrCountdownInterval = null; }
+}
+
 function switchCoordView(section) {
+  stopQrIntervalsIfRunning();
   const viewEl = document.getElementById('view-coord-' + section);
   if (!viewEl) {
     console.error('Vista de coordinación inexistente:', section);
@@ -2918,6 +2898,7 @@ function switchCoordView(section) {
 }
 
 function switchStudentView(view) {
+  stopQrIntervalsIfRunning();
   const viewEl = document.getElementById('view-' + view);
   if (!viewEl) {
     console.error('Vista de estudiante inexistente:', view);
@@ -4433,6 +4414,7 @@ function renderStudentNotasView() {
 }
 
 function switchTeacherView(view) {
+  stopQrIntervalsIfRunning();
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
