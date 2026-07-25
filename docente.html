@@ -1746,6 +1746,12 @@ async function ensureQRCode() {
 <div id="mobile-drawer-overlay" onclick="closeMobileDrawer()"></div>
 <div id="mobile-bottom-sheet"></div>
 
+<!-- PANEL DE ERRORES VISIBLE (debug mobile) -->
+<div id="debug-error-panel" style="display:none;position:fixed;top:0;left:0;right:0;background:#b02030;color:white;padding:12px 16px;font-family:monospace;font-size:12px;z-index:9999;max-height:40vh;overflow-y:auto;white-space:pre-wrap;word-break:break-word;">
+  <button onclick="document.getElementById('debug-error-panel').style.display='none'" style="float:right;background:white;color:#b02030;border:none;border-radius:4px;padding:2px 8px;font-weight:bold;cursor:pointer">X</button>
+  <div id="debug-error-content"></div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
   <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2619,6 +2625,22 @@ function doLogout() {
 // Forzar repintado en Android Chrome via micro-scroll
 // ── ICONOS COMPARTIDOS PARA NAVEGACIÓN MOBILE ──────────────────
 
+// ── CAPTURA GLOBAL DE ERRORES (visible en pantalla para debug mobile) ──
+function showDebugError(msg) {
+  const panel = document.getElementById('debug-error-panel');
+  const content = document.getElementById('debug-error-content');
+  if (!panel || !content) return;
+  const time = new Date().toLocaleTimeString();
+  content.textContent += `[${time}] ${msg}\n\n`;
+  panel.style.display = 'block';
+}
+window.addEventListener('error', (e) => {
+  showDebugError(`ERROR: ${e.message}\nArchivo: ${e.filename}:${e.lineno}:${e.colno}`);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  showDebugError(`PROMISE RECHAZADA: ${e.reason?.message || e.reason}`);
+});
+
 const NAV_ICONS = {
   portfolio:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
   asistencia: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
@@ -2684,24 +2706,28 @@ function renderMobileNav() {
   const nav = document.getElementById('mobile-nav');
   if (!nav) return;
 
-  const all = getNavItems();
-  const MAX = 4;
-  const visible = all.slice(0, MAX);
-  const extra   = all.slice(MAX);
+  try {
+    const all = getNavItems();
+    const MAX = 4;
+    const visible = all.slice(0, MAX);
+    const extra   = all.slice(MAX);
 
-  let html = visible.map(it => {
-    const active = it.id && document.getElementById(it.id)?.classList.contains('active');
-    return `<button class="mnav-btn${active?' active':''}" onclick="${it.fn};syncMobileNav()">
-      ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
-    </button>`;
-  }).join('');
+    let html = visible.map(it => {
+      const active = it.id && document.getElementById(it.id)?.classList.contains('active');
+      return `<button class="mnav-btn${active?' active':''}" onclick="${it.fn};syncMobileNav()">
+        ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
+      </button>`;
+    }).join('');
 
-  if (extra.length > 0) {
-    html += `<button class="mnav-btn" onclick="openMobileDrawer()">
-      ${NAV_ICONS.mas}<span>Más</span>
-    </button>`;
+    if (extra.length > 0) {
+      html += `<button class="mnav-btn" onclick="openMobileDrawer()">
+        ${NAV_ICONS.mas}<span>Más</span>
+      </button>`;
+    }
+    nav.innerHTML = html;
+  } catch (err) {
+    showDebugError(`renderMobileNav falló: ${err.message}\n${err.stack}`);
   }
-  nav.innerHTML = html;
 }
 
 function syncMobileNav() {
