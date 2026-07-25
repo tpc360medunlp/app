@@ -5024,7 +5024,18 @@ function renderTeacherView(tab) {
     });
   });
 
-  const pending   = sortStudentsByApellido(allItems.filter(i => i.rec.status === 'pending'),   i => STUDENT_NAMES[i.email]||i.email);
+  // Pendientes: por fecha de entrega, la más antigua primero (FIFO)
+  // Devueltos/Validados: por apellido (son consultas puntuales, no una cola de trabajo)
+  const parseFechaDDMMYYYY = (str) => {
+    if (!str) return 0;
+    const [d, m, y] = str.split('/').map(Number);
+    return new Date(y, (m||1)-1, d||1).getTime();
+  };
+  const pending   = allItems.filter(i => i.rec.status === 'pending').sort((a, b) => {
+    const diff = parseFechaDDMMYYYY(a.rec.date) - parseFechaDDMMYYYY(b.rec.date);
+    if (diff !== 0) return diff;
+    return getApellido(STUDENT_NAMES[a.email]||a.email).localeCompare(getApellido(STUDENT_NAMES[b.email]||b.email), 'es');
+  });
   const rejected  = sortStudentsByApellido(allItems.filter(i => i.rec.status === 'rejected'),  i => STUDENT_NAMES[i.email]||i.email);
   const validated = sortStudentsByApellido(allItems.filter(i => i.rec.status === 'validated'), i => STUDENT_NAMES[i.email]||i.email);
   pendingList = pending;
@@ -13680,7 +13691,10 @@ async function eliminarArea(areaId) {
 async function moverHabilidad(areaId, skillId, dir) {
   const area = SKILLS_DATA.find(a => a.id === areaId);
   if (!area) return;
-  const activas = area.skills.filter(s => s.activa !== false);
+  // Usar el mismo criterio de orden que la vista (por .orden, no el orden crudo del array)
+  const activas = area.skills
+    .filter(s => s.activa !== false)
+    .sort((a, b) => (a.orden||0) - (b.orden||0));
   const idx = activas.findIndex(s => s.id === skillId);
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= activas.length) return;
