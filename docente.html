@@ -108,6 +108,7 @@ async function ensureQRCode() {
     min-height: 100dvh;
     overflow: visible;
     box-sizing: border-box;
+    z-index: 1000;
   }
   #screen-login.active { display: flex; }
 
@@ -622,8 +623,7 @@ async function ensureQRCode() {
   @media (max-width: 768px) {
     html, body {
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
     }
     #screen-app.active {
       height: 100%;
