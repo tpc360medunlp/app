@@ -13008,35 +13008,16 @@ function renderTeacherCronogramaMateria(materiaId) {
 }
 
 // ── PWA ───────────────────────────────────────────────────
+// Desregistrar cualquier service worker previo (el anterior usaba blob: URL, no confiable)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    const v  = '20260722';
-    const sw = `
-const CACHE = 'tpc360-${v}';
-self.addEventListener('install', e => { self.skipWaiting(); });
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-});
-self.addEventListener('fetch', e => {
-  if (e.request.mode === 'navigate' || e.request.url.match(/\\.html/)) {
-    e.respondWith(
-      fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      }).catch(() => caches.match(e.request))
-    );
-    return;
-  }
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-});`;
-    const url = URL.createObjectURL(new Blob([sw], {type:'application/javascript'}));
-    navigator.serviceWorker.register(url).catch(()=>{});
-  });
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  }).catch(()=>{});
+}
+if ('caches' in window) {
+  caches.keys().then(keys => {
+    keys.forEach(key => { if (key.startsWith('tpc360-')) caches.delete(key); });
+  }).catch(()=>{});
 }
 
 // ── PORTFOLIO MANAGEMENT (COORDINACIÓN) ───────────────────
