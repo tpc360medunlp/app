@@ -13326,5 +13326,14 @@ function closePortfolioModal(type) {
   document.getElementById('modal-portfolio-' + t).addEventListener('click', function(e){ if(e.target===this) closePortfolioModal(t); });
 });
 </script>
+<script>
+// Consola de desarrollador visible en mobile (solo si se agrega ?debug=1 a la URL)
+if (location.search.includes('debug=1')) {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/eruda';
+  s.onload = () => { eruda.init(); };
+  document.body.appendChild(s);
+}
+</script>
 </body>
 </html>
