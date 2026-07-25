@@ -8148,8 +8148,10 @@ function confirmComisionImport() {
   if (importedRows.length === 0) { showToast('Primero cargá un archivo válido', true); return; }
   const comision = COMISIONES.find(c => c.id === gestionComisionId);
   let added = 0;
+  let cambiados = 0;
   const upsertAlumnos = [];
   const upsertComAlumnos = [];
+  const deleteComAlumnos = []; // { comision_id, legajo } a quitar de comisiones viejas
 
   importedRows.forEach(r => {
     // Usar legajo del archivo si existe, sino usar DNI normalizado
@@ -8171,6 +8173,23 @@ function confirmComisionImport() {
     const email = ENROLLED_STUDENTS[legajoNorm]?.email || `legajo_${legajoNorm}`;
     if (!STUDENT_NAMES[email]) STUDENT_NAMES[email] = `${r.apellido}, ${r.nombre}`;
 
+    // Si el alumno ya estaba en OTRA comisión de la misma materia/año,
+    // registrar el cambio y sacarlo de la comisión vieja antes de agregarlo.
+    if (comision.materiaId && comision.año != null) {
+      const comisionesViejas = COMISIONES.filter(c =>
+        c.id !== gestionComisionId &&
+        c.materiaId === comision.materiaId &&
+        c.año == comision.año &&
+        c.alumnos.includes(email)
+      );
+      comisionesViejas.forEach(vieja => {
+        vieja.alumnos = vieja.alumnos.filter(e => e !== email);
+        registrarCambioComision(email, vieja.id, gestionComisionId);
+        deleteComAlumnos.push({ comision_id: vieja.id, legajo: legajoNorm });
+        cambiados++;
+      });
+    }
+
     if (!comision.alumnos.includes(email)) {
       comision.alumnos.push(email);
       added++;
@@ -8185,6 +8204,11 @@ function confirmComisionImport() {
         .upsert(upsertAlumnos, { onConflict: 'legajo' });
       if (error) console.warn('Error importando alumnos a padrón:', error);
     }
+    for (const del of deleteComAlumnos) {
+      const { error } = await _supabase.from('comision_alumnos')
+        .delete().eq('comision_id', del.comision_id).eq('legajo', del.legajo);
+      if (error) console.warn('Error quitando alumno de comisión anterior:', error);
+    }
     if (upsertComAlumnos.length > 0) {
       const { error } = await _supabase.from('comision_alumnos')
         .upsert(upsertComAlumnos, { onConflict: 'comision_id,legajo' });
@@ -8195,7 +8219,7 @@ function confirmComisionImport() {
   saveToSupabase();
 
   document.getElementById('modal-comision-sub').textContent = `${comision.alumnos.length} alumno/s inscripto/s`;
-  showToast(`${added} alumno/s agregados a la comisión`);
+  showToast(`${added} alumno/s agregados a la comisión${cambiados > 0 ? ` (${cambiados} transferido/s desde otra comisión)` : ''}`);
   showComisionTab('actuales');
 }
 
