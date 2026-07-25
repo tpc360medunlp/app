@@ -608,17 +608,48 @@ async function ensureQRCode() {
   .sidebar-overlay.open { display: block; }
 
   /* ── BARRA INFERIOR MOBILE ── */
-  #mobile-nav {
-    display: none;
-  }
+
+
+
+
+
+  #mobile-nav { display: none; }
 
   @media (max-width: 768px) {
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #screen-app.active {
+      height: 100%;
+      overflow: hidden;
+    }
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .sidebar { display: none !important; }
+    .hamburger-btn { display: none !important; }
+    .sidebar-overlay { display: none !important; }
+    .main-content {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      overflow-y: auto;
+      margin-left: 0 !important;
+      padding: 1rem !important;
+    }
     #mobile-nav {
       display: flex;
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      z-index: 300;
-      height: calc(62px + env(safe-area-inset-bottom, 0px));
+      position: static;
+      flex: 0 0 calc(62px + env(safe-area-inset-bottom, 0px));
+      width: 100%;
+      min-width: 0;
       padding-bottom: env(safe-area-inset-bottom, 0px);
       background: var(--navy);
       border-top: 1px solid rgba(255,255,255,0.08);
@@ -626,7 +657,6 @@ async function ensureQRCode() {
       overflow-y: hidden;
       overscroll-behavior-x: contain;
       scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
     }
     #mobile-nav::-webkit-scrollbar { display: none; }
 
@@ -661,21 +691,7 @@ async function ensureQRCode() {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-  }
 
-
-
-
-
-  @media (max-width: 768px) {
-    .hamburger-btn { display: none !important; }
-    .sidebar { display: none !important; }
-    .sidebar-overlay { display: none !important; }
-    .main-content {
-      margin-left: 0 !important;
-      padding: 1rem 1rem calc(78px + env(safe-area-inset-bottom, 0px)) !important;
-      -webkit-overflow-scrolling: touch;
-    }
     .page-header { flex-direction: column; gap: 10px; }
     .login-bg-lines { display: none; }
     .page-title { font-size: 18px; }
@@ -1121,6 +1137,9 @@ async function ensureQRCode() {
       </div>
 
     </main>
+
+    <!-- MOBILE NAV -->
+    <nav id="mobile-nav" aria-label="Navegación principal"></nav>
   </div>
 </div>
 
@@ -1724,9 +1743,6 @@ async function ensureQRCode() {
     </div>
   </div>
 </div>
-
-<!-- MOBILE NAV -->
-<nav id="mobile-nav" aria-label="Navegación principal"></nav>
 
 </div>
 
@@ -2697,10 +2713,6 @@ function updateNavigationState() {
   });
 }
 
-function scrollActiveMobileItemIntoView() {
-  const active = document.querySelector('#mobile-nav .mnav-btn.active');
-  active?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-}
 
 
 function renderSidebar() {
@@ -2830,6 +2842,7 @@ function stopQrIntervalsIfRunning() {
 function switchCoordView(section) {
   stopQrIntervalsIfRunning();
   currentView = section;
+  if (window.innerWidth <= 768) updateNavigationState();
   const viewEl = document.getElementById('view-coord-' + section);
   if (!viewEl) {
     console.error('Vista de coordinación inexistente:', section);
@@ -2857,12 +2870,12 @@ function switchCoordView(section) {
   };
 
   doRender();
-  if (window.innerWidth <= 768) { updateNavigationState(); scrollActiveMobileItemIntoView(); }
 }
 
 function switchStudentView(view) {
   stopQrIntervalsIfRunning();
   currentView = view;
+  if (window.innerWidth <= 768) updateNavigationState();
   const viewEl = document.getElementById('view-' + view);
   if (!viewEl) {
     console.error('Vista de estudiante inexistente:', view);
@@ -2925,7 +2938,6 @@ function switchStudentView(view) {
   };
 
   doRender();
-  if (window.innerWidth <= 768) { updateNavigationState(); scrollActiveMobileItemIntoView(); }
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -4381,6 +4393,7 @@ function renderStudentNotasView() {
 function switchTeacherView(view) {
   stopQrIntervalsIfRunning();
   currentView = view;
+  if (window.innerWidth <= 768) updateNavigationState();
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
@@ -4415,7 +4428,6 @@ function switchTeacherView(view) {
   };
 
   doRender();
-  if (window.innerWidth <= 768) { updateNavigationState(); scrollActiveMobileItemIntoView(); }
 }
 
 // Obtener las materiaIds que puede validar el docente actual
@@ -5215,7 +5227,7 @@ function confirmApprove() {
   const card = document.getElementById('vc-' + approvingPendingId);
   if (card) card.style.opacity = '0.4';
   setTimeout(() => renderTeacherView(), 400);
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   showToast('Práctica validada correctamente');
 }
 
@@ -5260,7 +5272,7 @@ function confirmReject() {
   }
   closeRejectModal();
   renderTeacherView();
-  renderSidebar(); if(window.innerWidth<=768) renderMobileNav();
+  renderSidebar();
   showToast('Práctica devuelta con observaciones');
 }
 
