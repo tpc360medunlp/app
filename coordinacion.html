@@ -191,7 +191,7 @@ async function ensureQRCode() {
   }
 
   /* ── APP SHELL ── */
-  .app-shell { display: flex; min-height: 100vh; }
+  .app-shell { display: flex; height: 100vh; overflow: hidden; }
 
   /* sidebar */
   .sidebar {
@@ -293,7 +293,7 @@ async function ensureQRCode() {
   .main-content {
     flex: 1;
     padding: 2rem 2.5rem;
-    min-height: 100vh;
+    height: 100%;
     overflow-y: auto;
   }
 
@@ -2646,14 +2646,16 @@ async function enterApp() {
     renderSidebar(); if(window.innerWidth<=768) { renderMobileNav(); renderMobileHeader(); }
 
     if (currentRole === 'student') {
-      switchStudentView('student');
+      const firstGroup = getOrderedStudentGroups().find(g => g.enabled);
+      switchStudentView(firstGroup?.view || 'student');
       setTimeout(() => {
         showInAppNotifications(currentUser.email);
         window._notifShown = true;
       }, 600);
     }
     else if (currentRole === 'teacher') {
-      switchTeacherView('teacher');
+      const firstGroup = getOrderedTeacherGroups().find(g => g.enabled);
+      switchTeacherView(firstGroup?.view || 'teacher');
       setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
     }
     else switchCoordView('stats');
@@ -11392,21 +11394,21 @@ let teacherViewConfig = {
 
 // ── Grupos de navegación (para reordenar) ──────────────────
 const STUDENT_NAV_GROUPS = [
-  { key:'portfolio',    label:'Portfolio',            configKeys:['portfolio'] },
-  { key:'asistencia',   label:'Asistencia',           configKeys:['asistencia'] },
-  { key:'notas',        label:'Calificaciones/Notas', configKeys:['notas_parciales','notas_finales'] },
-  { key:'certificados', label:'Certificados',         configKeys:['certificados_parciales','certificados_finales'] },
-  { key:'cronograma',   label:'Cronogramas',          configKeys:['cronograma'] },
-  { key:'cartelera',    label:'Cartelera',            configKeys:['cartelera'] },
-  { key:'cude',         label:'Mi CUdE',              configKeys:['cude'] },
+  { key:'portfolio',    label:'Portfolio',            configKeys:['portfolio'],                              view:'student' },
+  { key:'asistencia',   label:'Asistencia',           configKeys:['asistencia'],                             view:'student-attendance' },
+  { key:'notas',        label:'Calificaciones/Notas', configKeys:['notas_parciales','notas_finales'],        view:'student-notas' },
+  { key:'certificados', label:'Certificados',         configKeys:['certificados_parciales','certificados_finales'], view:'student-certificados' },
+  { key:'cronograma',   label:'Cronogramas',          configKeys:['cronograma'],                             view:'student-cronograma' },
+  { key:'cartelera',    label:'Cartelera',            configKeys:['cartelera'],                              view:'student-cartelera' },
+  { key:'cude',         label:'Mi CUdE',              configKeys:['cude'],                                   view:'student-cude' },
 ];
 const TEACHER_NAV_GROUPS = [
-  { key:'portfolio',      label:'Portfolio',            configKeys:['portfolio'] },
-  { key:'asistencia',     label:'Asistencia',           configKeys:['asistencia'] },
-  { key:'calificaciones', label:'Calificaciones/Notas', configKeys:['calificaciones'] },
-  { key:'certificados',   label:'Certificados',         configKeys:['certificados'] },
-  { key:'cronograma',     label:'Cronogramas',          configKeys:['cronograma'] },
-  { key:'solicitudAulas', label:'Solicitud de aulas',   configKeys:['solicitudAulas'] },
+  { key:'portfolio',      label:'Portfolio',            configKeys:['portfolio'],      view:'teacher' },
+  { key:'asistencia',     label:'Asistencia',           configKeys:['asistencia'],     view:'attendance' },
+  { key:'calificaciones', label:'Calificaciones/Notas', configKeys:['calificaciones'], view:'notas' },
+  { key:'certificados',   label:'Certificados',         configKeys:['certificados'],   view:'cert-requests' },
+  { key:'cronograma',     label:'Cronogramas',          configKeys:['cronograma'],     view:'teacher-cronograma' },
+  { key:'solicitudAulas', label:'Solicitud de aulas',   configKeys:['solicitudAulas'], view:'teacher-aulas' },
 ];
 
 function getOrderedStudentGroups() {
