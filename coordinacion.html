@@ -4619,34 +4619,42 @@ function renderStudentView() {
   const validated = allSkillIds.filter(id => records[id]?.status === 'validated').length;
   const pending = allSkillIds.filter(id => records[id]?.status === 'pending').length;
   const rejected = allSkillIds.filter(id => records[id]?.status === 'rejected').length;
-  const pct = Math.round((validated / total) * 100);
+  const pct = total > 0 ? Math.round((validated / total) * 100) : 0;
 
-  document.getElementById('student-stats').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Progreso general</div>
-      <div class="stat-value">${pct}<span class="stat-suffix">%</span></div>
-      <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Validadas</div>
-      <div class="stat-value">${validated}<span class="stat-suffix">/${total}</span></div>
-      <div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.round(validated/total*100)}%"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Pendientes de validación</div>
-      <div class="stat-value" style="color:${pending>0?'#b05a10':'inherit'}">${pending}</div>
-      <div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.round(pending/total*100)}%;background:var(--amber)"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Devueltas por docente</div>
-      <div class="stat-value" style="color:${rejected>0?'#b02030':'inherit'}">${rejected}</div>
-      <div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.round(rejected/total*100)}%;background:var(--red)"></div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Sin realizar</div>
-      <div class="stat-value">${total - validated - pending - rejected}</div>
-      <div class="stat-bar"><div class="stat-bar-fill" style="width:0%"></div></div>
-    </div>`;
+  if (total === 0) {
+    document.getElementById('student-stats').innerHTML = `
+      <div class="stat-card" style="grid-column:1/-1">
+        <div class="stat-label">Portfolio</div>
+        <div style="font-size:14px;color:var(--gray-400);margin-top:6px">Todavía no hay habilidades disponibles para cargar. Consultá con coordinación.</div>
+      </div>`;
+  } else {
+    document.getElementById('student-stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Progreso general</div>
+        <div class="stat-value">${pct}<span class="stat-suffix">%</span></div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Validadas</div>
+        <div class="stat-value">${validated}<span class="stat-suffix">/${total}</span></div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.round(validated/total*100)}%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pendientes de validación</div>
+        <div class="stat-value" style="color:${pending>0?'#b05a10':'inherit'}">${pending}</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.round(pending/total*100)}%;background:var(--amber)"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Devueltas por docente</div>
+        <div class="stat-value" style="color:${rejected>0?'#b02030':'inherit'}">${rejected}</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.round(rejected/total*100)}%;background:var(--red)"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sin realizar</div>
+        <div class="stat-value">${total - validated - pending - rejected}</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:0%"></div></div>
+      </div>`;
+  }
 
   let html = '';
   SKILLS_DATA.forEach(area => {
@@ -5443,7 +5451,7 @@ function renderCoordStudentPortfolio(email) {
   const allSkillIds = SKILLS_DATA.flatMap(a => a.skills.filter(s => s.activa !== false).map(s => s.id));
   const total    = allSkillIds.length;
   const validated= allSkillIds.filter(id => records[id]?.status === 'validated').length;
-  const pct      = Math.round(validated / total * 100);
+  const pct      = total > 0 ? Math.round(validated / total * 100) : 0;
 
   let html = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem">
@@ -6708,7 +6716,7 @@ function exportProgresoPortfolio(fmt='xlsx') {
     const pending   = allSkillIds.filter(id => recs[id]?.status==='pending').length;
     const rejected  = allSkillIds.filter(id => recs[id]?.status==='rejected').length;
     const none      = total - validated - pending - rejected;
-    const pct       = Math.round(validated/total*100) + '%';
+    const pct       = (total > 0 ? Math.round(validated/total*100) : 0) + '%';
     return [STUDENT_NAMES[email]||email, email, validated, pending, rejected, none, pct];
   });
 
@@ -6853,14 +6861,14 @@ function renderPortfolioProgressView(filter = '', tab = 'active') {
   const total       = allSkillIds.length;
   const allStudents = Object.keys(studentRecords);
 
-  const activeStudents    = allStudents.filter(email => {
+  const activeStudents    = total > 0 ? allStudents.filter(email => {
     const validated = Object.values(studentRecords[email]).filter(r => r.status === 'validated').length;
-    return Math.round(validated / total * 100) < 100;
-  });
-  const completedStudents = allStudents.filter(email => {
+    return validated < total;
+  }) : [];
+  const completedStudents = total > 0 ? allStudents.filter(email => {
     const validated = Object.values(studentRecords[email]).filter(r => r.status === 'validated').length;
-    return Math.round(validated / total * 100) === 100;
-  });
+    return validated >= total;
+  }) : [];
 
   const sourceList = tab === 'active' ? activeStudents : completedStudents;
   const filtered   = sortStudentsByApellido(
@@ -6907,7 +6915,7 @@ function renderPortfolioProgressView(filter = '', tab = 'active') {
     filtered.forEach(email => {
       const name      = STUDENT_NAMES[email] || email;
       const validated = Object.values(studentRecords[email]).filter(r => r.status === 'validated').length;
-      const pct       = Math.round(validated / total * 100);
+      const pct       = total > 0 ? Math.round(validated / total * 100) : 0;
       const initials  = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const pctColor  = pct === 100 ? '#1a7a35' : 'var(--teal)';
       html += `<div class="skill-row" style="align-items:center;cursor:pointer" onclick="renderCoordStudentPortfolio('${email}')">
