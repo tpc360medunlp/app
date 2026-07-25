@@ -610,86 +610,70 @@ async function ensureQRCode() {
   /* ── BARRA INFERIOR MOBILE ── */
   #mobile-nav {
     display: none;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: calc(58px + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: var(--navy);
-    z-index: 300;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    flex-direction: row;
-    align-items: stretch;
   }
-  .mnav-btn {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    border: none;
-    background: none;
-    color: rgba(255,255,255,0.4);
-    font-family: var(--font);
-    font-size: 9px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 6px 2px 4px;
-    -webkit-tap-highlight-color: transparent;
-    border-top: 3px solid transparent;
-    min-width: 0;
-  }
-  .mnav-btn.active { color: var(--teal-mid); border-top-color: var(--teal-mid); background: rgba(255,255,255,0.04); }
-  .mnav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
-  .mnav-btn span { white-space: nowrap; display: block; }
 
-  #mobile-drawer-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(11,31,58,0.5);
-    z-index: 500;
+  @media (max-width: 768px) {
+    #mobile-nav {
+      display: flex;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 300;
+      height: calc(62px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    #mobile-nav::-webkit-scrollbar { display: none; }
+
+    .mnav-btn {
+      flex: 0 0 72px;
+      min-width: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 4px 4px;
+      border: none;
+      border-top: 3px solid transparent;
+      background: transparent;
+      color: rgba(255,255,255,0.45);
+      font-family: var(--font);
+      font-size: 9px;
+      font-weight: 500;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mnav-btn.active {
+      color: var(--teal-mid);
+      border-top-color: var(--teal-mid);
+      background: rgba(255,255,255,0.04);
+    }
+    .mnav-btn svg { width: 21px; height: 21px; flex-shrink: 0; }
+    .mnav-btn span {
+      max-width: 68px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
-  #mobile-drawer-overlay.open { display: block; }
-  body.mobile-menu-open { overflow: hidden; }
-  #mobile-bottom-sheet {
-    display: none;
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    background: var(--navy);
-    z-index: 501;
-    border-radius: 16px 16px 0 0;
-    padding: 1rem 0 calc(2rem + env(safe-area-inset-bottom, 0px));
-    flex-direction: column;
-    max-height: 70dvh;
-    overflow-y: auto;
-  }
-  #mobile-bottom-sheet.open { display: flex; }
-  .msheet-handle {
-    width: 36px; height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
-    margin: 0 auto 1rem;
-  }
-  .msheet-item {
-    display: flex; align-items: center; gap: 14px;
-    padding: 12px 1.5rem;
-    border: none; background: none;
-    color: rgba(255,255,255,0.75);
-    font-family: var(--font); font-size: 15px; font-weight: 500;
-    cursor: pointer; width: 100%; text-align: left;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .msheet-item.active { color: var(--teal-mid); }
-  .msheet-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+
+
+
 
   @media (max-width: 768px) {
     .hamburger-btn { display: none !important; }
     .sidebar { display: none !important; }
     .sidebar-overlay { display: none !important; }
-    #mobile-nav { display: flex; }
     .main-content {
       margin-left: 0 !important;
-      padding: 1rem 1rem 5rem !important;
+      padding: 1rem 1rem calc(78px + env(safe-area-inset-bottom, 0px)) !important;
       -webkit-overflow-scrolling: touch;
     }
     .page-header { flex-direction: column; gap: 10px; }
@@ -1742,9 +1726,7 @@ async function ensureQRCode() {
 </div>
 
 <!-- MOBILE NAV -->
-<div id="mobile-nav"></div>
-<div id="mobile-drawer-overlay" onclick="closeMobileDrawer()"></div>
-<div id="mobile-bottom-sheet"></div>
+<nav id="mobile-nav" aria-label="Navegación principal"></nav>
 
 </div>
 
@@ -2251,6 +2233,7 @@ const USERS = {
 };
 
 let currentRole = "student";
+let currentView = null; // vista activa en la barra de navegación móvil
 // Leer rol guardado al inicio ANTES de que initLoginScreen lo borre
 const _savedRoleAtStart = localStorage.getItem('tpc360_role');
 let currentUser = USERS.student;
@@ -2634,39 +2617,39 @@ function getNavItems() {
   const t = teacherViewConfig;
   if (currentRole === 'student') {
     const all = [];
-    if (c.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchStudentView('student')`,             id:'nav-student-portfolio'});
-    if (c.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchStudentView('student-attendance')`,  id:'nav-student-attendance'});
+    if (c.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    id:'student'});
+    if (c.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   id:'student-attendance'});
     if (c.notas_parciales?.enabled||c.notas_finales?.enabled)
-                                all.push({i:'notas',     l:'Notas',        fn:`switchStudentView('student-notas')`,       id:'nav-student-notas'});
+                                all.push({i:'notas',     l:'Notas',        id:'student-notas'});
     if (c.certificados_parciales?.enabled||c.certificados_finales?.enabled)
-                                all.push({i:'cert',      l:'Certificados', fn:`switchStudentView('student-certificados')`,id:'nav-student-certificados'});
-    if (c.cronograma?.enabled)  all.push({i:'calendario',l:'Cronograma',   fn:`switchStudentView('student-cronograma')`,  id:'nav-student-cronograma'});
-    if (c.cartelera?.enabled)   all.push({i:'cartelera', l:'Cartelera',    fn:`switchStudentView('student-cartelera')`,   id:'nav-student-cartelera'});
-    if (c.cude?.enabled)        all.push({i:'cude',      l:'Mi CUdE',      fn:`switchStudentView('student-cude')`,        id:'nav-student-cude'});
+                                all.push({i:'cert',      l:'Certificados', id:'student-certificados'});
+    if (c.cronograma?.enabled)  all.push({i:'calendario',l:'Cronograma',   id:'student-cronograma'});
+    if (c.cartelera?.enabled)   all.push({i:'cartelera', l:'Cartelera',    id:'student-cartelera'});
+    if (c.cude?.enabled)        all.push({i:'cude',      l:'Mi CUdE',      id:'student-cude'});
     return all;
   }
   if (currentRole === 'teacher') {
     const all = [];
-    if (t.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    fn:`switchTeacherView('teacher')`,             id:'nav-validaciones'});
-    if (t.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   fn:`switchTeacherView('attendance')`,          id:'nav-asistencia'});
-    if (t.calificaciones?.enabled) all.push({i:'notas',  l:'Notas',        fn:`switchTeacherView('notas')`,               id:'nav-notas'});
-    if (t.certificados?.enabled)all.push({i:'cert',      l:'Certificados', fn:`switchTeacherView('cert-requests')`,        id:'nav-cert-requests'});
-    if (t.cronograma?.enabled)  all.push({i:'calendario',l:'Cronogramas',  fn:`switchTeacherView('teacher-cronograma')`,  id:'nav-teacher-cronograma'});
-    if (t.solicitudAulas?.enabled!==false) all.push({i:'aulas',l:'Aulas',  fn:`switchTeacherView('teacher-aulas')`,       id:'nav-teacher-aulas'});
+    if (t.portfolio?.enabled)   all.push({i:'portfolio', l:'Portfolio',    id:'teacher'});
+    if (t.asistencia?.enabled)  all.push({i:'asistencia',l:'Asistencia',   id:'attendance'});
+    if (t.calificaciones?.enabled) all.push({i:'notas',  l:'Notas',        id:'notas'});
+    if (t.certificados?.enabled)all.push({i:'cert',      l:'Certificados', id:'cert-requests'});
+    if (t.cronograma?.enabled)  all.push({i:'calendario',l:'Cronogramas',  id:'teacher-cronograma'});
+    if (t.solicitudAulas?.enabled!==false) all.push({i:'aulas',l:'Aulas', id:'teacher-aulas'});
     return all;
   }
   if (currentRole === 'coordinator') {
     return [
-      {i:'stats',     l:'Estadísticas', fn:`switchCoordView('stats')`,        id:'nav-coord-stats'},
-      {i:'materias',  l:'Materias',     fn:`switchCoordView('academic')`,     id:'nav-coord-academic'},
-      {i:'docentes',  l:'Docentes',     fn:`switchCoordView('teachers')`,     id:'nav-coord-teachers'},
-      {i:'cartelera', l:'Cartelera',    fn:`switchCoordView('cartelera')`,    id:'nav-coord-cartelera'},
-      {i:'portfolio', l:'Portfolio',    fn:`switchCoordView('portfolio')`,    id:'nav-coord-portfolio'},
-      {i:'docentes',  l:'Cuentas',      fn:`switchCoordView('accounts')`,     id:'nav-coord-accounts'},
-      {i:'cert',      l:'Certificados', fn:`switchCoordView('certificados')`, id:'nav-coord-certificados'},
-      {i:'config',    l:'Configuración',fn:`switchCoordView('config')`,       id:'nav-coord-config'},
-      {i:'cude',      l:'CUdE',         fn:`switchCoordView('cude')`,         id:'nav-coord-cude'},
-      {i:'aulas',     l:'Aulas',        fn:`switchCoordView('aulas')`,        id:'nav-coord-aulas'},
+      {i:'stats',     l:'Estadísticas', id:'stats'},
+      {i:'materias',  l:'Materias',     id:'academic'},
+      {i:'docentes',  l:'Docentes',     id:'teachers'},
+      {i:'cartelera', l:'Cartelera',    id:'cartelera'},
+      {i:'portfolio', l:'Portfolio',    id:'portfolio'},
+      {i:'docentes',  l:'Cuentas',      id:'accounts'},
+      {i:'cert',      l:'Certificados', id:'certificados'},
+      {i:'config',    l:'Configuración',id:'config'},
+      {i:'cude',      l:'CUdE',         id:'cude'},
+      {i:'aulas',     l:'Aulas',        id:'aulas'},
     ];
   }
   return [];
@@ -2677,67 +2660,46 @@ function renderMobileNav() {
   const nav = document.getElementById('mobile-nav');
   if (!nav) return;
 
-  try {
-    const all = getNavItems();
-    const MAX = 4;
-    const visible = all.slice(0, MAX);
-    const extra   = all.slice(MAX);
+  const items = getNavItems();
+  nav.replaceChildren();
+  const fragment = document.createDocumentFragment();
 
-    let html = visible.map(it => {
-      const active = it.id && document.getElementById(it.id)?.classList.contains('active');
-      return `<button class="mnav-btn${active?' active':''}" onclick="${it.fn};syncMobileNav()">
-        ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
-      </button>`;
-    }).join('');
+  items.forEach(item => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mnav-btn';
+    button.dataset.view = item.id;
+    button.setAttribute('aria-label', item.l);
+    button.innerHTML = `${NAV_ICONS[item.i] || ''}<span>${item.l}</span>`;
+    button.addEventListener('click', () => navigateTo(item));
+    fragment.appendChild(button);
+  });
 
-    if (extra.length > 0) {
-      html += `<button class="mnav-btn" onclick="openMobileDrawer()">
-        ${NAV_ICONS.mas}<span>Más</span>
-      </button>`;
-    }
-    nav.innerHTML = html;
-  } catch (err) {
-    console.error('renderMobileNav falló:', err);
-  }
+  nav.appendChild(fragment);
+  updateNavigationState();
 }
 
-function syncMobileNav() {
-  document.querySelectorAll('.mnav-btn').forEach(btn => {
-    const fn = btn.getAttribute('onclick') || '';
-    const m = fn.match(/switch\w+View\('([^']+)'\)/);
-    if (m) {
-      const el = document.querySelector(`.nav-item[onclick*="'${m[1]}'"]`);
-      btn.classList.toggle('active', !!el?.classList.contains('active'));
-    }
+// Navega a una vista desde la barra móvil, delegando en las funciones
+// switch*View existentes (sin duplicar su lógica).
+function navigateTo(item) {
+  currentView = item.id;
+  if (currentRole === 'student')      switchStudentView(item.id);
+  else if (currentRole === 'teacher') switchTeacherView(item.id);
+  else if (currentRole === 'coordinator') switchCoordView(item.id);
+}
+
+function updateNavigationState() {
+  document.querySelectorAll('#mobile-nav [data-view]').forEach(button => {
+    const isActive = button.dataset.view === currentView;
+    button.classList.toggle('active', isActive);
+    if (isActive) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
   });
 }
 
-function openMobileDrawer() {
-  const sheet   = document.getElementById('mobile-bottom-sheet');
-  const overlay = document.getElementById('mobile-drawer-overlay');
-  if (!sheet || !overlay) return;
-
-  const all   = getNavItems();
-  const extra = all.slice(4);
-
-  let html = '<div class="msheet-handle"></div>';
-  extra.forEach(it => {
-    const active = it.id && document.getElementById(it.id)?.classList.contains('active');
-    html += `<button class="msheet-item${active?' active':''}"
-      onclick="closeMobileDrawer(); requestAnimationFrame(() => { ${it.fn}; syncMobileNav(); })">
-      ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
-    </button>`;
-  });
-  sheet.innerHTML = html;
-  overlay.classList.add('open');
-  sheet.classList.add('open');
-  document.body.classList.add('mobile-menu-open');
-}
-
-function closeMobileDrawer() {
-  document.getElementById('mobile-bottom-sheet')?.classList.remove('open');
-  document.getElementById('mobile-drawer-overlay')?.classList.remove('open');
-  document.body.classList.remove('mobile-menu-open');
+function scrollActiveMobileItemIntoView() {
+  const active = document.querySelector('#mobile-nav .mnav-btn.active');
+  active?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
 
 
@@ -2867,6 +2829,7 @@ function stopQrIntervalsIfRunning() {
 
 function switchCoordView(section) {
   stopQrIntervalsIfRunning();
+  currentView = section;
   const viewEl = document.getElementById('view-coord-' + section);
   if (!viewEl) {
     console.error('Vista de coordinación inexistente:', section);
@@ -2894,11 +2857,12 @@ function switchCoordView(section) {
   };
 
   doRender();
-  if(window.innerWidth<=768) renderMobileNav();
+  if (window.innerWidth <= 768) { updateNavigationState(); scrollActiveMobileItemIntoView(); }
 }
 
 function switchStudentView(view) {
   stopQrIntervalsIfRunning();
+  currentView = view;
   const viewEl = document.getElementById('view-' + view);
   if (!viewEl) {
     console.error('Vista de estudiante inexistente:', view);
@@ -2961,7 +2925,7 @@ function switchStudentView(view) {
   };
 
   doRender();
-  if(window.innerWidth<=768) renderMobileNav();
+  if (window.innerWidth <= 768) { updateNavigationState(); scrollActiveMobileItemIntoView(); }
 }
 
 // Ciclo lectivo seleccionado en vista asistencia del alumno
@@ -4416,6 +4380,7 @@ function renderStudentNotasView() {
 
 function switchTeacherView(view) {
   stopQrIntervalsIfRunning();
+  currentView = view;
   document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
@@ -4450,7 +4415,7 @@ function switchTeacherView(view) {
   };
 
   doRender();
-  if(window.innerWidth<=768) renderMobileNav();
+  if (window.innerWidth <= 768) { updateNavigationState(); scrollActiveMobileItemIntoView(); }
 }
 
 // Obtener las materiaIds que puede validar el docente actual
