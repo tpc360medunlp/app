@@ -5798,11 +5798,11 @@ function buildCoordCalifStats() {
 
 function filtrosHtml(yearOptions, materiaOptions) {
   return `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.25rem">
-    <select onchange="window._coordCalifYear=this.value; renderCoordinatorView()"
+    <select onchange="window._coordCalifYear=this.value; document.getElementById('coord-calif-stats').innerHTML = buildCoordCalifStats()"
       style="padding:8px 12px;font-size:13px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);font-family:var(--font);color:var(--navy);background:white">
       ${yearOptions}
     </select>
-    <select onchange="window._coordCalifMateria=this.value; renderCoordinatorView()"
+    <select onchange="window._coordCalifMateria=this.value; document.getElementById('coord-calif-stats').innerHTML = buildCoordCalifStats()"
       style="flex:1;min-width:180px;padding:8px 12px;font-size:13px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);font-family:var(--font);color:var(--navy);background:white">
       ${materiaOptions}
     </select>
