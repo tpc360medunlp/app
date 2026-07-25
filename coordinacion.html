@@ -5530,15 +5530,15 @@ function renderCoordinatorView() {
   const total = allSkillIds.length;
   const students = Object.keys(studentRecords);
 
-  const activeStudents = sortStudentsByApellido(
-    students.filter(email => { const v = Object.values(studentRecords[email]).filter(r=>r.status==='validated').length; return Math.round(v/total*100) < 100; }),
+  const activeStudents = total > 0 ? sortStudentsByApellido(
+    students.filter(email => { const v = Object.values(studentRecords[email]).filter(r=>r.status==='validated').length; return v < total; }),
     e => STUDENT_NAMES[e] || e
-  ).map(email => { const v = Object.values(studentRecords[email]).filter(r=>r.status==='validated').length; return { email, pct: Math.round(v/total*100) }; });
+  ).map(email => { const v = Object.values(studentRecords[email]).filter(r=>r.status==='validated').length; return { email, pct: Math.round(v/total*100) }; }) : [];
 
-  const completedStudents = sortStudentsByApellido(
-    students.filter(email => { const v = Object.values(studentRecords[email]).filter(r=>r.status==='validated').length; return Math.round(v/total*100) === 100; }),
+  const completedStudents = total > 0 ? sortStudentsByApellido(
+    students.filter(email => { const v = Object.values(studentRecords[email]).filter(r=>r.status==='validated').length; return v >= total; }),
     e => STUDENT_NAMES[e] || e
-  ).map(email => ({ email, pct: 100 }));
+  ).map(email => ({ email, pct: 100 })) : [];
 
   let totalValidated = 0, totalPending = 0;
   students.forEach(email => {
@@ -5566,7 +5566,9 @@ function renderCoordinatorView() {
   const maxCount = Math.max(...rangeCounts.map(r => r.count), 1);
 
   let distHtml = '';
-  if (activeStudents.length === 0) {
+  if (total === 0) {
+    distHtml = `<div style="padding:1.5rem;text-align:center;color:var(--gray-400);font-size:14px">No hay habilidades activas definidas — no se pueden calcular estadísticas de portfolio.</div>`;
+  } else if (activeStudents.length === 0) {
     distHtml = `<div style="padding:1.5rem;text-align:center;color:var(--gray-400);font-size:14px">No hay alumnos con portfolio en curso.</div>`;
   } else {
     rangeCounts.forEach(r => {
