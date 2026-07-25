@@ -5669,18 +5669,9 @@ function buildCoordCalifStats() {
           getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).estado
         );
 
-        const notasCons = alumnos.map(email => {
-          const coms2 = getComisionesMateriaAlumno(email, com.materiaId, com.año);
-          for (const f of NOMBRES_FECHAS) {
-            for (const c2 of coms2) {
-              const rec = parciales[c2.id]?.[parc]?.[f]?.[email];
-              if (!rec) continue;
-              if (rec.estado==='promocion'||rec.estado==='aprobado'||rec.estado==='desaprobado')
-                return rec.nota ?? null;
-            }
-          }
-          return null;
-        }).filter(n => n !== null && !isNaN(n));
+        const notasCons = alumnos
+          .map(email => getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).nota)
+          .filter(n => n !== null && !isNaN(n));
         const pctsCons = calcPcts(estadosCons, conPromocion, notasCons);
         html += `<div style="margin-bottom:6px">
           <div style="font-size:11px;color:var(--gray-400);margin-bottom:4px">${parc} · Consolidado</div>
