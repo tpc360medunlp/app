@@ -680,28 +680,6 @@ async function ensureQRCode() {
   .msheet-item.active { color: var(--teal-mid); }
   .msheet-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
-  @media (max-width: 768px) {
-    .hamburger-btn { display: none !important; }
-    .sidebar { display: none !important; }
-    .sidebar-overlay { display: none !important; }
-    #mobile-nav { display: flex; }
-    #mobile-header { display: flex; }
-    .main-content {
-      margin-left: 0 !important;
-      padding: calc(56px + env(safe-area-inset-top, 0px) + 1rem) 1rem 5rem !important;
-      -webkit-overflow-scrolling: touch;
-    }
-    .page-header { flex-direction: column; gap: 10px; }
-    .login-bg-lines { display: none; }
-    .page-title { font-size: 18px; }
-    .stats-row { grid-template-columns: 1fr 1fr; }
-    .coord-grid { grid-template-columns: 1fr; }
-    .area-header { flex-wrap: wrap; gap: 8px; }
-    .skill-row { flex-wrap: wrap; }
-    .validation-card { flex-direction: column; }
-    .modal { max-height: 92vh; overflow-y: auto; }
-  }
-
   #mobile-header {
     display: none;
     position: fixed;
@@ -773,6 +751,29 @@ async function ensureQRCode() {
     flex-shrink: 0;
   }
   #mobile-header .mh-logout svg { width: 16px; height: 16px; }
+
+  @media (max-width: 768px) {
+    .hamburger-btn { display: none !important; }
+    .sidebar { display: none !important; }
+    .sidebar-overlay { display: none !important; }
+    #mobile-nav { display: flex; }
+    #mobile-header { display: flex; }
+    .main-content {
+      margin-left: 0 !important;
+      padding: calc(56px + env(safe-area-inset-top, 0px) + 1rem) 1rem 5rem !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    .page-header { flex-direction: column; gap: 10px; }
+    .login-bg-lines { display: none; }
+    .page-title { font-size: 18px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .coord-grid { grid-template-columns: 1fr; }
+    .area-header { flex-wrap: wrap; gap: 8px; }
+    .skill-row { flex-wrap: wrap; }
+    .validation-card { flex-direction: column; }
+    .modal { max-height: 92vh; overflow-y: auto; }
+  }
+
 </style>
 </head>
 <body>
