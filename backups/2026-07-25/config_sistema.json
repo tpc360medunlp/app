@@ -1,0 +1,78 @@
+[
+  {
+    "clave": "studentViewConfig",
+    "valor": {
+      "cude": {
+        "label": "Mi CUdE",
+        "enabled": true
+      },
+      "cartelera": {
+        "label": "Cartelera",
+        "enabled": true
+      },
+      "portfolio": {
+        "label": "Portfolio",
+        "enabled": true
+      },
+      "asistencia": {
+        "label": "Asistencia",
+        "enabled": true
+      },
+      "cronograma": {
+        "label": "Cronogramas",
+        "enabled": true
+      },
+      "notas_finales": {
+        "label": "Calificaciones · Finales",
+        "enabled": true
+      },
+      "notas_parciales": {
+        "label": "Calificaciones · Parciales",
+        "enabled": true
+      },
+      "certificados_finales": {
+        "label": "Certificados · Finales",
+        "enabled": true
+      },
+      "certificados_parciales": {
+        "label": "Certificados · Parciales",
+        "enabled": true
+      }
+    },
+    "updated_at": "2026-07-19T03:55:12.79662+00:00"
+  },
+  {
+    "clave": "certFinalConfig",
+    "valor": {
+      "fontSize": 12,
+      "membrete": "https://dbrhpbhueiwednrkkelb.supabase.co/storage/v1/object/sign/membretes/membrete_finales_1784434040492.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zYzVjMjdjNi0wNjFkLTQ4ZmYtYjE3OC0yYTNmNDU3ZDE0NjgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtZW1icmV0ZXMvbWVtYnJldGVfZmluYWxlc18xNzg0NDM0MDQwNDkyLnBkZiIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODQ0MzQwNDEsImV4cCI6MTgxNTk3MDA0MX0.Qip5GSx10nkgToD6Fftj5hwE5ZzYwXcabPMZURlEr6M",
+      "margenDer": 25,
+      "margenInf": 60,
+      "margenIzq": 25,
+      "margenSup": 80,
+      "textoBase": "La Tecnicatura en Prácticas Cardiológicas de la Facultad de Ciencias Médicas de la Universidad Nacional de La Plata certifica que el/la alumno/a {APELLIDO}, {NOMBRE}, DNI {DNI}, se presentó a rendir el examen final de la asignatura {MATERIA} con fecha {FECHA_EXAMEN}, en el marco de la Tecnicatura en Prácticas Cardiológicas, año académico {AÑO}."
+    },
+    "updated_at": "2026-07-19T04:02:29.368994+00:00"
+  },
+  {
+    "clave": "certConfig",
+    "valor": {
+      "año": 2026,
+      "fontSize": 12,
+      "membrete": "https://dbrhpbhueiwednrkkelb.supabase.co/storage/v1/object/sign/membretes/membrete_parciales_1784434248753.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zYzVjMjdjNi0wNjFkLTQ4ZmYtYjE3OC0yYTNmNDU3ZDE0NjgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJtZW1icmV0ZXMvbWVtYnJldGVfcGFyY2lhbGVzXzE3ODQ0MzQyNDg3NTMucGRmIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4NDQzNDI1MCwiZXhwIjoxODE1OTcwMjUwfQ.c5tHLRHfOBOuGPv0MVChb3FL6wXacvNZoVYFogxLERM",
+      "margenDer": 25,
+      "margenInf": 60,
+      "margenIzq": 25,
+      "margenSup": 80,
+      "textoBase": "La Tecnicatura en Prácticas Cardiológicas de la Facultad de Ciencias Médicas de la Universidad Nacional de La Plata certifica que el/la alumno/a {APELLIDO}, {NOMBRE}, DNI {DNI}, rindió el examen de {PARCIAL} ({FECHA_PARCIAL}) de la asignatura {MATERIA} el día {FECHA_EXAMEN}, obteniendo la calificación de {NOTA} ({ESTADO}), en el marco de la comisión {COMISION}, año académico {AÑO}."
+    },
+    "updated_at": "2026-07-19T04:02:16.830998+00:00"
+  },
+  {
+    "clave": "plantilla_aulas_url",
+    "valor": {
+      "url": "https://dbrhpbhueiwednrkkelb.supabase.co/storage/v1/object/sign/solicitud-aulas/plantilla.docx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8zYzVjMjdjNi0wNjFkLTQ4ZmYtYjE3OC0yYTNmNDU3ZDE0NjgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJzb2xpY2l0dWQtYXVsYXMvcGxhbnRpbGxhLmRvY3giLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg0NTIwNDIwLCJleHAiOjE4MTYwNTY0MjB9.jQ-9GdXoKSDPHwxXb_Kqur0HHtlih5GRisfyPwpVzFA"
+    },
+    "updated_at": "2026-07-20T00:49:34.247615+00:00"
+  }
+]
