@@ -7468,12 +7468,12 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
       <div style="flex:1;font-size:14px;font-weight:500;color:var(--navy)">${getMateriaName(comision.materiaId)} · ${comision.nombre}</div>
       <span id="attendance-saved-indicator" style="font-size:12px;font-weight:500;opacity:0;transition:opacity 0.3s;margin-right:4px"></span>
-      <button onclick="nuevoRegistroFecha('${selCom}')" title="Ir a la fecha de hoy para iniciar un registro nuevo"
-        style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:none;background:var(--navy);color:white;cursor:pointer;font-family:var(--font);font-weight:600">+ Nuevo registro</button>
       <button onclick="exportAsistencia('${selCom}','xlsx')" title="Exportar Excel"
         style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #1a7a35;background:white;color:#1a7a35;cursor:pointer;font-family:var(--font);font-weight:500">📊 Excel</button>
       <button onclick="openFechasPdfModal('${selCom}')" title="Exportar PDF"
         style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #b02030;background:white;color:#b02030;cursor:pointer;font-family:var(--font);font-weight:500">📄 PDF</button>
+      <button onclick="nuevoRegistroFecha('${selCom}')" title="Ir a la fecha de hoy para iniciar un registro nuevo"
+        style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:none;background:var(--navy);color:white;cursor:pointer;font-family:var(--font);font-weight:600">+ Nuevo registro</button>
     </div>
     ${nuevoRegistroHtml}
     ${registrosHtml}
