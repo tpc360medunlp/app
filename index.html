@@ -7693,6 +7693,10 @@ function generateQrToken(comId, date) {
 }
 
 function openQrModal(comId, date) {
+  if (asistencia[comId]?.[date]?._cerrado) {
+    showToast('Este registro está cerrado. Reabrilo primero para poder tomar asistencia por QR.', true);
+    return;
+  }
   activeQrComision = comId;
   activeQrDate = date;
   qrRegistered = new Set(
@@ -7796,6 +7800,7 @@ function startQrIntervals(comId, date) {
 // que se dispara si el docente navega a otra pantalla sin cerrar explícitamente.
 async function finalizarSesionQr(comId, fecha) {
   const comision = COMISIONES.find(c => c.id === comId);
+  let huboError = false;
   if (comision && fecha) {
     if (!asistencia[comId]) asistencia[comId] = {};
     if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
@@ -7811,9 +7816,15 @@ async function finalizarSesionQr(comId, fecha) {
       const { error } = await _supabase.from('asistencia').upsert(rows, { onConflict: 'comision_id,fecha,legajo' });
       if (error) {
         console.warn('Error guardando ausentes al cerrar QR:', error);
-        showToast('Los ausentes se marcaron acá, pero no se pudieron guardar. Verificá tu conexión.', true);
+        huboError = true;
       }
     }
+  }
+  if (huboError) {
+    // No cerrar el registro si los ausentes no se pudieron guardar — quedaría bloqueado
+    // para editar con datos incompletos en la base. Se deja abierto para poder reintentar.
+    showToast('No se pudieron guardar todos los ausentes. El registro quedó abierto — revisalo y volvé a cerrarlo cuando tengas conexión.', true);
+    return;
   }
   await guardarEstadoCierre(comId, fecha, true);
 }
