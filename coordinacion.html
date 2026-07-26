@@ -7327,39 +7327,12 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
       ${getMateriaName(c.materiaId)} · ${c.nombre}
     </button>`).join('');
 
-  // Historial de clases registradas para esta comisión
   const fechasRegistradas = Object.keys(asistencia[selCom] || {}).sort().reverse();
-  let historialHtml = fechasRegistradas.length === 0
-    ? `<div style="padding:1rem;text-align:center;color:var(--gray-400);font-size:13px">Sin clases registradas aún.</div>`
-    : fechasRegistradas.map(f => {
-        const reg = asistencia[selCom][f];
-        // Solo contar alumnos que pertenecen a esta comisión
-        const alumnosFecha = alumnos.filter(e => reg[e] !== undefined);
-        const total = alumnosFecha.length;
-        const pres  = alumnosFecha.filter(e => reg[e] === 'presente').length;
-        const isSelected = f === selDate;
-        return `<div class="skill-row" style="align-items:center;${isSelected?'background:var(--teal-light);':''}">
-          <span style="flex:1;font-size:13px;color:var(--navy);font-weight:${isSelected?'500':'400'};cursor:pointer"
-            onclick="renderAttendanceView('${selCom}','${f}','manual')">${formatFecha(f)}</span>
-          <span style="font-size:12px;color:var(--gray-400);margin-right:8px">${pres}/${total} presentes</span>
-          ${isSelected ? `<span style="font-size:11px;color:var(--teal);margin-right:8px;font-weight:500">← editando</span>` : ''}
-          <button onclick="confirmarEliminarRegistro('${selCom}','${f}')"
-            style="padding:3px 10px;font-size:11px;border-radius:var(--radius-sm);border:1px solid #f5b8be;background:var(--red-light);color:#b02030;cursor:pointer;font-family:var(--font)">
-            🗑
-          </button>
-        </div>`;
-      }).join('');
+  const tieneRegistroSelDate = !!(asistencia[selCom] && asistencia[selCom][selDate]);
 
-  // Verificar si ya existe registro para la fecha seleccionada
-  const tieneRegistro = asistencia[selCom] && asistencia[selCom][selDate];
-  const registro = tieneRegistro ? asistencia[selCom][selDate] : {};
-  const presentes = alumnos.filter(e => registro[e] === 'presente').length;
-  const cerrado = registro._cerrado === true;
-
-  // Lista de alumnos para cuando hay registro
-  let listHtml = '';
-  if (tieneRegistro) {
-    listHtml = alumnos.length === 0
+  // Arma el bloque de detalle (fecha editable + botones + lista de alumnos) de una fecha puntual
+  const buildDetailBlock = (fecha, registro, cerradoF) => {
+    const listHtmlFecha = alumnos.length === 0
       ? `<div style="padding:1.5rem;text-align:center;color:var(--gray-400);font-size:14px">No hay alumnos en esta comisión.</div>`
       : alumnos.map(email => {
           const nombre = STUDENT_NAMES[email] || email;
@@ -7372,18 +7345,18 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
               <div style="font-size:14px;color:var(--navy)">${nombre}${getCudeBadge(email)}</div>
               ${origen ? `<div style="font-size:11px;color:#854F0B">(Proviene de ${origen})</div>` : ''}
             </div>
-            ${cerrado ? `
+            ${cerradoF ? `
               <span class="badge ${estado==='presente'?'badge-validated':'badge-rejected'}">
                 ${estado === 'presente' ? '✓ Presente' : '✗ Ausente'}
               </span>
             ` : `
             <div style="display:flex;gap:6px">
-              <button onclick="toggleAsistencia('${selCom}','${selDate}','${email}','presente')"
+              <button onclick="toggleAsistencia('${selCom}','${fecha}','${email}','presente')"
                 style="padding:6px 14px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid ${estado==='presente'?'#a8e6b8':'var(--gray-200)'};cursor:pointer;font-family:var(--font);font-weight:500;
                 background:${estado==='presente'?'var(--green-light)':'var(--white)'};color:${estado==='presente'?'#1a7a35':'var(--gray-400)'}">
                 ✓ Presente
               </button>
-              <button onclick="toggleAsistencia('${selCom}','${selDate}','${email}','ausente')"
+              <button onclick="toggleAsistencia('${selCom}','${fecha}','${email}','ausente')"
                 style="padding:6px 14px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid ${estado==='ausente'?'#f5b8be':'var(--gray-200)'};cursor:pointer;font-family:var(--font);font-weight:500;
                 background:${estado==='ausente'?'var(--red-light)':'var(--white)'};color:${estado==='ausente'?'#b02030':'var(--gray-400)'}">
                 ✗ Ausente
@@ -7392,95 +7365,111 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
             `}
           </div>`;
         }).join('');
-  }
+
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--gray-100);flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:13px;font-weight:500;color:var(--gray-600)">Fecha:</label>
+          <input type="date" class="form-input" value="${fecha}" ${cerradoF ? 'disabled' : ''}
+            onkeydown="event.preventDefault()"
+            onchange="cambiarFechaRegistro('${selCom}','${fecha}',this.value)"
+            title="${cerradoF ? 'Reabrí el registro para poder cambiar la fecha' : 'Cambiar la fecha de este registro (elegila con el calendario)'}"
+            style="width:160px;font-size:13px;padding:7px 10px;${cerradoF ? 'opacity:0.6;cursor:not-allowed' : ''}">
+        </div>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          ${cerradoF
+            ? `<button onclick="reabrirRegistroAsistencia('${selCom}','${fecha}')" title="Reabrir para editar"
+                style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--amber);background:white;color:#b05a10;cursor:pointer;font-family:var(--font);font-weight:500">🔓 Reabrir</button>`
+            : `<button onclick="cerrarRegistroAsistencia('${selCom}','${fecha}')" title="Cerrar registro"
+                style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--navy);background:white;color:var(--navy);cursor:pointer;font-family:var(--font);font-weight:500">🔒 Cerrar</button>`
+          }
+          ${!cerradoF ? `<button onclick="openQrModal('${selCom}','${fecha}')"
+            style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--teal);color:white">
+            📱 Generar QR
+          </button>` : ''}
+          <button onclick="confirmarEliminarRegistro('${selCom}','${fecha}')" title="Eliminar este registro"
+            style="padding:8px 10px;font-size:13px;border-radius:var(--radius-md);border:1px solid #f5b8be;background:var(--red-light);color:#b02030;cursor:pointer;font-family:var(--font)">🗑</button>
+        </div>
+      </div>
+      <div style="padding:8px 0">${listHtmlFecha}</div>
+    `;
+  };
+
+  // Lista unificada: una fila por fecha con registro — cerradas colapsadas, abiertas desplegadas
+  const registrosHtml = fechasRegistradas.length === 0
+    ? `<div class="area-card"><div style="padding:2rem;text-align:center;color:var(--gray-400);font-size:14px">Sin clases registradas aún.</div></div>`
+    : fechasRegistradas.map(fecha => {
+        const registro = asistencia[selCom][fecha];
+        const cerradoF = registro._cerrado === true;
+        const alumnosFecha = alumnos.filter(e => registro[e] !== undefined);
+        const total = alumnosFecha.length;
+        const pres  = alumnosFecha.filter(e => registro[e] === 'presente').length;
+        const rowId = 'att-row-' + fecha.replace(/-/g, '');
+
+        const headerRow = cerradoF
+          ? `<button onclick="toggleAttGroup('${rowId}')"
+              style="width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:12px 18px">
+              <svg id="${rowId}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--navy)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+              <span style="flex:1;text-align:left;font-size:14px;font-weight:500;color:var(--navy)">${formatFecha(fecha)} <span style="font-size:11px;color:#7a4a10;font-weight:400">🔒 cerrado</span></span>
+              <span style="font-size:12px;color:var(--gray-400)">${pres}/${total} presentes</span>
+            </button>`
+          : `<div style="display:flex;align-items:center;gap:10px;padding:12px 18px">
+              <span style="flex:1;font-size:14px;font-weight:500;color:var(--navy)">${formatFecha(fecha)}</span>
+              <span style="font-size:12px;color:var(--gray-400)">${pres}/${total} presentes</span>
+            </div>`;
+
+        return `<div class="area-card" style="margin-bottom:.75rem">
+          ${headerRow}
+          <div id="${rowId}" style="display:${cerradoF ? 'none' : 'block'}">${buildDetailBlock(fecha, registro, cerradoF)}</div>
+        </div>`;
+      }).join('');
+
+  // Bloque para iniciar un registro nuevo — solo si la fecha elegida todavía no tiene uno
+  const nuevoRegistroHtml = !tieneRegistroSelDate ? `
+    <div class="area-card" style="margin-bottom:1rem">
+      <div style="padding:2rem;text-align:center">
+        <div style="font-size:36px;margin-bottom:12px;opacity:0.3">📋</div>
+        <div style="font-size:14px;color:var(--gray-600);margin-bottom:1.25rem">
+          Seleccioná la fecha de la clase y luego iniciá el registro.
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:1.5rem">
+          <label style="font-size:13px;font-weight:500;color:var(--gray-600)">Fecha:</label>
+          <input type="date" class="form-input" value="${selDate}"
+            onchange="renderAttendanceView('${selCom}',this.value,'${selMode}')"
+            style="width:170px;font-size:13px;padding:8px 12px">
+        </div>
+        <div style="font-size:13px;color:var(--gray-400);margin-bottom:1rem">
+          No hay registro para el <strong style="color:var(--navy)">${formatFecha(selDate)}</strong>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button onclick="iniciarRegistro('${selCom}','${selDate}','manual')"
+            style="padding:10px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--navy);color:white">
+            ✏️ Iniciar registro manual
+          </button>
+          <button onclick="iniciarRegistro('${selCom}','${selDate}','qr')"
+            style="padding:10px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--teal);color:white">
+            📱 Generar QR
+          </button>
+        </div>
+      </div>
+    </div>
+  ` : '';
 
   document.getElementById('attendance-container').innerHTML = `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
-    <div class="area-card">
-      <div class="area-header">
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:500;color:var(--navy)">${getMateriaName(comision.materiaId)} · ${comision.nombre}</div>
-          <div style="font-size:12px;color:var(--gray-400);margin-top:2px">
-            ${tieneRegistro ? `${alumnos.length} alumnos · ${presentes} presentes · ${alumnos.length - presentes} ausentes` : 'Seleccioná una fecha para registrar asistencia'}
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          ${tieneRegistro ? `<span id="attendance-saved-indicator" style="font-size:12px;font-weight:500;opacity:0;transition:opacity 0.3s;margin-right:8px"></span>` : ''}
-          ${tieneRegistro ? `<button onclick="nuevoRegistroFecha('${selCom}')" title="Ir a la fecha de hoy para iniciar un registro nuevo"
-              style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:none;background:var(--navy);color:white;cursor:pointer;font-family:var(--font);font-weight:600">+ Nuevo registro</button>` : ''}
-          <button onclick="exportAsistencia('${selCom}','xlsx')" title="Exportar Excel"
-            style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #1a7a35;background:white;color:#1a7a35;cursor:pointer;font-family:var(--font);font-weight:500">📊 Excel</button>
-          <button onclick="openFechasPdfModal('${selCom}')" title="Exportar PDF"
-            style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #b02030;background:white;color:#b02030;cursor:pointer;font-family:var(--font);font-weight:500">📄 PDF</button>
-        </div>
-      </div>
-      ${cerrado ? `
-        <button onclick="toggleAttGroup('attendance-list-cerrado')"
-          style="width:100%;display:flex;align-items:center;gap:8px;background:var(--amber-light);border:none;border-bottom:1px solid #f4d4a0;padding:8px 18px;cursor:pointer;font-family:var(--font)">
-          <span style="font-size:12px;color:#7a4a10;flex:1;text-align:left">🔒 Este registro está cerrado. Tocá "Reabrir" si necesitás corregir algo.</span>
-          <svg id="attendance-list-cerrado-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#7a4a10" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-      ` : ''}
-
-      ${!tieneRegistro ? `
-        <div style="padding:2rem;text-align:center">
-          <div style="font-size:36px;margin-bottom:12px;opacity:0.3">📋</div>
-          <div style="font-size:14px;color:var(--gray-600);margin-bottom:1.25rem">
-            Seleccioná la fecha de la clase y luego iniciá el registro.
-          </div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:1.5rem">
-            <label style="font-size:13px;font-weight:500;color:var(--gray-600)">Fecha:</label>
-            <input type="date" class="form-input" value="${selDate}"
-              onchange="renderAttendanceView('${selCom}',this.value,'${selMode}')"
-              style="width:170px;font-size:13px;padding:8px 12px">
-          </div>
-          <div style="font-size:13px;color:var(--gray-400);margin-bottom:1rem">
-            No hay registro para el <strong style="color:var(--navy)">${formatFecha(selDate)}</strong>
-          </div>
-          <div style="display:flex;gap:8px;justify-content:center">
-            <button onclick="iniciarRegistro('${selCom}','${selDate}','manual')"
-              style="padding:10px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--navy);color:white">
-              ✏️ Iniciar registro manual
-            </button>
-            <button onclick="iniciarRegistro('${selCom}','${selDate}','qr')"
-              style="padding:10px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--teal);color:white">
-              📱 Generar QR
-            </button>
-          </div>
-        </div>
-      ` : `
-        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--gray-100);flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:13px;font-weight:500;color:var(--gray-600)">Fecha:</label>
-            <input type="date" class="form-input" value="${selDate}" ${cerrado ? 'disabled' : ''}
-              onkeydown="event.preventDefault()"
-              onchange="cambiarFechaRegistro('${selCom}','${selDate}',this.value)"
-              title="${cerrado ? 'Reabrí el registro para poder cambiar la fecha' : 'Cambiar la fecha de este registro (elegila con el calendario)'}"
-              style="width:160px;font-size:13px;padding:7px 10px;${cerrado ? 'opacity:0.6;cursor:not-allowed' : ''}">
-          </div>
-          <div style="display:flex;gap:8px;margin-left:auto">
-            ${cerrado
-              ? `<button onclick="reabrirRegistroAsistencia('${selCom}','${selDate}')" title="Reabrir para editar"
-                  style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--amber);background:white;color:#b05a10;cursor:pointer;font-family:var(--font);font-weight:500">🔓 Reabrir</button>`
-              : `<button onclick="cerrarRegistroAsistencia('${selCom}','${selDate}')" title="Cerrar registro"
-                  style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--navy);background:white;color:var(--navy);cursor:pointer;font-family:var(--font);font-weight:500">🔒 Cerrar</button>`
-            }
-            ${!cerrado ? `<button onclick="openQrModal('${selCom}','${selDate}')"
-              style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--teal);color:white">
-              📱 Generar QR
-            </button>` : ''}
-          </div>
-        </div>
-        <div id="attendance-list-cerrado" style="padding:8px 0;display:${cerrado ? 'none' : 'block'}">${listHtml}</div>
-      `}
-
-      <div style="border-top:1px solid var(--gray-100);margin-top:4px">
-        <div style="padding:12px 18px 8px;font-size:12px;font-weight:500;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em">
-          Historial de clases registradas
-        </div>
-        <div>${historialHtml}</div>
-      </div>
-    </div>`;
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <div style="flex:1;font-size:14px;font-weight:500;color:var(--navy)">${getMateriaName(comision.materiaId)} · ${comision.nombre}</div>
+      <span id="attendance-saved-indicator" style="font-size:12px;font-weight:500;opacity:0;transition:opacity 0.3s;margin-right:4px"></span>
+      <button onclick="nuevoRegistroFecha('${selCom}')" title="Ir a la fecha de hoy para iniciar un registro nuevo"
+        style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:none;background:var(--navy);color:white;cursor:pointer;font-family:var(--font);font-weight:600">+ Nuevo registro</button>
+      <button onclick="exportAsistencia('${selCom}','xlsx')" title="Exportar Excel"
+        style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #1a7a35;background:white;color:#1a7a35;cursor:pointer;font-family:var(--font);font-weight:500">📊 Excel</button>
+      <button onclick="openFechasPdfModal('${selCom}')" title="Exportar PDF"
+        style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #b02030;background:white;color:#b02030;cursor:pointer;font-family:var(--font);font-weight:500">📄 PDF</button>
+    </div>
+    ${nuevoRegistroHtml}
+    ${registrosHtml}
+  `;
 }
 
 async function iniciarRegistro(comId, fecha, tipo) {
