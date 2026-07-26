@@ -2382,8 +2382,17 @@ const _savedRoleAtStart = 'coordinator';
 // Capturar token de asistencia por QR (si el alumno escaneó y aún no está logueado,
 // el login con Google hace un redirect que perdería este query param — lo guardamos ya).
 (function() {
-  const tokenParam = new URLSearchParams(window.location.search).get('token');
-  if (tokenParam) localStorage.setItem('tpc360_qr_token', tokenParam);
+  const params = new URLSearchParams(window.location.search);
+  const tokenParam = params.get('token');
+  if (tokenParam) {
+    localStorage.setItem('tpc360_qr_token', tokenParam);
+    // Limpiar el token de la URL para que no se vuelva a procesar si el alumno
+    // recarga la página o vuelve a abrir esta misma URL más tarde (ej. desde el historial).
+    params.delete('token');
+    const nuevaQuery = params.toString();
+    const nuevaUrl = window.location.pathname + (nuevaQuery ? '?' + nuevaQuery : '') + window.location.hash;
+    window.history.replaceState({}, '', nuevaUrl);
+  }
 })();
 let currentUser = USERS.student;
 let selectedSkillId = null;
