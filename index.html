@@ -7559,6 +7559,12 @@ function openQrModal(comId, date) {
   document.getElementById('modal-qr-sub').textContent =
     `Fecha: ${date} · El código se renueva cada 30 segundos`;
   document.getElementById('qr-registered').textContent = qrRegistered.size;
+  const elLast = document.getElementById('qr-last-registered');
+  if (elLast) {
+    clearTimeout(elLast._timeout);
+    elLast.innerHTML = '';
+    elLast.style.opacity = '0';
+  }
   document.getElementById('modal-qr').classList.add('open');
   renderQr();
   startQrIntervals(comId, date);
