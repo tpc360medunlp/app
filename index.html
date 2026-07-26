@@ -7405,14 +7405,6 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           ${tieneRegistro ? `<span id="attendance-saved-indicator" style="font-size:12px;font-weight:500;opacity:0;transition:opacity 0.3s;margin-right:8px"></span>` : ''}
-          ${tieneRegistro ? `<button onclick="nuevoRegistroFecha('${selCom}')" title="Iniciar un registro en otra fecha"
-              style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;color:var(--gray-600);cursor:pointer;font-family:var(--font);font-weight:500">+ Nuevo registro</button>` : ''}
-          ${tieneRegistro ? (cerrado
-            ? `<button onclick="reabrirRegistroAsistencia('${selCom}','${selDate}')" title="Reabrir para editar"
-                style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid var(--amber);background:white;color:#b05a10;cursor:pointer;font-family:var(--font);font-weight:500">🔓 Reabrir</button>`
-            : `<button onclick="cerrarRegistroAsistencia('${selCom}','${selDate}')" title="Cerrar registro"
-                style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid var(--navy);background:white;color:var(--navy);cursor:pointer;font-family:var(--font);font-weight:500">🔒 Cerrar</button>`
-          ) : ''}
           <button onclick="exportAsistencia('${selCom}','xlsx')" title="Exportar Excel"
             style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #1a7a35;background:white;color:#1a7a35;cursor:pointer;font-family:var(--font);font-weight:500">📊 Excel</button>
           <button onclick="openFechasPdfModal('${selCom}')" title="Exportar PDF"
@@ -7456,15 +7448,22 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
           <div style="display:flex;align-items:center;gap:8px">
             <label style="font-size:13px;font-weight:500;color:var(--gray-600)">Fecha:</label>
             <input type="date" class="form-input" value="${selDate}" ${cerrado ? 'disabled' : ''}
+              onkeydown="event.preventDefault()"
               onchange="cambiarFechaRegistro('${selCom}','${selDate}',this.value)"
-              title="${cerrado ? 'Reabrí el registro para poder cambiar la fecha' : 'Cambiar la fecha de este registro'}"
+              title="${cerrado ? 'Reabrí el registro para poder cambiar la fecha' : 'Cambiar la fecha de este registro (elegila con el calendario)'}"
               style="width:160px;font-size:13px;padding:7px 10px;${cerrado ? 'opacity:0.6;cursor:not-allowed' : ''}">
           </div>
           <div style="display:flex;gap:8px;margin-left:auto">
-            <button onclick="renderAttendanceView('${selCom}','${today}','manual')"
+            <button onclick="nuevoRegistroFecha('${selCom}')" title="Ir a la fecha de hoy para iniciar un registro nuevo"
               style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;cursor:pointer;font-family:var(--font);font-weight:500;color:var(--gray-600)">
-              Ir a hoy
+              + Nuevo registro
             </button>
+            ${cerrado
+              ? `<button onclick="reabrirRegistroAsistencia('${selCom}','${selDate}')" title="Reabrir para editar"
+                  style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--amber);background:white;color:#b05a10;cursor:pointer;font-family:var(--font);font-weight:500">🔓 Reabrir</button>`
+              : `<button onclick="cerrarRegistroAsistencia('${selCom}','${selDate}')" title="Cerrar registro"
+                  style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--navy);background:white;color:var(--navy);cursor:pointer;font-family:var(--font);font-weight:500">🔒 Cerrar</button>`
+            }
             ${!cerrado ? `<button onclick="openQrModal('${selCom}','${selDate}')"
               style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--teal);color:white">
               📱 Generar QR
@@ -7579,16 +7578,11 @@ async function reabrirRegistroAsistencia(comId, fecha) {
   }
 }
 
-// Navega a una fecha elegida por el docente para empezar (o revisar) un registro ahí,
-// sin afectar el registro que esté viendo actualmente.
+// Lleva directo a la fecha de hoy para iniciar (o revisar) un registro ahí,
+// sin afectar el registro que se esté viendo actualmente.
 function nuevoRegistroFecha(comId) {
-  const fecha = prompt('Fecha del nuevo registro (AAAA-MM-DD):', new Date().toISOString().split('T')[0]);
-  if (!fecha) return;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-    showToast('Formato de fecha inválido. Usá AAAA-MM-DD.', true);
-    return;
-  }
-  renderAttendanceView(comId, fecha, 'manual');
+  const today = new Date().toISOString().split('T')[0];
+  renderAttendanceView(comId, today, 'manual');
 }
 
 // Cambia la fecha de un registro de asistencia existente (solo disponible mientras está abierto).
