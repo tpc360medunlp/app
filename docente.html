@@ -2729,9 +2729,22 @@ async function registrarAsistenciaPorToken(token) {
     return;
   }
 
+  // Consultar Supabase directamente en vez de confiar en la copia local en memoria:
+  // si el docente borró y volvió a crear la sesión después de que este alumno cargó
+  // la página, su copia local podría seguir mostrando "presente" de la sesión vieja.
+  const { data: existente, error: errCheck } = await _supabase
+    .from('asistencia')
+    .select('estado')
+    .eq('comision_id', comId).eq('fecha', fecha).eq('legajo', legajo)
+    .maybeSingle();
+
+  if (errCheck) console.warn('Error verificando asistencia previa:', errCheck);
+
   if (!asistencia[comId]) asistencia[comId] = {};
   if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
-  if (asistencia[comId][fecha][currentUser.email] === 'presente') {
+
+  if (existente?.estado === 'presente') {
+    asistencia[comId][fecha][currentUser.email] = 'presente'; // sincronizar copia local
     showToast('Ya estabas registrado como presente.');
     return;
   }
