@@ -2806,6 +2806,14 @@ async function abrirEscanerQr() {
     return;
   }
 
+  // Si mientras se esperaba el permiso de la cámara el usuario canceló (cerró el modal),
+  // no seguir: apagar la cámara recién obtenida en vez de arrancar a escanear igual.
+  if (!modal.classList.contains('open')) {
+    _escanerQrStream.getTracks().forEach(t => t.stop());
+    _escanerQrStream = null;
+    return;
+  }
+
   const video = document.getElementById('escaner-qr-video');
   video.srcObject = _escanerQrStream;
   await video.play();
@@ -7655,6 +7663,13 @@ async function confirmDeleteRegistro() {
     showToast('No se pudo eliminar el registro. Verificá tu conexión.', true);
     return;
   }
+  // Limpiar también el estado de cierre, si lo hubiera — evita que quede una fila
+  // huérfana en config_sistema y que un registro nuevo en esta misma fecha "herede"
+  // el cierre de uno que ya no existe.
+  const { error: errCierre } = await _supabase.from('config_sistema')
+    .delete().eq('clave', `asistencia_cerrada_${deleteComId}_${deleteFecha}`);
+  if (errCierre) console.warn('Error limpiando estado de cierre:', errCierre);
+
   closeDeleteRegistroModal();
   showToast('Registro eliminado');
   const today = new Date().toISOString().split('T')[0];
