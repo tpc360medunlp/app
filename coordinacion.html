@@ -7572,6 +7572,16 @@ async function reabrirRegistroAsistencia(comId, fecha) {
 // sin afectar el registro que se esté viendo actualmente.
 function nuevoRegistroFecha(comId) {
   const today = new Date().toISOString().split('T')[0];
+  if (asistencia[comId]?.[today]) {
+    showToast('Ya existe un registro para hoy. Si necesitás volver a tomarla, borrá primero el que ya está guardado.', true);
+    renderAttendanceView(comId, today, 'manual');
+    // Si estaba colapsado (cerrado), desplegarlo y llevar la vista ahí para que sea fácil encontrarlo
+    const rowId = 'att-row-' + today.replace(/-/g, '');
+    const row = document.getElementById(rowId);
+    if (row && row.style.display === 'none') toggleAttGroup(rowId);
+    row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
   renderAttendanceView(comId, today, 'manual');
 }
 
