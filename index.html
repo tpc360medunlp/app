@@ -2706,8 +2706,8 @@ async function registrarAsistenciaPorToken(token) {
   const [, comId, fecha, slotStr] = m;
   const slot = parseInt(slotStr);
   const slotActual = Math.floor(Date.now() / 30000);
-  // Aceptar el slot actual o el inmediato anterior (margen por si tardó en loguearse)
-  if (slot !== slotActual && slot !== slotActual - 1) {
+  // Solo se acepta el slot actual — ventana real de 30 segundos, sin margen extra.
+  if (slot !== slotActual) {
     showToast('El código QR ya expiró. Pedile al docente que lo vuelva a mostrar.', true);
     return;
   }
