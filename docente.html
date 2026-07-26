@@ -7406,6 +7406,8 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           ${tieneRegistro ? `<span id="attendance-saved-indicator" style="font-size:12px;font-weight:500;opacity:0;transition:opacity 0.3s;margin-right:8px"></span>` : ''}
+          ${tieneRegistro ? `<button onclick="nuevoRegistroFecha('${selCom}')" title="Ir a la fecha de hoy para iniciar un registro nuevo"
+              style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;color:var(--gray-600);cursor:pointer;font-family:var(--font);font-weight:500">+ Nuevo registro</button>` : ''}
           <button onclick="exportAsistencia('${selCom}','xlsx')" title="Exportar Excel"
             style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #1a7a35;background:white;color:#1a7a35;cursor:pointer;font-family:var(--font);font-weight:500">📊 Excel</button>
           <button onclick="openFechasPdfModal('${selCom}')" title="Exportar PDF"
@@ -7455,10 +7457,6 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
               style="width:160px;font-size:13px;padding:7px 10px;${cerrado ? 'opacity:0.6;cursor:not-allowed' : ''}">
           </div>
           <div style="display:flex;gap:8px;margin-left:auto">
-            <button onclick="nuevoRegistroFecha('${selCom}')" title="Ir a la fecha de hoy para iniciar un registro nuevo"
-              style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;cursor:pointer;font-family:var(--font);font-weight:500;color:var(--gray-600)">
-              + Nuevo registro
-            </button>
             ${cerrado
               ? `<button onclick="reabrirRegistroAsistencia('${selCom}','${selDate}')" title="Reabrir para editar"
                   style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--amber);background:white;color:#b05a10;cursor:pointer;font-family:var(--font);font-weight:500">🔓 Reabrir</button>`
