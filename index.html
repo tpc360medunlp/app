@@ -2072,6 +2072,13 @@ async function loadDataFromSupabase() {
         if (c.clave === 'plantilla_aulas_url' && c.valor?.url) {
           window._plantillaAulasUrl = c.valor.url;
         }
+        const mCerrado = c.clave.match(/^asistencia_cerrada_(.+)_(\d{4}-\d{2}-\d{2})$/);
+        if (mCerrado && c.valor) {
+          const [, comIdCerrado, fechaCerrada] = mCerrado;
+          if (!asistencia[comIdCerrado]) asistencia[comIdCerrado] = {};
+          if (!asistencia[comIdCerrado][fechaCerrada]) asistencia[comIdCerrado][fechaCerrada] = {};
+          asistencia[comIdCerrado][fechaCerrada]._cerrado = !!c.valor.cerrado;
+        }
       });
     }
 
@@ -2721,6 +2728,10 @@ async function registrarAsistenciaPorToken(token) {
     showToast('No estás inscripto en esta comisión.', true);
     return;
   }
+  if (asistencia[comId]?.[fecha]?._cerrado) {
+    showToast('El registro de esta clase ya está cerrado. Avisale al docente.', true);
+    return;
+  }
 
   const legajo = getLegajoByEmail(currentUser.email);
   if (!legajo) {
@@ -3210,8 +3221,16 @@ function renderSidebar() {
 
 // Limpieza de seguridad: detener intervalos de QR si quedaron corriendo al cambiar de vista
 function stopQrIntervalsIfRunning() {
+  const habiaSesionActiva = typeof qrInterval !== 'undefined' && !!qrInterval;
   if (typeof qrInterval !== 'undefined' && qrInterval) { clearInterval(qrInterval); qrInterval = null; }
   if (typeof qrCountdownInterval !== 'undefined' && qrCountdownInterval) { clearInterval(qrCountdownInterval); qrCountdownInterval = null; }
+  // Si el docente navega a otra pantalla sin cerrar explícitamente la sesión de QR,
+  // finalizarla igual (marcar ausentes + cerrar el registro) para que no quede a medias.
+  if (habiaSesionActiva && typeof activeQrComision !== 'undefined' && activeQrComision && activeQrDate) {
+    const modal = document.getElementById('modal-qr');
+    if (modal) modal.classList.remove('open');
+    finalizarSesionQr(activeQrComision, activeQrDate);
+  }
 }
 
 function switchCoordView(section) {
@@ -7334,6 +7353,7 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
   const tieneRegistro = asistencia[selCom] && asistencia[selCom][selDate];
   const registro = tieneRegistro ? asistencia[selCom][selDate] : {};
   const presentes = alumnos.filter(e => registro[e] === 'presente').length;
+  const cerrado = registro._cerrado === true;
 
   // Lista de alumnos para cuando hay registro
   let listHtml = '';
@@ -7351,6 +7371,11 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
               <div style="font-size:14px;color:var(--navy)">${nombre}${getCudeBadge(email)}</div>
               ${origen ? `<div style="font-size:11px;color:#854F0B">(Proviene de ${origen})</div>` : ''}
             </div>
+            ${cerrado ? `
+              <span class="badge ${estado==='presente'?'badge-validated':'badge-rejected'}">
+                ${estado === 'presente' ? '✓ Presente' : '✗ Ausente'}
+              </span>
+            ` : `
             <div style="display:flex;gap:6px">
               <button onclick="toggleAsistencia('${selCom}','${selDate}','${email}','presente')"
                 style="padding:6px 14px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid ${estado==='presente'?'#a8e6b8':'var(--gray-200)'};cursor:pointer;font-family:var(--font);font-weight:500;
@@ -7363,6 +7388,7 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
                 ✗ Ausente
               </button>
             </div>
+            `}
           </div>`;
         }).join('');
   }
@@ -7379,12 +7405,23 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           ${tieneRegistro ? `<span id="attendance-saved-indicator" style="font-size:12px;font-weight:500;opacity:0;transition:opacity 0.3s;margin-right:8px"></span>` : ''}
+          ${tieneRegistro ? (cerrado
+            ? `<button onclick="reabrirRegistroAsistencia('${selCom}','${selDate}')" title="Reabrir para editar"
+                style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid var(--amber);background:white;color:#b05a10;cursor:pointer;font-family:var(--font);font-weight:500">🔓 Reabrir</button>`
+            : `<button onclick="cerrarRegistroAsistencia('${selCom}','${selDate}')" title="Cerrar registro"
+                style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid var(--navy);background:white;color:var(--navy);cursor:pointer;font-family:var(--font);font-weight:500">🔒 Cerrar</button>`
+          ) : ''}
           <button onclick="exportAsistencia('${selCom}','xlsx')" title="Exportar Excel"
             style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #1a7a35;background:white;color:#1a7a35;cursor:pointer;font-family:var(--font);font-weight:500">📊 Excel</button>
           <button onclick="openFechasPdfModal('${selCom}')" title="Exportar PDF"
             style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:1.5px solid #b02030;background:white;color:#b02030;cursor:pointer;font-family:var(--font);font-weight:500">📄 PDF</button>
         </div>
       </div>
+      ${cerrado ? `
+        <div style="background:var(--amber-light);border-bottom:1px solid #f4d4a0;padding:8px 18px;font-size:12px;color:#7a4a10">
+          🔒 Este registro está cerrado. Tocá "Reabrir" si necesitás corregir algo.
+        </div>
+      ` : ''}
 
       ${!tieneRegistro ? `
         <div style="padding:2rem;text-align:center">
@@ -7425,10 +7462,10 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
               style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;cursor:pointer;font-family:var(--font);font-weight:500;color:var(--gray-600)">
               Ir a hoy
             </button>
-            <button onclick="openQrModal('${selCom}','${selDate}')"
+            ${!cerrado ? `<button onclick="openQrModal('${selCom}','${selDate}')"
               style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--teal);color:white">
               📱 Generar QR
-            </button>
+            </button>` : ''}
           </div>
         </div>
         <div style="padding:8px 0">${listHtml}</div>
@@ -7474,6 +7511,10 @@ async function iniciarRegistro(comId, fecha, tipo) {
 }
 
 async function toggleAsistencia(comId, fecha, email, estado) {
+  if (asistencia[comId]?.[fecha]?._cerrado) {
+    showToast('Este registro está cerrado. Reabrilo primero para poder editarlo.', true);
+    return;
+  }
   if (!asistencia[comId]) asistencia[comId] = {};
   if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
   const estadoAnterior = asistencia[comId][fecha][email];
@@ -7498,6 +7539,41 @@ async function toggleAsistencia(comId, fecha, email, estado) {
   }
   renderAttendanceView(comId, fecha, 'manual');
   showSavedIndicator();
+}
+
+// ── CIERRE/REAPERTURA DE UN REGISTRO DE ASISTENCIA ──────────
+async function guardarEstadoCierre(comId, fecha, cerrado) {
+  if (!asistencia[comId]) asistencia[comId] = {};
+  if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
+  const anterior = asistencia[comId][fecha]._cerrado;
+  asistencia[comId][fecha]._cerrado = cerrado;
+  const { error } = await _supabase.from('config_sistema').upsert(
+    { clave: `asistencia_cerrada_${comId}_${fecha}`, valor: { cerrado } },
+    { onConflict: 'clave' }
+  );
+  if (error) {
+    console.warn('Error guardando cierre de asistencia:', error);
+    asistencia[comId][fecha]._cerrado = anterior;
+    showToast('No se pudo guardar el cambio. Verificá tu conexión.', true);
+    return false;
+  }
+  return true;
+}
+
+async function cerrarRegistroAsistencia(comId, fecha) {
+  const ok = await guardarEstadoCierre(comId, fecha, true);
+  if (ok) {
+    renderAttendanceView(comId, fecha, 'manual');
+    showToast('Registro de asistencia cerrado');
+  }
+}
+
+async function reabrirRegistroAsistencia(comId, fecha) {
+  const ok = await guardarEstadoCierre(comId, fecha, false);
+  if (ok) {
+    renderAttendanceView(comId, fecha, 'manual');
+    showToast('Registro reabierto — ya podés editarlo');
+  }
 }
 
 // ── DELETE REGISTRO ───────────────────────────────────────
@@ -7658,20 +7734,20 @@ function startQrIntervals(comId, date) {
   }, 4000);
 }
 
-async function closeQrModal() {
-  clearInterval(qrInterval);
-  clearInterval(qrCountdownInterval);
-  document.getElementById('modal-qr').classList.remove('open');
-  const comision = COMISIONES.find(c => c.id === activeQrComision);
-  if (comision && activeQrDate) {
-    if (!asistencia[activeQrComision]) asistencia[activeQrComision] = {};
-    if (!asistencia[activeQrComision][activeQrDate]) asistencia[activeQrComision][activeQrDate] = {};
+// Marca ausentes a quienes no escanearon y cierra el registro (bloqueado para edición).
+// La usan tanto el botón "Cerrar sesión de asistencia" como el cierre automático
+// que se dispara si el docente navega a otra pantalla sin cerrar explícitamente.
+async function finalizarSesionQr(comId, fecha) {
+  const comision = COMISIONES.find(c => c.id === comId);
+  if (comision && fecha) {
+    if (!asistencia[comId]) asistencia[comId] = {};
+    if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
     const rows = [];
     comision.alumnos.forEach(email => {
       if (!qrRegistered.has(email)) {
-        asistencia[activeQrComision][activeQrDate][email] = 'ausente';
+        asistencia[comId][fecha][email] = 'ausente';
         const legajo = getLegajoByEmail(email);
-        if (legajo) rows.push({ comision_id: activeQrComision, fecha: activeQrDate, legajo, estado: 'ausente' });
+        if (legajo) rows.push({ comision_id: comId, fecha, legajo, estado: 'ausente' });
       }
     });
     if (rows.length > 0) {
@@ -7682,6 +7758,14 @@ async function closeQrModal() {
       }
     }
   }
+  await guardarEstadoCierre(comId, fecha, true);
+}
+
+async function closeQrModal() {
+  clearInterval(qrInterval);
+  clearInterval(qrCountdownInterval);
+  document.getElementById('modal-qr').classList.remove('open');
+  await finalizarSesionQr(activeQrComision, activeQrDate);
   renderAttendanceView(activeQrComision, activeQrDate, 'manual');
 }
 
