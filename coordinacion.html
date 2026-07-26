@@ -2671,7 +2671,14 @@ async function iniciarLoginGoogle() {
   const currentPage = window.location.origin + window.location.pathname;
   const { error } = await _supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: currentPage }
+    options: {
+      redirectTo: currentPage,
+      // Sin esto, Google reutiliza la sesión activa del navegador y no muestra el
+      // selector de cuenta — en Android Chrome suele mostrarlo igual por su propia
+      // integración con el selector nativo del sistema, pero en iOS Safari no, y
+      // el login queda "pegado" a la última cuenta usada.
+      queryParams: { prompt: 'select_account' }
+    }
   });
   if (error) {
     showRegError('❌ Error al conectar con Google. Intentá de nuevo.');
