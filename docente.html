@@ -7454,11 +7454,16 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
         <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--gray-100);flex-wrap:wrap">
           <div style="display:flex;align-items:center;gap:8px">
             <label style="font-size:13px;font-weight:500;color:var(--gray-600)">Fecha:</label>
-            <input type="date" class="form-input" value="${selDate}"
-              onchange="renderAttendanceView('${selCom}',this.value,'${selMode}')"
-              style="width:160px;font-size:13px;padding:7px 10px">
+            <input type="date" class="form-input" value="${selDate}" ${cerrado ? 'disabled' : ''}
+              onchange="cambiarFechaRegistro('${selCom}','${selDate}',this.value)"
+              title="${cerrado ? 'Reabrí el registro para poder cambiar la fecha' : 'Cambiar la fecha de este registro'}"
+              style="width:160px;font-size:13px;padding:7px 10px;${cerrado ? 'opacity:0.6;cursor:not-allowed' : ''}">
           </div>
           <div style="display:flex;gap:8px;margin-left:auto">
+            <button onclick="nuevoRegistroFecha('${selCom}')"
+              style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;cursor:pointer;font-family:var(--font);font-weight:500;color:var(--gray-600)">
+              + Nuevo registro
+            </button>
             <button onclick="renderAttendanceView('${selCom}','${today}','manual')"
               style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;cursor:pointer;font-family:var(--font);font-weight:500;color:var(--gray-600)">
               Ir a hoy
@@ -7575,6 +7580,52 @@ async function reabrirRegistroAsistencia(comId, fecha) {
     renderAttendanceView(comId, fecha, 'manual');
     showToast('Registro reabierto — ya podés editarlo');
   }
+}
+
+// Navega a una fecha elegida por el docente para empezar (o revisar) un registro ahí,
+// sin afectar el registro que esté viendo actualmente.
+function nuevoRegistroFecha(comId) {
+  const fecha = prompt('Fecha del nuevo registro (AAAA-MM-DD):', new Date().toISOString().split('T')[0]);
+  if (!fecha) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    showToast('Formato de fecha inválido. Usá AAAA-MM-DD.', true);
+    return;
+  }
+  renderAttendanceView(comId, fecha, 'manual');
+}
+
+// Cambia la fecha de un registro de asistencia existente (solo disponible mientras está abierto).
+async function cambiarFechaRegistro(comId, fechaVieja, fechaNueva) {
+  if (!fechaNueva || fechaNueva === fechaVieja) return;
+  if (asistencia[comId]?.[fechaNueva]) {
+    showToast('Ya existe un registro para esa fecha. Elegí otra fecha o eliminá el existente primero.', true);
+    renderAttendanceView(comId, fechaVieja, 'manual');
+    return;
+  }
+  const registro = asistencia[comId]?.[fechaVieja];
+  if (!registro) return;
+
+  // Mover todas las filas de asistencia de esta comisión/fecha a la fecha nueva
+  const { error } = await _supabase.from('asistencia')
+    .update({ fecha: fechaNueva })
+    .eq('comision_id', comId).eq('fecha', fechaVieja);
+
+  if (error) {
+    console.warn('Error cambiando fecha del registro:', error);
+    showToast('No se pudo cambiar la fecha. Verificá tu conexión.', true);
+    renderAttendanceView(comId, fechaVieja, 'manual');
+    return;
+  }
+
+  // Si había una clave de cierre para la fecha vieja, eliminarla (el registro se mueve abierto)
+  await _supabase.from('config_sistema').delete().eq('clave', `asistencia_cerrada_${comId}_${fechaVieja}`);
+
+  // Actualizar en memoria
+  asistencia[comId][fechaNueva] = registro;
+  delete asistencia[comId][fechaVieja];
+
+  renderAttendanceView(comId, fechaNueva, 'manual');
+  showToast('Fecha del registro actualizada');
 }
 
 // ── DELETE REGISTRO ───────────────────────────────────────
