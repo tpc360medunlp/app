@@ -7501,6 +7501,12 @@ function closeDeleteRegistroModal() {
   document.getElementById('modal-delete-registro').classList.remove('open');
 }
 async function confirmDeleteRegistro() {
+  // Si había una sesión de QR corriendo para esta misma comisión/fecha, cortarla
+  // para que no siga escribiendo datos viejos por encima del registro recién borrado.
+  if (deleteComId === activeQrComision && deleteFecha === activeQrDate) {
+    stopQrIntervalsIfRunning();
+    qrRegistered = new Set();
+  }
   const registroAnterior = asistencia[deleteComId]?.[deleteFecha];
   if (asistencia[deleteComId]) delete asistencia[deleteComId][deleteFecha];
   // Eliminar en Supabase
@@ -7597,6 +7603,10 @@ function startQrIntervals(comId, date) {
       .select('legajo, estado')
       .eq('comision_id', comId)
       .eq('fecha', date);
+
+    // Si mientras se esperaba la respuesta la sesión de QR cambió (se cerró, se borró
+    // el registro, o se abrió otra), descartar este resultado — ya no corresponde.
+    if (comId !== activeQrComision || date !== activeQrDate) return;
 
     if (error) { console.warn('Error consultando asistencia QR:', error); return; }
     if (!asistencia[comId]) asistencia[comId] = {};
