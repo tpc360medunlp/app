@@ -4461,7 +4461,14 @@ function renderStudentFinalesView() {
         if (com) comisiones.push(com);
       }
     });
-    if (comisiones.length === 0) return { tipo: 'sin_cursar' };
+    if (comisiones.length === 0) {
+      const sr = selfReportedFinales[email]?.[materia.id];
+      if (sr) {
+        if (sr.estado === 'aprobado') return { tipo: 'acreditado_sr', nota: sr.nota, mesa: sr.mesaLabel };
+        if (sr.estado === 'desaprobado' || sr.estado === 'ausente') return { tipo: 'pendiente_final_sr', mesa: sr.mesaLabel };
+      }
+      return { tipo: 'sin_cursar' };
+    }
 
     // Ordenar por año descendente — el más reciente primero
     comisiones.sort((a, b) => b.año - a.año);
@@ -4605,9 +4612,10 @@ function renderStudentFinalesView() {
         bc='#378ADD';bg='#f0f7ff';ic='📚';badgeC='#185FA5';badgeBg='#E6F1FB';bl='Cursando';
       } else {
         bc='var(--gray-200)';bg='var(--gray-50)';ic='—';badgeC='var(--gray-400)';badgeBg='var(--gray-100)';bl='Sin cursar';
+        extra=`<button onclick="openSelfReportModal('${materia.id}','${materia.nombre.replace(/'/g,"\\'")}') " style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px dashed var(--gray-400);background:transparent;color:var(--gray-500);cursor:pointer;margin-top:6px;font-family:var(--font)">+ Cargar resultado</button>`;
       }
       html += `<div style="display:flex;align-items:center">
-        <div style="background:${bg};border:1.5px solid ${bc};border-radius:var(--radius-md);padding:10px 12px;text-align:center;min-width:110px;max-width:130px;${est.tipo==='sin_cursar'?'opacity:0.5':''}">
+        <div style="background:${bg};border:1.5px solid ${bc};border-radius:var(--radius-md);padding:10px 12px;text-align:center;min-width:110px;max-width:130px">
           <div style="font-size:16px;margin-bottom:4px">${ic}</div>
           <div style="font-size:11px;font-weight:500;color:var(--navy);line-height:1.3;margin-bottom:5px">${materia.nombre}</div>
           <span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${badgeBg};color:${badgeC};font-weight:500">${bl}</span>
