@@ -1524,6 +1524,16 @@ async function ensureJsQR() {
       </select>
     </div>
     <div class="form-field">
+      <label class="form-label">Cantidad de parciales</label>
+      <select class="form-select" id="field-materia-cantidad-parciales">
+        <option value="">Sin especificar (el sistema lo infiere de las notas cargadas)</option>
+        <option value="1">1 parcial</option>
+        <option value="2">2 parciales</option>
+        <option value="3">3 parciales</option>
+        <option value="4">4 parciales</option>
+      </select>
+    </div>
+    <div class="form-field">
       <label class="form-label">Régimen de cursada</label>
       <select class="form-select" id="field-materia-regimen" onchange="toggleNotaPromocion()">
         <option value="sin_promocion">Sin promoción</option>
@@ -1622,7 +1632,7 @@ async function ensureJsQR() {
       <select class="form-select" id="sr-estado">
         <option value="aprobado">Aprobado</option>
         <option value="desaprobado">Desaprobado</option>
-        <option value="ausente">Ausente</option>
+        <option value="promocion">Promocionado</option>
       </select>
     </div>
     <div class="form-field" id="sr-nota-field">
@@ -1933,6 +1943,7 @@ async function loadDataFromSupabase() {
         notaPromocion: m.nota_promocion,
         criterioPromocion: m.criterio_promocion,
         regimen_cursada: m.regimen_cursada || 'anual',
+        cantidadParciales: m.cantidad_parciales || null,
         cronograma: m.cronograma || null,
       }));
     }
@@ -4362,7 +4373,7 @@ function openSelfReportModal(materiaId, materiaNombre) {
   const existing = selfReportedFinales[email]?.[materiaId];
   document.getElementById('sr-materia-nombre').textContent = materiaNombre;
   document.getElementById('sr-mesa').value   = existing?.mesaLabel || '';
-  document.getElementById('sr-estado').value = existing?.estado    || 'aprobado';
+  document.getElementById('sr-estado').value = (existing?.estado === 'ausente' ? 'desaprobado' : existing?.estado) || 'aprobado';
   document.getElementById('sr-nota').value   = existing?.nota      || '';
   document.getElementById('sr-error').style.display = 'none';
   document.getElementById('modal-self-report').classList.add('open');
@@ -4465,6 +4476,7 @@ function renderStudentFinalesView() {
       const sr = selfReportedFinales[email]?.[materia.id];
       if (sr) {
         if (sr.estado === 'aprobado') return { tipo: 'acreditado_sr', nota: sr.nota, mesa: sr.mesaLabel };
+        if (sr.estado === 'promocion') return { tipo: 'promocionado_sr', nota: sr.nota, mesa: sr.mesaLabel };
         if (sr.estado === 'desaprobado' || sr.estado === 'ausente') return { tipo: 'pendiente_final_sr', mesa: sr.mesaLabel };
       }
       return { tipo: 'sin_cursar' };
@@ -4475,23 +4487,29 @@ function renderStudentFinalesView() {
 
     for (const com of comisiones) {
       const coms = getComisionesMateriaAlumno(email, materia.id, com.año);
-      const parcialesConNotas = NOMBRES_PARCIALES.filter(p =>
-        coms.some(c2 => NOMBRES_FECHAS.some(f => {
-          const d = parciales[c2.id]?.[p]?.[f];
-          return d && Object.keys(d).filter(k=>k!=='_publicado').length > 0;
-        }))
-      );
+      // Si la materia tiene la cantidad de parciales configurada, usar esa lista fija
+      // (así un parcial que todavía no se tomó/cargó sigue contando como pendiente,
+      // en vez de "no existir" para el sistema). Si no está configurada, se infiere
+      // dinámicamente de qué parciales ya tienen alguna nota cargada (comportamiento anterior).
+      const parcialesRequeridos = materia.cantidadParciales
+        ? NOMBRES_PARCIALES.slice(0, materia.cantidadParciales)
+        : NOMBRES_PARCIALES.filter(p =>
+            coms.some(c2 => NOMBRES_FECHAS.some(f => {
+              const d = parciales[c2.id]?.[p]?.[f];
+              return d && Object.keys(d).filter(k=>k!=='_publicado').length > 0;
+            }))
+          );
 
-      // Sin notas publicadas → está cursando (comisión activa pero sin notas aún)
-      if (parcialesConNotas.length === 0) return { tipo: 'cursando', ciclo: com.año };
+      // Sin notas publicadas y sin cantidad configurada → está cursando (comisión activa, nada cargado aún)
+      if (parcialesRequeridos.length === 0) return { tipo: 'cursando', ciclo: com.año };
 
-      const promociono = parcialesConNotas.every(p =>
+      const promociono = parcialesRequeridos.every(p =>
         NOMBRES_FECHAS.some(f => coms.some(c2 =>
           parciales[c2.id]?.[p]?.[f]?.[email]?.estado === 'promocion'
         ))
       );
       if (promociono) {
-        const notas = parcialesConNotas.map(p => {
+        const notas = parcialesRequeridos.map(p => {
           for (const f of NOMBRES_FECHAS) for (const c2 of coms) {
             const rec = parciales[c2.id]?.[p]?.[f]?.[email];
             if (rec?.estado === 'promocion') return rec.nota;
@@ -4502,7 +4520,7 @@ function renderStudentFinalesView() {
         return { tipo: 'promocionado', nota: prom, ciclo: com.año };
       }
 
-      const aproboTodos = parcialesConNotas.every(p =>
+      const aproboTodos = parcialesRequeridos.every(p =>
         NOMBRES_FECHAS.some(f => coms.some(c2 => {
           const est = parciales[c2.id]?.[p]?.[f]?.[email]?.estado;
           return est === 'aprobado' || est === 'promocion';
@@ -4529,6 +4547,9 @@ function renderStudentFinalesView() {
         if (sr?.estado === 'aprobado') {
           return { tipo: 'acreditado_sr', nota: sr.nota, mesa: sr.mesaLabel };
         }
+        if (sr?.estado === 'promocion') {
+          return { tipo: 'promocionado_sr', nota: sr.nota, mesa: sr.mesaLabel };
+        }
         return { tipo: 'pendiente_final', ciclo: com.año };
       }
       return { tipo: 'cursando', ciclo: com.año };
@@ -4538,7 +4559,8 @@ function renderStudentFinalesView() {
     const sr = selfReportedFinales[email]?.[materia.id];
     if (sr) {
       if (sr.estado === 'aprobado') return { tipo: 'acreditado_sr', nota: sr.nota, mesa: sr.mesaLabel };
-      if (sr.estado === 'desaprobado') return { tipo: 'pendiente_final_sr', mesa: sr.mesaLabel };
+      if (sr.estado === 'promocion') return { tipo: 'promocionado_sr', nota: sr.nota, mesa: sr.mesaLabel };
+      if (sr.estado === 'desaprobado' || sr.estado === 'ausente') return { tipo: 'pendiente_final_sr', mesa: sr.mesaLabel };
     }
 
     return { tipo: 'sin_cursar' };
@@ -4557,7 +4579,7 @@ function renderStudentFinalesView() {
   const totalMaterias = MATERIAS.length;
   const acreditadas = MATERIAS.filter(m => {
     const est = getEstadoMateria(m);
-    return est.tipo === 'promocionado' || est.tipo === 'acreditado' || est.tipo === 'acreditado_sr';
+    return est.tipo === 'promocionado' || est.tipo === 'acreditado' || est.tipo === 'acreditado_sr' || est.tipo === 'promocionado_sr';
   }).length;
   const pctGlobal = totalMaterias > 0 ? Math.round(acreditadas/totalMaterias*100) : 0;
 
@@ -4600,6 +4622,12 @@ function renderStudentFinalesView() {
         extra=`${notaStr}<div style="font-size:10px;color:#1a7a35;margin-top:2px;opacity:0.8">${est.mesa}</div>
           <div style="font-size:9px;color:#1a7a35;opacity:0.6;margin-top:2px">Cargado por vos</div>
           <button onclick="borrarSelfReport('${materia.id}')" style="font-size:9px;padding:2px 6px;border-radius:10px;border:1px solid #1a7a35;background:transparent;color:#1a7a35;cursor:pointer;margin-top:4px;font-family:var(--font)">Borrar</button>`;
+      } else if (est.tipo==='promocionado_sr') {
+        bc='#1D9E75';bg='#f0fdf4';ic='⭐';badgeC='#0F6E56';badgeBg='#E1F5EE';bl='Promocionado';
+        const notaStr = est.nota ? `<div style="font-size:22px;font-weight:700;color:#0F6E56;line-height:1;margin-top:5px">${est.nota}</div>` : '';
+        extra=`${notaStr}
+          <div style="font-size:9px;color:#0F6E56;opacity:0.6;margin-top:2px">Cargado por vos</div>
+          <button onclick="borrarSelfReport('${materia.id}')" style="font-size:9px;padding:2px 6px;border-radius:10px;border:1px solid #0F6E56;background:transparent;color:#0F6E56;cursor:pointer;margin-top:4px;font-family:var(--font)">Borrar</button>`;
       } else if (est.tipo==='pendiente_final') {
         bc='#EF9F27';bg='#fffbf0';ic='⏳';badgeC='#854F0B';badgeBg='var(--amber-light)';bl='Pendiente final';
         extra=`<button onclick="openSelfReportModal('${materia.id}','${materia.nombre.replace(/'/g,"\\'")}') " style="font-size:10px;padding:3px 8px;border-radius:10px;border:1px dashed #854F0B;background:transparent;color:#854F0B;cursor:pointer;margin-top:6px;font-family:var(--font)">+ Cargar resultado</button>`;
@@ -8249,6 +8277,7 @@ function openMateriaModal() {
   document.getElementById('field-materia-año').value = '';
   document.getElementById('field-materia-regimen').value = 'sin_promocion';
   document.getElementById('field-materia-regimen-cursada').value = 'anual';
+  document.getElementById('field-materia-cantidad-parciales').value = '';
   document.getElementById('field-materia-nota-promocion').value = '';
   document.getElementById('field-materia-criterio').value = 'primera_fecha';
   document.getElementById('field-nota-promocion-group').style.display = 'none';
@@ -8273,6 +8302,7 @@ function openEditMateriaModal(materiaId) {
   document.getElementById('field-materia-año').value = materia.añoCarrera || '';
   document.getElementById('field-materia-regimen').value = materia.regimen || 'sin_promocion';
   document.getElementById('field-materia-regimen-cursada').value = materia.regimen_cursada || 'anual';
+  document.getElementById('field-materia-cantidad-parciales').value = materia.cantidadParciales || '';
   document.getElementById('field-materia-nota-promocion').value = materia.notaPromocion || '';
   document.getElementById('field-materia-criterio').value = materia.criterioPromocion || 'primera_fecha';
   const showPromo = materia.regimen === 'promocion';
@@ -8299,6 +8329,8 @@ async function confirmAddMateria() {
   const añoCarrera       = document.getElementById('field-materia-año').value;
   const regimen          = document.getElementById('field-materia-regimen').value;
   const regimenCursada   = document.getElementById('field-materia-regimen-cursada').value;
+  const cantParivalue    = document.getElementById('field-materia-cantidad-parciales').value;
+  const cantidadParciales = cantParivalue ? parseInt(cantParivalue) : null;
   const notaPromocion    = regimen === 'promocion'
     ? parseFloat(document.getElementById('field-materia-nota-promocion').value) || null
     : null;
@@ -8313,10 +8345,12 @@ async function confirmAddMateria() {
     materia.nombre = nombre; materia.docenteDni = docenteDni;
     materia.añoCarrera = añoCarrera; materia.regimen = regimen;
     materia.regimen_cursada = regimenCursada;
+    materia.cantidadParciales = cantidadParciales;
     materia.notaPromocion = notaPromocion; materia.criterioPromocion = criterioPromocion;
     const { error } = await _supabase.from('materias').update({
       nombre, docente_dni: docenteDni, año_carrera: añoCarrera,
       regimen, regimen_cursada: regimenCursada,
+      cantidad_parciales: cantidadParciales,
       nota_promocion: notaPromocion, criterio_promocion: criterioPromocion
     }).eq('id', editingMateriaId);
 
@@ -8330,11 +8364,12 @@ async function confirmAddMateria() {
     showToast('Materia actualizada correctamente');
   } else {
     const id = 'm' + Date.now();
-    const nueva = { id, nombre, docenteDni, añoCarrera, regimen, notaPromocion, criterioPromocion, regimen_cursada: regimenCursada, cronograma: null };
+    const nueva = { id, nombre, docenteDni, añoCarrera, regimen, notaPromocion, criterioPromocion, regimen_cursada: regimenCursada, cantidadParciales, cronograma: null };
     MATERIAS.push(nueva);
     const { error } = await _supabase.from('materias').insert({
       id, nombre, docente_dni: docenteDni, año_carrera: añoCarrera,
       regimen, regimen_cursada: regimenCursada,
+      cantidad_parciales: cantidadParciales,
       nota_promocion: notaPromocion, criterio_promocion: criterioPromocion
     });
 
