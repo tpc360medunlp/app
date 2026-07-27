@@ -12955,7 +12955,7 @@ async function generarCertificado(comId, parcial, fechaParcial, email) {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `Certificado_${datos.apellido}_${datos.nombre}_${parcial}_${fechaParcial}.pdf`.replace(/ /g,'_');
+    a.download = `Certificado_${datos.apellido}_${datos.nombre}_${materia?.nombre||''}_${parcial}_${fechaParcial}.pdf`.replace(/ /g,'_');
     a.click();
     URL.revokeObjectURL(url);
     showToast('✓ Certificado descargado');
@@ -13883,7 +13883,7 @@ async function descargarCertFinal(id) {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `Certificado_Final_${s.apellido}_${s.nombre}.pdf`.replace(/ /g,'_');
+    a.download = `Certificado_${s.apellido}_${s.nombre}_${materia?.nombre||''}_Final.pdf`.replace(/ /g,'_');
     a.click();
     URL.revokeObjectURL(url);
     showToast('✓ Certificado descargado');
