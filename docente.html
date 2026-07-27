@@ -13568,7 +13568,14 @@ function renderStudentCertificadosView(tab = null) {
 
 function renderStudentCertFinalesView(tabsHtml = '', subtitulo = '') {
   const email = currentUser.email;
-  const misSolicitudes = solicitudesCertFinales.filter(s => s.email === email);
+  const parseFechaDDMMYYYY = (str) => {
+    if (!str) return 0;
+    const [d, m, y] = str.split('/').map(Number);
+    return new Date(y, (m||1)-1, d||1).getTime();
+  };
+  const misSolicitudes = solicitudesCertFinales
+    .filter(s => s.email === email)
+    .sort((a, b) => parseFechaDDMMYYYY(b.fechaSolicitud) - parseFechaDDMMYYYY(a.fechaSolicitud));
 
   const estadoBadge = est => {
     if (est === 'pendiente') return `<span class="badge badge-pending">Pendiente</span>`;
@@ -13697,8 +13704,15 @@ function renderCertRequestsView() {
     return;
   }
 
-  const pendientes  = misSolicitudes.filter(s => s.estado === 'pendiente');
-  const procesadas  = misSolicitudes.filter(s => s.estado !== 'pendiente');
+  const parseFechaDDMMYYYY = (str) => {
+    if (!str) return 0;
+    const [d, m, y] = str.split('/').map(Number);
+    return new Date(y, (m||1)-1, d||1).getTime();
+  };
+  const pendientes  = misSolicitudes.filter(s => s.estado === 'pendiente')
+    .sort((a, b) => parseFechaDDMMYYYY(a.fechaSolicitud) - parseFechaDDMMYYYY(b.fechaSolicitud));
+  const procesadas  = misSolicitudes.filter(s => s.estado !== 'pendiente')
+    .sort((a, b) => parseFechaDDMMYYYY(b.fechaSolicitud) - parseFechaDDMMYYYY(a.fechaSolicitud));
 
   const renderCard = (s, showActions) => {
     const materia = MATERIAS.find(m => m.id === s.materiaId);
