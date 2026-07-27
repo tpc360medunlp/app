@@ -1591,6 +1591,39 @@ async function ensureJsQR() {
         <option value="">Sin asignar</option>
       </select>
     </div>
+
+    <div class="form-field" style="border-top:1px solid var(--gray-100);padding-top:14px;margin-top:4px">
+      <label class="form-label" style="font-weight:600">📖 Teórico</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray-600);margin:6px 0">
+        <input type="checkbox" id="field-teorico-comun" onchange="toggleTeoricoComunUI()"> Común a todas las comisiones de esta materia
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray-600);margin-bottom:8px">
+        <input type="checkbox" id="field-teorico-async" onchange="toggleTeoricoAsyncUI()"> Asincrónico (sin día/horario/lugar fijo)
+      </label>
+      <div id="field-teorico-detalle" style="display:flex;gap:8px;flex-wrap:wrap">
+        <select class="form-select" id="field-teorico-dia" style="flex:1;min-width:110px">
+          <option value="">Día</option>
+          <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+          <option>Jueves</option><option>Viernes</option><option>Sábado</option>
+        </select>
+        <input type="text" class="form-input" id="field-teorico-horario" placeholder="Horario, ej: 10:00-12:00" style="flex:1;min-width:130px">
+        <input type="text" class="form-input" id="field-teorico-lugar" placeholder="Lugar" style="flex:1;min-width:110px">
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" style="font-weight:600">🔬 Práctico</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+        <select class="form-select" id="field-practico-dia" style="flex:1;min-width:110px">
+          <option value="">Día</option>
+          <option>Lunes</option><option>Martes</option><option>Miércoles</option>
+          <option>Jueves</option><option>Viernes</option><option>Sábado</option>
+        </select>
+        <input type="text" class="form-input" id="field-practico-horario" placeholder="Horario, ej: 14:00-17:00" style="flex:1;min-width:130px">
+        <input type="text" class="form-input" id="field-practico-lugar" placeholder="Lugar" style="flex:1;min-width:110px">
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeComisionModal()">Cancelar</button>
       <button class="btn-primary" onclick="confirmAddComision()">Guardar</button>
@@ -2008,6 +2041,8 @@ async function loadDataFromSupabase() {
           año: c.año,
           periodo: c.periodo || 1,
           alumnos: emails,
+          teorico: c.teorico || null,
+          practico: c.practico || null,
         });
       });
     }
@@ -8123,6 +8158,15 @@ function openComisionModalForMateria(materiaId) {
     teachers.map(([dni,s]) => `<option value="${dni}">${s.apellido}, ${s.nombre}</option>`).join('');
   document.getElementById('field-comision-nombre').value = '';
   document.getElementById('field-periodo-group').style.display = 'none';
+  document.getElementById('field-teorico-comun').checked = false;
+  document.getElementById('field-teorico-async').checked = false;
+  document.getElementById('field-teorico-dia').value = '';
+  document.getElementById('field-teorico-horario').value = '';
+  document.getElementById('field-teorico-lugar').value = '';
+  document.getElementById('field-practico-dia').value = '';
+  document.getElementById('field-practico-horario').value = '';
+  document.getElementById('field-practico-lugar').value = '';
+  toggleTeoricoAsyncUI();
   updatePeriodoField();
   document.getElementById('modal-nueva-comision').classList.add('open');
 }
@@ -8422,6 +8466,32 @@ function populateAñoSelect(selectedAño) {
 }
 
 // Nueva/editar comisión modal
+function toggleTeoricoAsyncUI() {
+  const async = document.getElementById('field-teorico-async').checked;
+  document.getElementById('field-teorico-detalle').style.display = async ? 'none' : 'flex';
+}
+
+// Busca si ya existe otra comisión de esta materia con el teórico marcado como
+// "común", y si la hay, precarga sus datos (el usuario los puede seguir editando).
+function cargarTeoricoComunSiExiste() {
+  const materiaId = document.getElementById('field-comision-materia').value;
+  const comunExistente = COMISIONES.find(c => c.materiaId === materiaId && c.teorico?.comun);
+  if (!comunExistente) return;
+  const t = comunExistente.teorico;
+  document.getElementById('field-teorico-comun').checked = true;
+  document.getElementById('field-teorico-async').checked = !!t.asincronico;
+  document.getElementById('field-teorico-dia').value      = t.dia || '';
+  document.getElementById('field-teorico-horario').value  = t.horario || '';
+  document.getElementById('field-teorico-lugar').value    = t.lugar || '';
+  toggleTeoricoAsyncUI();
+}
+
+function toggleTeoricoComunUI() {
+  if (document.getElementById('field-teorico-comun').checked) {
+    cargarTeoricoComunSiExiste();
+  }
+}
+
 function updatePeriodoField() {
   const materiaId = document.getElementById('field-comision-materia').value;
   const materia   = MATERIAS.find(m => m.id === materiaId);
@@ -8429,6 +8499,7 @@ function updatePeriodoField() {
   const group     = document.getElementById('field-periodo-group');
   const label     = document.getElementById('field-periodo-label');
   const select    = document.getElementById('field-comision-periodo');
+  if (!editingComisionId) cargarTeoricoComunSiExiste();
   if (regimen === 'anual') { group.style.display = 'none'; return; }
   const opciones  = regimen === 'cuatrimestral'
     ? [['1','1er Cuatrimestre'],['2','2do Cuatrimestre']]
@@ -8454,6 +8525,15 @@ function openComisionModal() {
     teachers.map(([dni,s]) => `<option value="${dni}">${s.apellido}, ${s.nombre}</option>`).join('');
   document.getElementById('field-comision-nombre').value = '';
   document.getElementById('field-periodo-group').style.display = 'none';
+  document.getElementById('field-teorico-comun').checked = false;
+  document.getElementById('field-teorico-async').checked = false;
+  document.getElementById('field-teorico-dia').value = '';
+  document.getElementById('field-teorico-horario').value = '';
+  document.getElementById('field-teorico-lugar').value = '';
+  document.getElementById('field-practico-dia').value = '';
+  document.getElementById('field-practico-horario').value = '';
+  document.getElementById('field-practico-lugar').value = '';
+  toggleTeoricoAsyncUI();
   updatePeriodoField();
   document.getElementById('modal-nueva-comision').classList.add('open');
 }
@@ -8473,6 +8553,17 @@ function openEditComisionModal(comisionId) {
       `<option value="${dni}" ${dni === c.docenteDni ? 'selected' : ''}>${s.apellido}, ${s.nombre}</option>`
     ).join('');
   document.getElementById('field-comision-nombre').value = c.nombre;
+  const t = c.teorico || {};
+  const p = c.practico || {};
+  document.getElementById('field-teorico-comun').checked = !!t.comun;
+  document.getElementById('field-teorico-async').checked = !!t.asincronico;
+  document.getElementById('field-teorico-dia').value      = t.dia || '';
+  document.getElementById('field-teorico-horario').value  = t.horario || '';
+  document.getElementById('field-teorico-lugar').value    = t.lugar || '';
+  document.getElementById('field-practico-dia').value     = p.dia || '';
+  document.getElementById('field-practico-horario').value = p.horario || '';
+  document.getElementById('field-practico-lugar').value   = p.lugar || '';
+  toggleTeoricoAsyncUI();
   // Mostrar campo de periodo si corresponde
   updatePeriodoField();
   // Seleccionar el periodo actual de la comisión
@@ -8496,44 +8587,90 @@ async function confirmAddComision() {
     ? 1
     : parseInt(document.getElementById('field-comision-periodo').value) || 1;
   if (!nombre) { showToast('Ingresá el nombre de la comisión', true); return; }
+
+  const teoricoComun = document.getElementById('field-teorico-comun').checked;
+  const teoricoAsync = document.getElementById('field-teorico-async').checked;
+  const teorico = {
+    comun: teoricoComun,
+    asincronico: teoricoAsync,
+    dia:     teoricoAsync ? '' : document.getElementById('field-teorico-dia').value,
+    horario: teoricoAsync ? '' : document.getElementById('field-teorico-horario').value.trim(),
+    lugar:   teoricoAsync ? '' : document.getElementById('field-teorico-lugar').value.trim(),
+  };
+  const practico = {
+    dia:     document.getElementById('field-practico-dia').value,
+    horario: document.getElementById('field-practico-horario').value.trim(),
+    lugar:   document.getElementById('field-practico-lugar').value.trim(),
+  };
+
+  // Otras comisiones "comunes" de la misma materia a las que hay que propagarles el teórico
+  const propagarA = teoricoComun
+    ? COMISIONES.filter(c => c.materiaId === materiaId && c.teorico?.comun && c.id !== editingComisionId)
+    : [];
+
   if (editingComisionId) {
     const c = COMISIONES.find(com => com.id === editingComisionId);
-    const anterior = { ...c };
-    c.nombre = nombre; c.materiaId = materiaId; c.docenteDni = docenteDni; c.año = año; c.periodo = periodo;
-    // Actualizar en Supabase
-    const { error } = await _supabase.from('comisiones').update({
-      nombre, materia_id: materiaId, docente_dni: docenteDni, año, periodo
-    }).eq('id', editingComisionId);
+    const anterior = { ...c, teorico: c.teorico ? {...c.teorico} : null, practico: c.practico ? {...c.practico} : null };
+    const anterioresProp = propagarA.map(pc => ({ id: pc.id, teorico: pc.teorico ? {...pc.teorico} : null }));
 
-    if (error) {
-      console.warn('Error actualizando comisión:', error);
+    c.nombre = nombre; c.materiaId = materiaId; c.docenteDni = docenteDni; c.año = año; c.periodo = periodo;
+    c.teorico = teorico; c.practico = practico;
+    propagarA.forEach(pc => { pc.teorico = { ...teorico }; });
+
+    const resultados = await Promise.all([
+      _supabase.from('comisiones').update({
+        nombre, materia_id: materiaId, docente_dni: docenteDni, año, periodo, teorico, practico
+      }).eq('id', editingComisionId),
+      ...propagarA.map(pc => _supabase.from('comisiones').update({ teorico }).eq('id', pc.id))
+    ]);
+    const huboError = resultados.some(r => r.error);
+    if (huboError) {
+      resultados.forEach(r => { if (r.error) console.warn('Error actualizando comisión:', r.error); });
       Object.assign(c, anterior);
+      anterioresProp.forEach(ap => {
+        const pc = COMISIONES.find(x => x.id === ap.id);
+        if (pc) pc.teorico = ap.teorico;
+      });
       showToast('No se pudo actualizar la comisión. Verificá tu conexión.', true);
       return;
     }
     closeComisionModal();
     selectedAcademicYear = año;
     renderAcademicView(materiaId);
-    showToast('Comisión actualizada correctamente');
+    showToast(propagarA.length > 0
+      ? `Comisión actualizada — teórico también actualizado en ${propagarA.length} comisión/es más`
+      : 'Comisión actualizada correctamente');
   } else {
     const id = 'c' + Date.now();
-    const nueva = { id, materiaId, nombre, docenteDni, año, periodo, alumnos: [] };
+    const nueva = { id, materiaId, nombre, docenteDni, año, periodo, alumnos: [], teorico, practico };
     COMISIONES.push(nueva);
-    // Guardar en Supabase
-    const { error } = await _supabase.from('comisiones').insert({
-      id, materia_id: materiaId, nombre, docente_dni: docenteDni, año, periodo
-    });
 
-    if (error) {
-      console.warn('Error guardando comisión:', error);
+    const anterioresProp = propagarA.map(pc => ({ id: pc.id, teorico: pc.teorico ? {...pc.teorico} : null }));
+    propagarA.forEach(pc => { pc.teorico = { ...teorico }; });
+
+    const resultados = await Promise.all([
+      _supabase.from('comisiones').insert({
+        id, materia_id: materiaId, nombre, docente_dni: docenteDni, año, periodo, teorico, practico
+      }),
+      ...propagarA.map(pc => _supabase.from('comisiones').update({ teorico }).eq('id', pc.id))
+    ]);
+    const huboError = resultados.some(r => r.error);
+    if (huboError) {
+      resultados.forEach(r => { if (r.error) console.warn('Error guardando comisión:', r.error); });
       COMISIONES.splice(COMISIONES.indexOf(nueva), 1);
+      anterioresProp.forEach(ap => {
+        const pc = COMISIONES.find(x => x.id === ap.id);
+        if (pc) pc.teorico = ap.teorico;
+      });
       showToast('No se pudo guardar la comisión. Verificá tu conexión.', true);
       return;
     }
     closeComisionModal();
     selectedAcademicYear = año;
     renderAcademicView(materiaId);
-    showToast('Comisión agregada correctamente');
+    showToast(propagarA.length > 0
+      ? `Comisión agregada — teórico también actualizado en ${propagarA.length} comisión/es más`
+      : 'Comisión agregada correctamente');
   }
 }
 document.getElementById('modal-nueva-comision').dataset.closable='true'; document.getElementById('modal-nueva-comision')._closeModal=function(){closeComisionModal()};
@@ -13119,6 +13256,28 @@ async function eliminarCronograma(materiaId, periodo = 1) {
   showToast('Cronograma eliminado');
 }
 
+// Arma el bloque fijo de teórico/práctico que aparece arriba del cronograma semanal de una materia.
+function buildTeoricoPracticoHTML(comision) {
+  if (!comision) return '';
+  const t = comision.teorico, p = comision.practico;
+  const hayTeorico  = t && (t.asincronico || t.dia || t.horario || t.lugar);
+  const hayPractico = p && (p.dia || p.horario || p.lugar);
+  if (!hayTeorico && !hayPractico) return '';
+
+  const lineaTeorico = hayTeorico
+    ? (t.asincronico
+        ? `<div style="font-size:13px;color:var(--gray-600)">📖 <strong>Teórico:</strong> Asincrónico</div>`
+        : `<div style="font-size:13px;color:var(--gray-600)">📖 <strong>Teórico:</strong> ${[t.dia, t.horario].filter(Boolean).join(' · ')}${t.lugar ? ` · ${t.lugar}` : ''}</div>`)
+    : '';
+  const lineaPractico = hayPractico
+    ? `<div style="font-size:13px;color:var(--gray-600);margin-top:4px">🔬 <strong>Práctico:</strong> ${[p.dia, p.horario].filter(Boolean).join(' · ')}${p.lugar ? ` · ${p.lugar}` : ''}</div>`
+    : '';
+
+  return `<div style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:10px">
+    ${lineaTeorico}${lineaPractico}
+  </div>`;
+}
+
 function renderStudentCronogramaView() {
   const email = currentUser.email;
   const currentYear = new Date().getFullYear();
@@ -13182,6 +13341,7 @@ function renderStudentCronogramaView() {
               </div>
             </button>
             <div id="${comId}" style="display:none;padding-top:8px">
+              ${buildTeoricoPracticoHTML(comAlumno)}
               ${cronograma
                 ? cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, currentFiltro)
                 : `<div style="padding:1rem;text-align:center;color:var(--gray-400);font-size:13px">El cronograma aún no fue cargado por coordinación.</div>`
@@ -13954,8 +14114,25 @@ function renderTeacherCronogramaMateria(materiaId) {
   const regimenCursada = materia?.regimen_cursada || 'anual';
   const nPeriodos = getCantPeriodos(regimenCursada);
 
+  // Comisiones de esta materia a cargo del docente — bloque fijo de teórico/práctico
+  const staffEntry = Object.entries(ENROLLED_STAFF).find(([,s]) =>
+    `${s.nombre} ${s.apellido}` === currentUser.name
+  );
+  const docenteDni = staffEntry ? staffEntry[0] : null;
+  const misComisionesMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.docenteDni === docenteDni);
+  let htmlTeoricoPractico = '';
+  if (misComisionesMateria.length === 1) {
+    htmlTeoricoPractico = buildTeoricoPracticoHTML(misComisionesMateria[0]);
+  } else if (misComisionesMateria.length > 1) {
+    htmlTeoricoPractico = misComisionesMateria.map(c => {
+      const bloque = buildTeoricoPracticoHTML(c);
+      if (!bloque) return '';
+      return `<div style="font-size:12px;font-weight:500;color:var(--gray-500);margin-bottom:4px">${c.nombre}</div>${bloque}`;
+    }).join('');
+  }
+
   // Obtener todos los periodos disponibles para esta materia
-  let html = '';
+  let html = htmlTeoricoPractico;
   let alguno = false;
 
   for (let p = 1; p <= nPeriodos; p++) {
@@ -14008,7 +14185,7 @@ function renderTeacherCronogramaMateria(materiaId) {
   }
 
   container.innerHTML = alguno ? html
-    : `<div class="empty-state"><div class="empty-icon">📅</div><p>El cronograma de esta materia aún no fue cargado por coordinación.</p></div>`;
+    : htmlTeoricoPractico + `<div class="empty-state"><div class="empty-icon">📅</div><p>El cronograma de esta materia aún no fue cargado por coordinación.</p></div>`;
 }
 
 // ── PWA ───────────────────────────────────────────────────
