@@ -4724,9 +4724,11 @@ function renderStudentNotasView() {
     let filas = '';
 
     NOMBRES_PARCIALES.forEach(parc => {
+      let yaAprobadoEnFechaAnterior = false;
       NOMBRES_FECHAS.forEach(f => {
         const clave = `${comision.materiaId}_${parc}_${f}`;
         if (notasVistas.has(clave)) return;
+        if (yaAprobadoEnFechaAnterior) return; // fechas posteriores a la aprobación no deberían contar
         let fechaData = null, comOrigen = null;
         for (const com of coms) {
           const d = parciales[com.id]?.[parc]?.[f];
@@ -4736,6 +4738,7 @@ function renderStudentNotasView() {
         notasVistas.add(clave);
         const rec = fechaData[email];
         if (!rec || rec.estado === null || rec.estado === undefined) return;
+        if (rec.estado === 'aprobado' || rec.estado === 'promocion') yaAprobadoEnFechaAnterior = true;
         const nota        = rec.nota;
         const estado      = rec.estado || '';
         const estadoColor = estado==='aprobado'?'#1a7a35':estado==='desaprobado'?'#b02030':estado==='promocion'?'#5b2d8e':'#b05a10';
