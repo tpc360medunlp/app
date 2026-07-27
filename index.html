@@ -5987,7 +5987,7 @@ function buildCoordCalifStats() {
 
   // Selector materia
   const materiaOptions = `<option value="">Todas las materias</option>` +
-    MATERIAS.map(m => `<option value="${m.id}" ${m.id===selMateria?'selected':''}>${m.nombre}</option>`).join('');
+    ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}" ${m.id===selMateria?'selected':''}>${m.nombre}</option>`).join('');
 
   // Comisiones filtradas
   const comisiones = COMISIONES.filter(c =>
@@ -8114,7 +8114,7 @@ function openComisionModalForMateria(materiaId) {
   document.getElementById('modal-nueva-comision').querySelector('.modal-title').textContent = 'Nueva comisión';
   populateAñoSelect(selectedAcademicYear);
   document.getElementById('field-comision-materia').innerHTML =
-    MATERIAS.map(m => `<option value="${m.id}" ${m.id === materiaId ? 'selected' : ''}>${m.nombre}</option>`).join('');
+    ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}" ${m.id === materiaId ? 'selected' : ''}>${m.nombre}</option>`).join('');
   const teachers = Object.entries(ENROLLED_STAFF).filter(([,s]) => s.roles?.includes('teacher') && s.activo !== false)
     .sort((a,b) => a[1].apellido.localeCompare(b[1].apellido,'es'));
   document.getElementById('field-comision-docente').innerHTML =
@@ -8445,7 +8445,7 @@ function openComisionModal() {
   document.getElementById('modal-nueva-comision').querySelector('.modal-title').textContent = 'Nueva comisión';
   populateAñoSelect(selectedAcademicYear);
   document.getElementById('field-comision-materia').innerHTML =
-    MATERIAS.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+    ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
   const teachers = Object.entries(ENROLLED_STAFF).filter(([,s]) => s.roles?.includes('teacher') && s.activo !== false)
     .sort((a,b) => a[1].apellido.localeCompare(b[1].apellido,'es'));
   document.getElementById('field-comision-docente').innerHTML =
@@ -8463,7 +8463,7 @@ function openEditComisionModal(comisionId) {
   document.getElementById('modal-nueva-comision').querySelector('.modal-title').textContent = 'Editar comisión';
   populateAñoSelect(c.año);
   document.getElementById('field-comision-materia').innerHTML =
-    MATERIAS.map(m => `<option value="${m.id}" ${m.id === c.materiaId ? 'selected' : ''}>${m.nombre}</option>`).join('');
+    ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}" ${m.id === c.materiaId ? 'selected' : ''}>${m.nombre}</option>`).join('');
   const teachers = Object.entries(ENROLLED_STAFF).filter(([,s]) => s.roles?.includes('teacher') && s.activo !== false)
     .sort((a,b) => a[1].apellido.localeCompare(b[1].apellido,'es'));
   document.getElementById('field-comision-docente').innerHTML =
@@ -9335,7 +9335,7 @@ function renderFinalesView() {
 
   // Selector de materia
   const materiaOptions = `<option value="">Todas las materias</option>` +
-    MATERIAS.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+    ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
 
   const mesas = getMesasDelCiclo(ciclo);
   const now   = new Date();
@@ -9381,7 +9381,7 @@ function renderFinalesView() {
           nAnuladas   > 0 ? `<span style="font-size:11px;padding:2px 8px;border-radius:20px;background:var(--amber-light);color:#854F0B">${nAnuladas} anulada${nAnuladas>1?'s':''}</span>` : '',
         ].filter(Boolean).join('');
         const mesaKey = 'cal-' + mesa.id + '-' + añoMesa;
-        const filasHTML = MATERIAS.map(m => buildMesaFilaHTML(m, añoMesa, mesa, pasada)).join('');
+        const filasHTML = ordenarMateriasEstandar(MATERIAS).map(m => buildMesaFilaHTML(m, añoMesa, mesa, pasada)).join('');
         return buildMesaCardHTML(mesaKey, mesa, añoMesa, headerBg, headerColor, chips, filasHTML);
       }).join('')}
     </div>
@@ -9606,7 +9606,7 @@ function buildFinalesStats(ciclo) {
 
   let html = '<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid var(--navy)"><span style="font-size:15px;font-weight:700;color:var(--navy);letter-spacing:-.01em">Estadísticas por materia</span></div>';
 
-  MATERIAS.forEach(materia => {
+  ordenarMateriasEstandar(MATERIAS).forEach(materia => {
     const todosMesas = mesas.map(mesa => {
       const añoMesa = mesa.mes >= 4 ? inicio : fin;
       return { mesa, data: getMesaData(materia.id, añoMesa, mesa.id) };
@@ -9792,7 +9792,7 @@ function buildCortesTemporales(ciclo) {
 
   let hayDatos = false;
 
-  MATERIAS.forEach(materia => {
+  ordenarMateriasEstandar(MATERIAS).forEach(materia => {
     const comisiones     = COMISIONES.filter(c => c.materiaId===materia.id && c.año==inicio);
     const alumnosCursada = [...new Set(comisiones.flatMap(c => c.alumnos||[]))];
 
@@ -10589,7 +10589,7 @@ function toggleChipMateria(id, btn) {
 
 function abrirModalPeriodoCude() {
   // Poblar chips de materias
-  document.getElementById('chips-materias-periodo').innerHTML = MATERIAS.map(m =>
+  document.getElementById('chips-materias-periodo').innerHTML = ordenarMateriasEstandar(MATERIAS).map(m =>
     `<button onclick="toggleChipMateria('${m.id}',this)"
       data-id="${m.id}" data-sel="0"
       style="padding:4px 12px;font-size:12px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-600);cursor:pointer;font-family:var(--font)">
@@ -10904,7 +10904,7 @@ function renderTeacherAulasFormulario(dni) {
   // Materias del docente
   const misComisiones = COMISIONES.filter(c => c.docenteDni === dni);
   const misMateriasIds = [...new Set(misComisiones.map(c => c.materiaId))];
-  const misMaterias = MATERIAS.filter(m => misMateriasIds.includes(m.id));
+  const misMaterias = ordenarMateriasEstandar(MATERIAS).filter(m => misMateriasIds.includes(m.id));
 
   // Docentes de las cátedras
   const todosDocentesDni = [...new Set(
@@ -11346,7 +11346,7 @@ function renderCoordAulasFormulario() {
         <label class="form-label">Asignatura</label>
         <select class="form-select" id="aula-materia">
           <option value="">Seleccioná una materia</option>
-          ${MATERIAS.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}
+          ${ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}
         </select>
       </div>
 
@@ -12247,7 +12247,7 @@ function renderTeachersView() {
 
   const renderRow = ([dni, s]) => {
     const archivado  = s.activo === false;
-    const materias   = MATERIAS.filter(m => m.docenteDni === dni);
+    const materias   = ordenarMateriasEstandar(MATERIAS).filter(m => m.docenteDni === dni);
     const tieneRegistros = docenteTieneRegistros(dni);
 
     return `<div class="skill-row" style="align-items:center;flex-wrap:wrap;gap:8px;${archivado?'opacity:0.55':''}">
@@ -13126,7 +13126,7 @@ function renderStudentCronogramaView() {
   const misMaterias = misMateriasIds.map(id => MATERIAS.find(m => m.id === id)).filter(Boolean);
 
   // Para finales: todas las materias que tienen algún periodo de cronograma cargado
-  const todasConCronograma = MATERIAS.filter(m => m.cronograma && Object.keys(m.cronograma).length > 0);
+  const todasConCronograma = ordenarMateriasEstandar(MATERIAS).filter(m => m.cronograma && Object.keys(m.cronograma).length > 0);
 
   if (todasConCronograma.length === 0 && misMaterias.length === 0) {
     document.getElementById('student-cronograma-container').innerHTML =
@@ -13319,7 +13319,7 @@ function renderCronogramaMateria(materiaId, filtro = 'tp') {
   const misComisiones = COMISIONES.filter(c => c.año === currentYear && c.alumnos.includes(email));
   const misMateriasIds = [...new Set(misComisiones.map(c => c.materiaId))];
   const misMaterias = misMateriasIds.map(id => MATERIAS.find(m => m.id === id)).filter(Boolean);
-  const todasConCronograma = MATERIAS.filter(m => m.cronograma && Object.keys(m.cronograma).length > 0);
+  const todasConCronograma = ordenarMateriasEstandar(MATERIAS).filter(m => m.cronograma && Object.keys(m.cronograma).length > 0);
 
   // Para finales: mostrar todas las materias; para TP/parciales: solo las propias
   const matsParaTabs = filtro === 'finales' ? todasConCronograma : (misMaterias.length > 0 ? misMaterias : todasConCronograma);
@@ -13621,7 +13621,7 @@ function openSolicitudModal() {
     document.getElementById('sf-dni').value      = datos.doc || legajo;
   }
   document.getElementById('sf-materia').innerHTML =
-    MATERIAS.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+    ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
   document.getElementById('sf-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('sf-error').style.display = 'none';
   document.getElementById('modal-solicitud-final').classList.add('open');
