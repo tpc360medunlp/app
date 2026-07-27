@@ -426,6 +426,7 @@ async function ensureJsQR() {
     border-radius: var(--radius-xl);
     padding: 2rem;
     width: 100%; max-width: 480px;
+    max-height: 92vh; overflow-y: auto;
     box-shadow: var(--shadow-lg);
     transform: translateY(16px); transition: transform 0.2s;
   }
@@ -779,7 +780,6 @@ async function ensureJsQR() {
     .area-header { flex-wrap: wrap; gap: 8px; }
     .skill-row { flex-wrap: wrap; }
     .validation-card { flex-direction: column; }
-    .modal { max-height: 92vh; overflow-y: auto; }
   }
 
 </style>
@@ -4567,7 +4567,7 @@ function renderStudentFinalesView() {
   };
 
   const porAño = {};
-  MATERIAS.forEach(m => {
+  ordenarMateriasEstandar(MATERIAS).forEach(m => {
     const año = m.añoCarrera || '0';
     if (!porAño[año]) porAño[año] = [];
     porAño[año].push(m);
@@ -4635,7 +4635,10 @@ function renderStudentFinalesView() {
         bc='#EF9F27';bg='#fffbf0';ic='⏳';badgeC='#854F0B';badgeBg='var(--amber-light)';bl='Pendiente final';
         extra=`<div style="font-size:10px;color:#854F0B;opacity:0.7;margin-top:3px">${est.mesa} · Desaprobado</div>
           <div style="font-size:9px;color:#854F0B;opacity:0.6">Cargado por vos</div>
-          <button onclick="openSelfReportModal('${materia.id}','${materia.nombre.replace(/'/g,"\\'")}') " style="font-size:9px;padding:2px 6px;border-radius:10px;border:1px dashed #854F0B;background:transparent;color:#854F0B;cursor:pointer;margin-top:3px;font-family:var(--font)">Editar</button>`;
+          <div style="display:flex;gap:4px;justify-content:center;margin-top:3px">
+            <button onclick="openSelfReportModal('${materia.id}','${materia.nombre.replace(/'/g,"\\'")}') " style="font-size:9px;padding:2px 6px;border-radius:10px;border:1px dashed #854F0B;background:transparent;color:#854F0B;cursor:pointer;font-family:var(--font)">Editar</button>
+            <button onclick="borrarSelfReport('${materia.id}')" style="font-size:9px;padding:2px 6px;border-radius:10px;border:1px solid #854F0B;background:transparent;color:#854F0B;cursor:pointer;font-family:var(--font)">Borrar</button>
+          </div>`;
       } else if (est.tipo==='cursando') {
         bc='#378ADD';bg='#f0f7ff';ic='📚';badgeC='#185FA5';badgeBg='#E6F1FB';bl='Cursando';
       } else {
@@ -7355,6 +7358,23 @@ function getMateriaName(id) {
   return MATERIAS.find(m => m.id === id)?.nombre || id;
 }
 
+// Orden estándar de materias en toda la app: por año de la carrera (ascendente,
+// sin año asignado al final), después anuales antes que cuatrimestrales/otro
+// régimen, y por último alfabético.
+function ordenarMateriasEstandar(materias) {
+  return [...materias].sort((a, b) => {
+    const añoA = a.añoCarrera ? Number(a.añoCarrera) : 999;
+    const añoB = b.añoCarrera ? Number(b.añoCarrera) : 999;
+    if (añoA !== añoB) return añoA - añoB;
+
+    const esAnualA = (a.regimen_cursada || 'anual') === 'anual' ? 0 : 1;
+    const esAnualB = (b.regimen_cursada || 'anual') === 'anual' ? 0 : 1;
+    if (esAnualA !== esAnualB) return esAnualA - esAnualB;
+
+    return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+  });
+}
+
 function renderAttendanceView(selectedComId, selectedDate, mode) {
   const comisiones = getTeacherComisiones();
   if (comisiones.length === 0) {
@@ -7966,7 +7986,7 @@ function renderAcademicView(selectedMateriaId = null) {
   if (!selectedMateriaId) {
     const rows = MATERIAS.length === 0
       ? `<div style="padding:2rem;text-align:center;color:var(--gray-400)">No hay materias cargadas.</div>`
-      : MATERIAS.map(m => {
+      : ordenarMateriasEstandar(MATERIAS).map(m => {
           const comCount = COMISIONES.filter(c => c.materiaId === m.id && c.año === selectedAcademicYear).length;
           const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === m.docenteDni);
           const docenteName = staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
