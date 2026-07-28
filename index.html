@@ -6691,6 +6691,44 @@ function exportBtns(onXlsx, onPdf) {
 
 // ── Exportaciones específicas ─────────────────────────────
 
+// 0. Listado general de comisiones y horarios (coordinación)
+function exportListadoComisiones(año, fmt='xlsx') {
+  año = parseInt(año);
+  const comisionesDelAño = COMISIONES.filter(c => c.año === año);
+  const materiasOrdenadas = ordenarMateriasEstandar(MATERIAS).filter(m => comisionesDelAño.some(c => c.materiaId === m.id));
+
+  const formatBloque = (x, esTeorico) => {
+    if (!x) return '—';
+    if (esTeorico && x.asincronico) return 'Asincrónico';
+    const partes = [x.dia, x.horario].filter(Boolean).join(' ');
+    return [partes, x.lugar].filter(Boolean).join(' · ') || '—';
+  };
+
+  const rows = [];
+  materiasOrdenadas.forEach(m => {
+    const comisionesMateria = comisionesDelAño.filter(c => c.materiaId === m.id)
+      .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
+    comisionesMateria.forEach(c => {
+      const staffEntry  = Object.entries(ENROLLED_STAFF).find(([d]) => d === c.docenteDni);
+      const docenteName = staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
+      rows.push([m.nombre, c.nombre, docenteName, formatBloque(c.teorico, true), formatBloque(c.practico, false)]);
+    });
+  });
+
+  if (rows.length === 0) {
+    showToast('No hay comisiones cargadas para este año.', true);
+    return;
+  }
+
+  const titulo    = 'Listado de Comisiones y Horarios';
+  const subtitulo = `Ciclo lectivo ${año}`;
+  const headers   = ['Materia', 'Comisión', 'Docente', 'Teórico', 'Práctico'];
+  const nombre    = `Listado_Comisiones_${año}`;
+
+  if (fmt === 'pdf') exportarPdf(titulo, subtitulo, headers, rows, nombre, true);
+  else               exportarXlsx(titulo, subtitulo, headers, rows, nombre);
+}
+
 // 1. Asistencia (docente)
 function exportAsistencia(comId, fmt='xlsx') {
   const com     = COMISIONES.find(c => c.id === comId);
@@ -8061,6 +8099,7 @@ function renderAcademicView(selectedMateriaId = null) {
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Duplicar del año anterior
         </button>
+        ${exportBtns(`exportListadoComisiones('${selectedAcademicYear}','xlsx')`, `exportListadoComisiones('${selectedAcademicYear}','pdf')`)}
         <button class="btn-cargar" onclick="openMateriaModal()" style="padding:9px 16px;font-size:13px;margin-left:auto">+ Nueva materia</button>
       </div>
       <div class="area-card">
@@ -8079,10 +8118,19 @@ function renderAcademicView(selectedMateriaId = null) {
     : comisiones.map(c => {
         const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === c.docenteDni);
         const docenteName = staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
+        const t = c.teorico, p = c.practico;
+        const hayT = t && (t.asincronico || t.dia || t.horario || t.lugar);
+        const hayP = p && (p.dia || p.horario || p.lugar);
+        const txtT = !hayT ? `<span style="color:var(--gray-400)">📖 Teórico sin cargar</span>`
+          : t.asincronico ? `<span style="color:var(--teal)">📖 Asincrónico</span>`
+          : `<span style="color:var(--teal)">📖 ${[t.dia, t.horario].filter(Boolean).join(' · ')}${t.lugar ? ` · ${t.lugar}` : ''}</span>`;
+        const txtP = !hayP ? `<span style="color:var(--gray-400)">🔬 Práctico sin cargar</span>`
+          : `<span style="color:#1a7a35">🔬 ${[p.dia, p.horario].filter(Boolean).join(' · ')}${p.lugar ? ` · ${p.lugar}` : ''}</span>`;
         return `<div class="skill-row" style="align-items:center;flex-wrap:wrap;gap:8px">
           <div style="flex:1;min-width:180px">
             <div style="font-size:14px;font-weight:500;color:var(--navy)">${c.nombre}</div>
             <div style="font-size:12px;color:var(--gray-400);margin-top:2px">Docente: ${docenteName} · ${c.alumnos.length} alumno/s</div>
+            <div style="font-size:12px;margin-top:4px;display:flex;gap:12px;flex-wrap:wrap">${txtT}${txtP}</div>
           </div>
           <div style="display:flex;gap:6px">
             <button class="btn-cargar" style="background:var(--gray-600);font-size:12px" onclick="openEditComisionModal('${c.id}')">
