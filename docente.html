@@ -13287,7 +13287,10 @@ function buildTeoricoPracticoHTML(comision) {
       ${p.lugar ? `<div style="font-size:12px;color:var(--gray-600);margin-top:2px">📍 ${p.lugar}</div>` : ''}
     </div>` : '';
 
-  return `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">${cardTeorico}${cardPractico}</div>`;
+  return `<div style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px">${comision.nombre}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">${cardTeorico}${cardPractico}</div>
+  </div>`;
 }
 
 function renderStudentCronogramaView() {
@@ -14132,16 +14135,7 @@ function renderTeacherCronogramaMateria(materiaId) {
   );
   const docenteDni = staffEntry ? staffEntry[0] : null;
   const misComisionesMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.docenteDni === docenteDni);
-  let htmlTeoricoPractico = '';
-  if (misComisionesMateria.length === 1) {
-    htmlTeoricoPractico = buildTeoricoPracticoHTML(misComisionesMateria[0]);
-  } else if (misComisionesMateria.length > 1) {
-    htmlTeoricoPractico = misComisionesMateria.map(c => {
-      const bloque = buildTeoricoPracticoHTML(c);
-      if (!bloque) return '';
-      return `<div style="font-size:12px;font-weight:500;color:var(--gray-500);margin-bottom:4px">${c.nombre}</div>${bloque}`;
-    }).join('');
-  }
+  const htmlTeoricoPractico = misComisionesMateria.map(c => buildTeoricoPracticoHTML(c)).join('');
 
   // Obtener todos los periodos disponibles para esta materia
   let html = htmlTeoricoPractico;
