@@ -6691,42 +6691,202 @@ function exportBtns(onXlsx, onPdf) {
 
 // ── Exportaciones específicas ─────────────────────────────
 
+// PDF con diseño propio (no tabular) para el listado de comisiones: subapartados por materia,
+// con teóricos primero y prácticos después dentro de cada uno.
+async function buildListadoComisionesPdf(año, materiasOrdenadas, comisionesDelAño) {
+  await ensurePDFLib();
+  const { PDFDocument, rgb, StandardFonts } = PDFLib;
+  const A4 = [595.28, 841.89];
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.addPage(A4);
+
+  const font     = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const NAVY  = rgb(0.043, 0.122, 0.227);
+  const GRAY  = rgb(0.4, 0.4, 0.4);
+  const GRAY_LIGHT = rgb(0.6, 0.63, 0.7);
+  const TEAL  = rgb(0, 0.659, 0.588);
+  const GREEN = rgb(0.102, 0.478, 0.208);
+  const TEAL_BG  = rgb(0.878, 0.961, 0.953);
+  const GREEN_BG = rgb(0.910, 0.976, 0.929);
+
+  let page = pdfDoc.getPage(0);
+  const { width, height } = page.getSize();
+  const ML = 44, MR = 44;
+  const contentW = width - ML - MR;
+  let y = height - 30;
+
+  const addPage = () => { page = pdfDoc.addPage(A4); y = page.getSize().height - 30; };
+  const checkY = (needed) => { if (y < 36 + needed) addPage(); };
+
+  // Encabezado institucional
+  page.drawText(sanitizePdf(INST_NOMBRE),   { x: ML, y, font: fontBold, size: 11, color: NAVY });
+  y -= 12;
+  page.drawText(sanitizePdf(INST_FACULTAD), { x: ML, y, font, size: 9, color: GRAY });
+  y -= 8;
+  page.drawRectangle({ x: ML, y, width: contentW, height: 1.5, color: TEAL });
+  y -= 24;
+  page.drawText(sanitizePdf('Listado de comisiones'), { x: ML, y, font: fontBold, size: 17, color: NAVY });
+  y -= 16;
+  page.drawText(sanitizePdf(`Ciclo lectivo ${año}`), { x: ML, y, font, size: 10, color: GRAY });
+  y -= 26;
+
+  const formatBloque = (x, esTeorico) => {
+    if (!x) return null;
+    if (esTeorico && x.asincronico) return 'Asincrónico';
+    const partes = [x.dia, x.horario].filter(Boolean).join(' ');
+    const full = [partes, x.lugar].filter(Boolean).join('  ·  ');
+    return full || null;
+  };
+
+  const getDocenteName = (c) => {
+    const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === c.docenteDni);
+    return staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
+  };
+
+  const drawBloqueLinea = (label, texto, color) => {
+    checkY(14);
+    page.drawText(sanitizePdf(label), { x: ML + 16, y, font: fontBold, size: 9.5, color });
+    const labelW = fontBold.widthOfTextAtSize(sanitizePdf(label), 9.5);
+    page.drawText(sanitizePdf(texto), { x: ML + 16 + labelW + 6, y, font, size: 9.5, color: NAVY });
+    y -= 14;
+  };
+
+  materiasOrdenadas.forEach((m, idxMateria) => {
+    const comisionesMateria = comisionesDelAño.filter(c => c.materiaId === m.id)
+      .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
+
+    const teoricos  = comisionesMateria.map(c => ({ c, txt: formatBloque(c.teorico, true) })).filter(x => x.txt);
+    const practicos = comisionesMateria.map(c => ({ c, txt: formatBloque(c.practico, false) })).filter(x => x.txt);
+
+    // Altura estimada del bloque completo, para no cortar la materia a la mitad entre páginas
+    const estH = 30 + (teoricos.length ? 16 + teoricos.length * 14 : 0) + (practicos.length ? 16 + practicos.length * 14 : 0) + 14;
+    checkY(estH);
+
+    // Barra lateral de color + nombre de la materia
+    page.drawRectangle({ x: ML, y: y - 3, width: 3, height: 16, color: TEAL });
+    page.drawText(sanitizePdf(m.nombre), { x: ML + 10, y, font: fontBold, size: 12.5, color: NAVY });
+    y -= 20;
+
+    if (teoricos.length === 0 && practicos.length === 0) {
+      page.drawText(sanitizePdf('Sin horarios cargados'), { x: ML + 16, y, font, size: 9.5, color: GRAY_LIGHT });
+      y -= 16;
+    }
+
+    if (teoricos.length > 0) {
+      checkY(16);
+      page.drawRectangle({ x: ML + 10, y: y - 2, width: 62, height: 13, color: TEAL_BG });
+      page.drawText(sanitizePdf('TEÓRICOS'), { x: ML + 14, y: y + 1, font: fontBold, size: 8, color: TEAL });
+      y -= 16;
+      teoricos.forEach(({ c, txt }) => drawBloqueLinea(`${c.nombre} (${getDocenteName(c)}):`, txt, GRAY));
+      y -= 4;
+    }
+
+    if (practicos.length > 0) {
+      checkY(16);
+      page.drawRectangle({ x: ML + 10, y: y - 2, width: 62, height: 13, color: GREEN_BG });
+      page.drawText(sanitizePdf('PRÁCTICOS'), { x: ML + 14, y: y + 1, font: fontBold, size: 8, color: GREEN });
+      y -= 16;
+      practicos.forEach(({ c, txt }) => drawBloqueLinea(`${c.nombre} (${getDocenteName(c)}):`, txt, GRAY));
+    }
+
+    y -= 16;
+    if (idxMateria < materiasOrdenadas.length - 1) {
+      checkY(4);
+      page.drawRectangle({ x: ML, y, width: contentW, height: 0.6, color: rgb(0.92,0.93,0.95) });
+      y -= 14;
+    }
+  });
+
+  return await pdfDoc.save();
+}
+
+// Excel con la misma agrupación por materia (teóricos primero, prácticos después).
+// No reutiliza buildXlsx a propósito, para no afectarle el encabezado a las demás exportaciones.
+async function buildListadoComisionesXlsx(año, materiasOrdenadas, comisionesDelAño) {
+  await ensureXLSX();
+  const XLSX = window.XLSX;
+  const wb = XLSX.utils.book_new();
+
+  const formatBloque = (x, esTeorico) => {
+    if (!x) return null;
+    if (esTeorico && x.asincronico) return 'Asincrónico';
+    const partes = [x.dia, x.horario].filter(Boolean).join(' ');
+    return [partes, x.lugar].filter(Boolean).join(' · ') || null;
+  };
+
+  const getDocenteName = (c) => {
+    const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === c.docenteDni);
+    return staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
+  };
+
+  const wsData = [
+    [INST_NOMBRE], [INST_FACULTAD], ['Listado de comisiones'], [`Ciclo lectivo ${año}`], []
+  ];
+  const merges = [
+    { s:{r:0,c:0}, e:{r:0,c:2} }, { s:{r:1,c:0}, e:{r:1,c:2} },
+    { s:{r:2,c:0}, e:{r:2,c:2} }, { s:{r:3,c:0}, e:{r:3,c:2} },
+  ];
+
+  materiasOrdenadas.forEach(m => {
+    const comisionesMateria = comisionesDelAño.filter(c => c.materiaId === m.id)
+      .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
+    const teoricos  = comisionesMateria.map(c => ({ c, txt: formatBloque(c.teorico, true) })).filter(x => x.txt);
+    const practicos = comisionesMateria.map(c => ({ c, txt: formatBloque(c.practico, false) })).filter(x => x.txt);
+
+    let r = wsData.length;
+    wsData.push([m.nombre]);
+    merges.push({ s:{r,c:0}, e:{r,c:2} });
+
+    if (teoricos.length === 0 && practicos.length === 0) {
+      wsData.push(['Sin horarios cargados']);
+    }
+    if (teoricos.length > 0) {
+      wsData.push(['Teóricos']);
+      teoricos.forEach(({ c, txt }) => wsData.push([c.nombre, getDocenteName(c), txt]));
+    }
+    if (practicos.length > 0) {
+      wsData.push(['Prácticos']);
+      practicos.forEach(({ c, txt }) => wsData.push([c.nombre, getDocenteName(c), txt]));
+    }
+    wsData.push([]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!merges'] = merges;
+  ws['!cols'] = [{ wch: 22 }, { wch: 26 }, { wch: 42 }];
+  XLSX.utils.book_append_sheet(wb, ws, 'Comisiones');
+  const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+  return new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
 // 0. Listado general de comisiones y horarios (coordinación)
-function exportListadoComisiones(año, fmt='xlsx') {
+async function exportListadoComisiones(año, fmt='xlsx') {
   año = parseInt(año);
   const comisionesDelAño = COMISIONES.filter(c => c.año === año);
   const materiasOrdenadas = ordenarMateriasEstandar(MATERIAS).filter(m => comisionesDelAño.some(c => c.materiaId === m.id));
 
-  const formatBloque = (x, esTeorico) => {
-    if (!x) return '—';
-    if (esTeorico && x.asincronico) return 'Asincrónico';
-    const partes = [x.dia, x.horario].filter(Boolean).join(' ');
-    return [partes, x.lugar].filter(Boolean).join(' · ') || '—';
-  };
-
-  const rows = [];
-  materiasOrdenadas.forEach(m => {
-    const comisionesMateria = comisionesDelAño.filter(c => c.materiaId === m.id)
-      .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
-    comisionesMateria.forEach(c => {
-      const staffEntry  = Object.entries(ENROLLED_STAFF).find(([d]) => d === c.docenteDni);
-      const docenteName = staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
-      rows.push([m.nombre, c.nombre, docenteName, formatBloque(c.teorico, true), formatBloque(c.practico, false)]);
-    });
-  });
-
-  if (rows.length === 0) {
+  if (materiasOrdenadas.length === 0) {
     showToast('No hay comisiones cargadas para este año.', true);
     return;
   }
 
-  const titulo    = 'Listado de Comisiones y Horarios';
-  const subtitulo = `Ciclo lectivo ${año}`;
-  const headers   = ['Materia', 'Comisión', 'Docente', 'Teórico', 'Práctico'];
-  const nombre    = `Listado_Comisiones_${año}`;
-
-  if (fmt === 'pdf') exportarPdf(titulo, subtitulo, headers, rows, nombre, true);
-  else               exportarXlsx(titulo, subtitulo, headers, rows, nombre);
+  const nombre = `Listado_Comisiones_${año}`;
+  showToast(fmt === 'pdf' ? 'Generando PDF...' : 'Generando Excel...');
+  try {
+    if (fmt === 'pdf') {
+      const bytes = await buildListadoComisionesPdf(año, materiasOrdenadas, comisionesDelAño);
+      triggerDownload(new Blob([bytes], { type:'application/pdf' }), exportFilename(nombre) + '.pdf');
+      showToast('PDF generado correctamente');
+    } else {
+      const blob = await buildListadoComisionesXlsx(año, materiasOrdenadas, comisionesDelAño);
+      triggerDownload(blob, exportFilename(nombre) + '.xlsx');
+      showToast('Excel generado correctamente');
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('Error al generar el archivo: ' + e.message, true);
+  }
 }
 
 // 1. Asistencia (docente)
