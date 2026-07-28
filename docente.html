@@ -6757,11 +6757,18 @@ async function buildListadoComisionesPdf(año, materiasOrdenadas, comisionesDelA
     const comisionesMateria = comisionesDelAño.filter(c => c.materiaId === m.id)
       .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
 
-    const teoricos  = comisionesMateria.map(c => ({ c, txt: formatBloque(c.teorico, true) })).filter(x => x.txt);
+    // Si el teórico es común, mostrar una sola mención sin aclarar la comisión.
+    // Si no, listar el teórico de cada comisión que tenga uno propio cargado.
+    const comunConDato = comisionesMateria.find(c => c.teorico?.comun && formatBloque(c.teorico, true));
+    const teoricoComunTxt = comunConDato ? formatBloque(comunConDato.teorico, true) : null;
+    const teoricosIndividuales = teoricoComunTxt ? [] : comisionesMateria
+      .map(c => ({ c, txt: formatBloque(c.teorico, true) })).filter(x => x.txt);
+
     const practicos = comisionesMateria.map(c => ({ c, txt: formatBloque(c.practico, false) })).filter(x => x.txt);
 
     // Altura estimada del bloque completo, para no cortar la materia a la mitad entre páginas
-    const estH = 30 + (teoricos.length ? 16 + teoricos.length * 14 : 0) + (practicos.length ? 16 + practicos.length * 14 : 0) + 14;
+    const nLineasTeorico = teoricoComunTxt ? 1 : teoricosIndividuales.length;
+    const estH = 30 + (nLineasTeorico ? 16 + nLineasTeorico * 14 : 0) + (practicos.length ? 16 + practicos.length * 14 : 0) + 14;
     checkY(estH);
 
     // Barra lateral de color + nombre de la materia
@@ -6769,17 +6776,21 @@ async function buildListadoComisionesPdf(año, materiasOrdenadas, comisionesDelA
     page.drawText(sanitizePdf(m.nombre), { x: ML + 10, y, font: fontBold, size: 12.5, color: NAVY });
     y -= 20;
 
-    if (teoricos.length === 0 && practicos.length === 0) {
+    if (nLineasTeorico === 0 && practicos.length === 0) {
       page.drawText(sanitizePdf('Sin horarios cargados'), { x: ML + 16, y, font, size: 9.5, color: GRAY_LIGHT });
       y -= 16;
     }
 
-    if (teoricos.length > 0) {
+    if (nLineasTeorico > 0) {
       checkY(16);
       page.drawRectangle({ x: ML + 10, y: y - 2, width: 62, height: 13, color: TEAL_BG });
       page.drawText(sanitizePdf('TEÓRICOS'), { x: ML + 14, y: y + 1, font: fontBold, size: 8, color: TEAL });
       y -= 16;
-      teoricos.forEach(({ c, txt }) => drawBloqueLinea(`${c.nombre} (${getDocenteName(c)}):`, txt, GRAY));
+      if (teoricoComunTxt) {
+        drawBloqueLinea('Común a todas las comisiones:', teoricoComunTxt, GRAY);
+      } else {
+        teoricosIndividuales.forEach(({ c, txt }) => drawBloqueLinea(`${c.nombre} (${getDocenteName(c)}):`, txt, GRAY));
+      }
       y -= 4;
     }
 
@@ -6832,19 +6843,27 @@ async function buildListadoComisionesXlsx(año, materiasOrdenadas, comisionesDel
   materiasOrdenadas.forEach(m => {
     const comisionesMateria = comisionesDelAño.filter(c => c.materiaId === m.id)
       .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
-    const teoricos  = comisionesMateria.map(c => ({ c, txt: formatBloque(c.teorico, true) })).filter(x => x.txt);
+
+    const comunConDato = comisionesMateria.find(c => c.teorico?.comun && formatBloque(c.teorico, true));
+    const teoricoComunTxt = comunConDato ? formatBloque(comunConDato.teorico, true) : null;
+    const teoricosIndividuales = teoricoComunTxt ? [] : comisionesMateria
+      .map(c => ({ c, txt: formatBloque(c.teorico, true) })).filter(x => x.txt);
+
     const practicos = comisionesMateria.map(c => ({ c, txt: formatBloque(c.practico, false) })).filter(x => x.txt);
 
     let r = wsData.length;
     wsData.push([m.nombre]);
     merges.push({ s:{r,c:0}, e:{r,c:2} });
 
-    if (teoricos.length === 0 && practicos.length === 0) {
+    if (!teoricoComunTxt && teoricosIndividuales.length === 0 && practicos.length === 0) {
       wsData.push(['Sin horarios cargados']);
     }
-    if (teoricos.length > 0) {
+    if (teoricoComunTxt) {
       wsData.push(['Teóricos']);
-      teoricos.forEach(({ c, txt }) => wsData.push([c.nombre, getDocenteName(c), txt]));
+      wsData.push(['Común a todas las comisiones', '', teoricoComunTxt]);
+    } else if (teoricosIndividuales.length > 0) {
+      wsData.push(['Teóricos']);
+      teoricosIndividuales.forEach(({ c, txt }) => wsData.push([c.nombre, getDocenteName(c), txt]));
     }
     if (practicos.length > 0) {
       wsData.push(['Prácticos']);
