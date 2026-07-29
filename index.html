@@ -1204,6 +1204,17 @@ async function ensureJsQR() {
         <div id="coord-aulas-container"></div>
       </div>
 
+      <!-- COORDINATOR: MESAS DE FINALES -->
+      <div id="view-coord-mesas" class="page-view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Mesas de Finales</h1>
+            <p class="page-sub">Horarios y carga de notas de las mesas de examen</p>
+          </div>
+        </div>
+        <div id="mesas-finales-container"></div>
+      </div>
+
       <!-- STUDENT: CERTIFICADOS -->
       <div id="view-student-certificados" class="page-view">
         <div class="page-header">
@@ -1735,6 +1746,25 @@ async function ensureJsQR() {
   </div>
 </div>
 
+<!-- MODAL: grilla ágil de horarios de mesas por materia -->
+<div class="modal-overlay" id="modal-horarios-mesas" data-closable="true">
+  <div class="modal" style="max-width:640px">
+    <h2 class="modal-title">Horarios de mesas de final</h2>
+    <p class="modal-sub" id="horarios-mesas-sub"></p>
+    <div style="display:flex;gap:8px;padding:4px 0 8px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.04em">
+      <div style="width:100px;flex-shrink:0">Mesa</div>
+      <div style="flex:1.2">Fecha</div>
+      <div style="flex:1">Horario</div>
+      <div style="flex:1">Lugar</div>
+    </div>
+    <div style="max-height:48vh;overflow-y:auto" id="horarios-mesas-grid"></div>
+    <div class="modal-actions" style="margin-top:1rem">
+      <button class="btn-secondary" onclick="closeHorariosMesasModal()">Cancelar</button>
+      <button class="btn-primary" onclick="confirmGuardarHorariosMesas()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: selector de fechas para PDF asistencia -->
 <div class="modal-overlay" id="modal-fechas-pdf" data-closable="true">
   <div class="modal" style="max-width:480px">
@@ -2144,6 +2174,8 @@ async function loadDataFromSupabase() {
           cargado:   m.cargado,
           anulada:   m.anulada,
           fecha:     m.fecha,
+          horario:   m.horario || null,
+          lugar:     m.lugar || null,
           resultados: (m.mesas_resultados || []).map(r => ({
             legajo:  r.legajo,
             nombre:  r.nombre,
@@ -2994,6 +3026,7 @@ function doLogout() {
 // ── SIDEBAR ──────────────────────────────────────────────
 
 const NAV_ICONS = {
+  mesas:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
   portfolio:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>`,
   asistencia: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
   notas:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
@@ -3050,6 +3083,7 @@ function getNavItems() {
       {i:'config',    l:'Configuración',fn:`switchCoordView('config')`,       id:'nav-coord-config'},
       {i:'cude',      l:'CUdE',         fn:`switchCoordView('cude')`,         id:'nav-coord-cude'},
       {i:'aulas',     l:'Aulas',        fn:`switchCoordView('aulas')`,        id:'nav-coord-aulas'},
+      {i:'mesas',     l:'Mesas de Finales', fn:`switchCoordView('mesas')`,    id:'nav-coord-mesas'},
     ];
   }
   return [];
@@ -3281,6 +3315,10 @@ function renderSidebar() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Solicitud de aulas</span>
         <span id="aulas-badge-coord" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
+      </button>
+      <button class="nav-item" id="nav-coord-mesas" onclick="switchCoordView('mesas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Mesas de Finales</span>
       </button>`;
   }
   nav.innerHTML = html;
@@ -3326,6 +3364,7 @@ function switchCoordView(section) {
     if (section === 'cartelera')     renderCartelaView('coord-cartelera-container');
     if (section === 'cude')          renderCoordCudeView();
     if (section === 'aulas')         renderCoordAulasView();
+    if (section === 'mesas')         renderMesasFinalesView();
   };
 
   doRender();
@@ -5843,7 +5882,7 @@ function switchStatsTab(tab) {
   if (tab === 'calificaciones') {
     document.getElementById('coord-calif-stats').innerHTML = buildCoordCalifStats();
   } else if (tab === 'finales') {
-    renderFinalesView();
+    renderFinalesStatsView();
   } else {
     renderCoordinatorView();
   }
@@ -9662,27 +9701,61 @@ function parsearEstado(estadoStr) {
 }
 
 function getMesaData(materiaId, año, mesaId) {
-  return mesasExamen[materiaId]?.[año]?.[mesaId] || { cargado: false, resultados: [] };
+  return mesasExamen[materiaId]?.[año]?.[mesaId] || { cargado: false, fecha: null, horario: null, lugar: null, resultados: [] };
+}
+
+// Normaliza texto para comparar de forma flexible (sin tildes, minúsculas, sin espacios de más)
+function normalizarTextoMesa(txt) {
+  return (txt || '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+// Busca si el texto libre de una fila del cronograma semanal (columna "final") coincide
+// con alguna de las mesas del calendario institucional, y si esa mesa tiene datos
+// estructurados (horario/lugar/fecha) cargados para esta materia. Si no matchea, o
+// matchea pero no tiene nada cargado todavía, devuelve null — y el tag sigue
+// funcionando exactamente como antes, mostrando el texto libre tal cual.
+function matchMesaParaFinal(materiaId, textoFinal, fechaFilaDDMMYYYY) {
+  if (!textoFinal) return null;
+  const norm = normalizarTextoMesa(textoFinal);
+  const mesa = CALENDARIO_MESAS.find(m => normalizarTextoMesa(m.nombre) === norm);
+  if (!mesa) return null;
+  let año = new Date().getFullYear();
+  if (fechaFilaDDMMYYYY) {
+    const partes = String(fechaFilaDDMMYYYY).split('/');
+    if (partes.length === 3 && !isNaN(parseInt(partes[2]))) año = parseInt(partes[2]);
+  }
+  const data = getMesaData(materiaId, año, mesa.id);
+  if (!data.horario && !data.lugar && !data.fecha) return null;
+  return { mesa, data };
 }
 
 function setMesaData(materiaId, año, mesaId, data) {
   if (!mesasExamen[materiaId]) mesasExamen[materiaId] = {};
   if (!mesasExamen[materiaId][año]) mesasExamen[materiaId][año] = {};
-  mesasExamen[materiaId][año][mesaId] = data;
+  // Combinar con lo que ya había guardado — así una acción puntual (anular, borrar
+  // resultados, etc.) nunca pisa en silencio otros datos de la mesa que no mencionó
+  // (fecha, horario, lugar).
+  const anterior = mesasExamen[materiaId][año][mesaId] || {};
+  const merged = { ...anterior, ...data };
+  mesasExamen[materiaId][año][mesaId] = merged;
 
   // Guardar en Supabase
   _supabase.from('mesas_examen').upsert({
     materia_id: materiaId,
     año: parseInt(año),
     mesa_id: mesaId,
-    fecha: data.fecha || null,
-    cargado: data.cargado || false,
-    anulada: data.anulada || false,
+    fecha:    merged.fecha    ?? null,
+    cargado:  merged.cargado  ?? false,
+    anulada:  merged.anulada  ?? false,
+    horario:  merged.horario  ?? null,
+    lugar:    merged.lugar    ?? null,
   }, { onConflict: 'materia_id,año,mesa_id' }).then(async ({ data: mesaRow, error }) => {
     if (error) { console.warn('Error guardando mesa:', error); return; }
 
     // Guardar resultados si hay
-    if (data.resultados && data.resultados.length > 0) {
+    if (merged.resultados && merged.resultados.length > 0) {
       // Obtener el id de la mesa recién guardada
       const { data: mesaDb } = await _supabase.from('mesas_examen')
         .select('id').eq('materia_id', materiaId).eq('año', parseInt(año)).eq('mesa_id', mesaId).single();
@@ -9692,7 +9765,7 @@ function setMesaData(materiaId, año, mesaId, data) {
       await _supabase.from('mesas_resultados').delete().eq('mesa_db_id', mesaDb.id);
 
       // Insertar nuevos resultados
-      const rows = data.resultados.map(r => ({
+      const rows = merged.resultados.map(r => ({
         mesa_db_id: mesaDb.id,
         legajo:  r.legajo,
         nombre:  r.nombre,
@@ -9718,13 +9791,63 @@ function buildMesaFilaHTML(m, añoMesa, mesa, pasada) {
   const fechaStr = data.fecha ? ' · ' + data.fecha.split('-').reverse().join('/') : '';
   const nombre = m.nombre.replace(/'/g, "\\'");
   const mesaNom= (mesa.nombre + ' ' + añoMesa).replace(/'/g, "\\'");
-  return `<div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--gray-100)">
+  return `<div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--gray-100);gap:8px">
     <span style="flex:1;font-size:13px;color:var(--navy)">${m.nombre}</span>
+    <button onclick="openHorariosMesasModal('${m.id}','${añoMesa}')" title="Cargar fecha, horario y lugar de las mesas de esta materia"
+      style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;font-size:11px;border-radius:20px;border:1px solid var(--gray-200);cursor:pointer;font-family:var(--font);font-weight:500;background:white;color:var(--gray-600)">
+      📅 Horarios
+    </button>
     <button onclick="openMesaModal('${m.id}','${añoMesa}','${mesa.id}','${nombre}','${mesaNom}')"
       style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:11px;border-radius:20px;border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${bg};color:${color}">
       ${label}${data.cargado ? ' · ' + count + ' alumnos' + fechaStr : ''}
     </button>
   </div>`;
+}
+
+// ── HORARIOS DE MESAS (grilla ágil por materia) ──────────
+let _horariosMesasMateriaId = null;
+let _horariosMesasAño = null;
+
+function openHorariosMesasModal(materiaId, año) {
+  _horariosMesasMateriaId = materiaId;
+  _horariosMesasAño = año;
+  const materia = MATERIAS.find(m => m.id === materiaId);
+  document.getElementById('horarios-mesas-sub').textContent = `${materia?.nombre || ''} · Ciclo ${año}`;
+
+  const grid = CALENDARIO_MESAS.map(mesa => {
+    const data = getMesaData(materiaId, año, mesa.id);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+      <div style="width:100px;flex-shrink:0;font-size:12px;font-weight:500;color:var(--navy)">${mesa.nombre}</div>
+      <input type="date" class="form-input" id="hm-fecha-${mesa.id}" value="${data.fecha || ''}" style="flex:1.2;font-size:12px;padding:6px 8px">
+      <input type="text" class="form-input" id="hm-horario-${mesa.id}" value="${data.horario ? data.horario.replace(/"/g,'&quot;') : ''}" placeholder="Horario" style="flex:1;font-size:12px;padding:6px 8px">
+      <input type="text" class="form-input" id="hm-lugar-${mesa.id}" value="${data.lugar ? data.lugar.replace(/"/g,'&quot;') : ''}" placeholder="Lugar" style="flex:1;font-size:12px;padding:6px 8px">
+    </div>`;
+  }).join('');
+  document.getElementById('horarios-mesas-grid').innerHTML = grid;
+  document.getElementById('modal-horarios-mesas').classList.add('open');
+}
+
+function closeHorariosMesasModal() {
+  document.getElementById('modal-horarios-mesas').classList.remove('open');
+}
+
+function confirmGuardarHorariosMesas() {
+  const materiaId = _horariosMesasMateriaId;
+  const año = _horariosMesasAño;
+  let cambios = 0;
+  CALENDARIO_MESAS.forEach(mesa => {
+    const fecha   = document.getElementById(`hm-fecha-${mesa.id}`).value || null;
+    const horario = document.getElementById(`hm-horario-${mesa.id}`).value.trim() || null;
+    const lugar   = document.getElementById(`hm-lugar-${mesa.id}`).value.trim() || null;
+    const data = getMesaData(materiaId, año, mesa.id);
+    if (data.fecha !== fecha || data.horario !== horario || data.lugar !== lugar) {
+      setMesaData(materiaId, año, mesa.id, { fecha, horario, lugar });
+      cambios++;
+    }
+  });
+  closeHorariosMesasModal();
+  renderMesasFinalesView();
+  showToast(cambios > 0 ? `Horarios guardados (${cambios} mesa/s actualizadas)` : 'No hubo cambios para guardar');
 }
 
 function buildMesaCardHTML(mesaKey, mesa, añoMesa, headerBg, headerColor, chips, filasHTML) {
@@ -9740,7 +9863,7 @@ function buildMesaCardHTML(mesaKey, mesa, añoMesa, headerBg, headerColor, chips
 }
 
 // ── RENDER FINALES VIEW ───────────────────────────────────
-function renderFinalesView() {
+function renderMesasFinalesView() {
   const ciclo = window._finalesCiclo || _finalesCiclo;
   const { inicio, fin } = getCicloYears(ciclo);
 
@@ -9750,19 +9873,15 @@ function renderFinalesView() {
     `<option value="${y}" ${y==ciclo?'selected':''}>${y}-${y+1}</option>`
   ).join('');
 
-  // Selector de materia
-  const materiaOptions = `<option value="">Todas las materias</option>` +
-    ordenarMateriasEstandar(MATERIAS).map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
-
   const mesas = getMesasDelCiclo(ciclo);
   const now   = new Date();
 
   // Construir tabla calendario
-  document.getElementById('coord-finales-container').innerHTML = `
+  document.getElementById('mesas-finales-container').innerHTML = `
     <div style="display:flex;gap:12px;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">
       <div>
         <label style="font-size:12px;font-weight:500;color:var(--gray-600);display:block;margin-bottom:4px">Ciclo lectivo</label>
-        <select class="form-select" onchange="window._finalesCiclo=parseInt(this.value);window._cortesfecha=null;renderFinalesView()" style="min-width:140px">
+        <select class="form-select" onchange="window._finalesCiclo=parseInt(this.value);renderMesasFinalesView()" style="min-width:140px">
           ${cicloOptions}
         </select>
       </div>
@@ -9801,6 +9920,27 @@ function renderFinalesView() {
         const filasHTML = ordenarMateriasEstandar(MATERIAS).map(m => buildMesaFilaHTML(m, añoMesa, mesa, pasada)).join('');
         return buildMesaCardHTML(mesaKey, mesa, añoMesa, headerBg, headerColor, chips, filasHTML);
       }).join('')}
+    </div>
+  `;
+}
+
+function renderFinalesStatsView() {
+  const ciclo = window._finalesCiclo || _finalesCiclo;
+
+  // Selector de ciclo lectivo
+  const años = [...new Set(COMISIONES.map(c => c.año))].sort((a,b) => b-a);
+  const cicloOptions = años.map(y =>
+    `<option value="${y}" ${y==ciclo?'selected':''}>${y}-${y+1}</option>`
+  ).join('');
+
+  document.getElementById('coord-finales-container').innerHTML = `
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">
+      <div>
+        <label style="font-size:12px;font-weight:500;color:var(--gray-600);display:block;margin-bottom:4px">Ciclo lectivo</label>
+        <select class="form-select" onchange="window._finalesCiclo=parseInt(this.value);window._cortesfecha=null;renderFinalesStatsView()" style="min-width:140px">
+          ${cicloOptions}
+        </select>
+      </div>
     </div>
 
     <!-- Estadísticas por materia -->
@@ -9894,7 +10034,7 @@ function anularMesa() {
   const { materiaId, año, mesaId } = _mesaModal;
   setMesaData(materiaId, año, mesaId, { cargado: false, anulada: true, resultados: [] });
   document.getElementById('modal-mesa').classList.remove('open');
-  renderFinalesView();
+  renderMesasFinalesView();
   showToast('Mesa anulada');
 }
 
@@ -9902,7 +10042,7 @@ function desanularMesa() {
   const { materiaId, año, mesaId } = _mesaModal;
   setMesaData(materiaId, año, mesaId, { cargado: false, anulada: false, resultados: [] });
   document.getElementById('modal-mesa').classList.remove('open');
-  renderFinalesView();
+  renderMesasFinalesView();
   showToast('Anulacion quitada');
 }
 
@@ -9910,7 +10050,7 @@ function borrarMesa() {
   const { materiaId, año, mesaId } = _mesaModal;
   setMesaData(materiaId, año, mesaId, { cargado: false, resultados: [] });
   document.getElementById('modal-mesa').classList.remove('open');
-  renderFinalesView();
+  renderMesasFinalesView();
   showToast('Resultados borrados');
 }
 
@@ -10003,11 +10143,28 @@ async function procesarExcelMesa(input) {
       }
 
       const { materiaId, año, mesaId } = _mesaModal;
-      setMesaData(materiaId, año, mesaId, { cargado: true, fecha: fechaActa, resultados });
-      const fechaMsg = fechaActa ? ` · Fecha: ${fechaActa.split('-').reverse().join('/')}` : '';
+      const existente = getMesaData(materiaId, año, mesaId);
+
+      let fechaFinal;
+      if (!fechaActa) {
+        // El Excel no trae una fecha reconocible — conservar la que ya hubiera cargada
+        fechaFinal = existente.fecha || null;
+      } else if (existente.fecha && existente.fecha !== fechaActa) {
+        const fmtExist = existente.fecha.split('-').reverse().join('/');
+        const fmtActa  = fechaActa.split('-').reverse().join('/');
+        const actualizar = confirm(
+          `La fecha del Excel (${fmtActa}) no coincide con la que ya tenías cargada para esta mesa (${fmtExist}).\n\n¿Querés actualizarla a la del Excel?`
+        );
+        fechaFinal = actualizar ? fechaActa : existente.fecha;
+      } else {
+        fechaFinal = fechaActa;
+      }
+
+      setMesaData(materiaId, año, mesaId, { cargado: true, fecha: fechaFinal, resultados });
+      const fechaMsg = fechaFinal ? ` · Fecha: ${fechaFinal.split('-').reverse().join('/')}` : '';
       document.getElementById('mesa-import-status').textContent = `✓ ${resultados.length} alumnos importados${fechaMsg}.`;
       document.getElementById('modal-mesa').classList.remove('open');
-      renderFinalesView();
+      renderMesasFinalesView();
       showToast(`${resultados.length} resultados cargados`);
     } catch(err) {
       document.getElementById('mesa-import-status').textContent = '❌ Error al leer el archivo: ' + err.message;
@@ -13660,7 +13817,7 @@ function cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, filtroAc
       ${estaMatriculado ? filtroBtn('parciales','📝 Parciales', filtroActual==='parciales') : ''}
       ${filtroBtn('finales','🎓 Finales', filtroActual==='finales')}
     </div>
-    <div id="crono-rows-${mId}">${cronoRowsHTMLFromCron(cronograma, estaMatriculado, filtroActual)}</div>`;
+    <div id="crono-rows-${mId}">${cronoRowsHTMLFromCron(cronograma, materia.id, estaMatriculado, filtroActual)}</div>`;
   return btns;
 }
 
@@ -13710,10 +13867,10 @@ function cronoRowsHTML(materia, estaMatriculado, filtro) {
   const comAlumno = COMISIONES.find(c => c.año === currentYear && c.alumnos.includes(email) && c.materiaId === materia.id);
   const cronograma = getCronogramaComision(materia, comAlumno);
   if (!cronograma) return `<div style="padding:1rem;text-align:center;color:var(--gray-400);font-size:13px">Sin cronograma para este período.</div>`;
-  return cronoRowsHTMLFromCron(cronograma, estaMatriculado, filtro);
+  return cronoRowsHTMLFromCron(cronograma, materia.id, estaMatriculado, filtro);
 }
 
-function cronoRowsHTMLFromCron(cronograma, estaMatriculado, filtro) {
+function cronoRowsHTMLFromCron(cronograma, materiaId, estaMatriculado, filtro) {
   const { filas } = cronograma;
   const inaugIdx = filas.findIndex(f =>
     [f.teorico, f.practico, f.parcial, f.final, f.obs].some(v => String(v).toLowerCase().includes('inaugural'))
@@ -13726,18 +13883,31 @@ function cronoRowsHTMLFromCron(cronograma, estaMatriculado, filtro) {
     </div>`;
   }
 
-  const tipoTag = (texto, tipo, lugar='') => {
+  const tipoTag = (texto, tipo, lugar='', matchInfo=null) => {
     if (!texto) return '';
     let color='var(--gray-600)', bg='var(--gray-100)', icon='';
     if (tipo==='teorico')  { color='var(--teal)';  bg='var(--teal-light)';  icon='📖 '; }
     if (tipo==='practico') { color='#1a7a35';       bg='var(--green-light)'; icon='🔬 '; }
     if (tipo==='parcial')  { color='#b05a10';       bg='var(--amber-light)'; icon='📝 '; }
     if (tipo==='final')    { color='#b02030';       bg='var(--red-light)';   icon='🎓 '; }
-    const lugarHtml = lugar ? `
-      <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
-        style="cursor:pointer;font-size:12px">📍</span>
-      <span class="lugar-popover">📍 ${lugar}</span>` : '';
-    return `<span class="crono-tag" style="display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0">${icon}${texto}${lugarHtml}</span>`;
+    let popoverHtml = '';
+    if (matchInfo) {
+      const detalle = [
+        matchInfo.data.fecha ? matchInfo.data.fecha.split('-').reverse().join('/') : '',
+        matchInfo.data.horario || '',
+        matchInfo.data.lugar || '',
+      ].filter(Boolean).join(' · ');
+      popoverHtml = `
+        <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
+          style="cursor:pointer;font-size:12px">📋</span>
+        <span class="lugar-popover">📋 ${escapeHtml(detalle)}</span>`;
+    } else if (lugar) {
+      popoverHtml = `
+        <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
+          style="cursor:pointer;font-size:12px">📍</span>
+        <span class="lugar-popover">📍 ${lugar}</span>`;
+    }
+    return `<span class="crono-tag" style="display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0">${icon}${texto}${popoverHtml}</span>`;
   };
 
   let rows = '';
@@ -13745,7 +13915,7 @@ function cronoRowsHTMLFromCron(cronograma, estaMatriculado, filtro) {
     let actividades = '';
     if (filtro==='tp')             actividades = tipoTag(f.teorico,'teorico',f.lugarTeorico||'') + tipoTag(f.practico,'practico',f.lugarPractico||'');
     else if (filtro==='parciales') actividades = tipoTag(f.parcial,'parcial', f.lugarParcial||'');
-    else if (filtro==='finales')   actividades = tipoTag(f.final,'final', f.lugarFinal||'');
+    else if (filtro==='finales')   actividades = tipoTag(f.final,'final', f.lugarFinal||'', matchMesaParaFinal(materiaId, f.final, f.inicio));
     if (!actividades) return;
     const fechaLabel = f.inicio
       ? (f.fin && f.fin !== f.inicio ? `Semana del ${f.inicio} al ${f.fin}` : f.inicio)
@@ -14422,18 +14592,31 @@ function renderTeacherCronogramaMateria(materiaId) {
     const { filas } = cronograma;
     const periodoLabel = nPeriodos > 1 ? getPeriodoLabel(regimenCursada, p) : '';
 
-    const tipoTag = (texto, tipo, lugar='') => {
+    const tipoTag = (texto, tipo, lugar='', matchInfo=null) => {
       if (!texto) return '';
       let color='var(--gray-600)', bg='var(--gray-100)', icon='';
       if (tipo==='teorico')  { color='var(--teal)';  bg='var(--teal-light)';  icon='📖 '; }
       if (tipo==='practico') { color='#1a7a35';       bg='var(--green-light)'; icon='🔬 '; }
       if (tipo==='parcial')  { color='#b05a10';       bg='var(--amber-light)'; icon='📝 '; }
       if (tipo==='final')    { color='#b02030';       bg='var(--red-light)';   icon='🎓 '; }
-      const lugarHtml = lugar ? `
-        <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
-          style="cursor:pointer;font-size:12px">📍</span>
-        <span class="lugar-popover">📍 ${lugar}</span>` : '';
-      return `<span class="crono-tag" style="display:inline-flex;align-items:center;font-size:13px;padding:4px 12px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0">${icon}${texto}${lugarHtml}</span>`;
+      let popoverHtml = '';
+      if (matchInfo) {
+        const detalle = [
+          matchInfo.data.fecha ? matchInfo.data.fecha.split('-').reverse().join('/') : '',
+          matchInfo.data.horario || '',
+          matchInfo.data.lugar || '',
+        ].filter(Boolean).join(' · ');
+        popoverHtml = `
+          <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
+            style="cursor:pointer;font-size:12px">📋</span>
+          <span class="lugar-popover">📋 ${escapeHtml(detalle)}</span>`;
+      } else if (lugar) {
+        popoverHtml = `
+          <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
+            style="cursor:pointer;font-size:12px">📍</span>
+          <span class="lugar-popover">📍 ${lugar}</span>`;
+      }
+      return `<span class="crono-tag" style="display:inline-flex;align-items:center;font-size:13px;padding:4px 12px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0">${icon}${texto}${popoverHtml}</span>`;
     };
 
     const rows = filas.map(f => {
@@ -14441,7 +14624,7 @@ function renderTeacherCronogramaMateria(materiaId) {
         tipoTag(f.teorico,'teorico',f.lugarTeorico||''),
         tipoTag(f.practico,'practico',f.lugarPractico||''),
         tipoTag(f.parcial,'parcial', f.lugarParcial||''),
-        tipoTag(f.final,'final', f.lugarFinal||''),
+        tipoTag(f.final,'final', f.lugarFinal||'', matchMesaParaFinal(materiaId, f.final, f.inicio)),
       ].join('');
       if (!actividades && !f.obs) return '';
       const fechaLabel = f.inicio
