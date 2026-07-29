@@ -1758,7 +1758,7 @@ async function ensureJsQR() {
     <h2 class="modal-title">Agenda de mesas de final</h2>
     <p class="modal-sub" id="horarios-mesas-sub"></p>
     <div style="display:flex;gap:8px;padding:4px 0 8px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.04em">
-      <div style="width:100px;flex-shrink:0">Mesa</div>
+      <div style="width:130px;flex-shrink:0">Mesa</div>
       <div style="flex:1.2">Fecha</div>
       <div style="flex:1">Horario</div>
       <div style="flex:1">Lugar</div>
@@ -1767,6 +1767,32 @@ async function ensureJsQR() {
     <div class="modal-actions" style="margin-top:1rem">
       <button class="btn-secondary" onclick="closeHorariosMesasModal()">Cancelar</button>
       <button class="btn-primary" onclick="confirmGuardarHorariosMesas()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: exportar listado de mesas de finales -->
+<div class="modal-overlay" id="modal-export-mesas" data-closable="true">
+  <div class="modal" style="max-width:420px">
+    <h2 class="modal-title">Exportar listado de mesas</h2>
+    <p class="modal-sub">Elegí cómo agrupar los datos antes de generar el archivo.</p>
+
+    <div class="form-field">
+      <label class="form-label">Agrupar por</label>
+      <select class="form-select" id="export-mesas-modo" onchange="actualizarOpcionesExportMesas()">
+        <option value="ciclo">Ciclo lectivo (abril a marzo)</option>
+        <option value="calendario">Año calendario (enero a diciembre)</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label class="form-label" id="export-mesas-valor-label">Ciclo lectivo</label>
+      <select class="form-select" id="export-mesas-valor"></select>
+    </div>
+
+    <div class="modal-actions" style="margin-top:1rem">
+      <button class="btn-secondary" onclick="document.getElementById('modal-export-mesas').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" style="background:#1a7a35" onclick="confirmExportMesas('xlsx')">📊 Excel</button>
+      <button class="btn-primary" style="background:#b02030" onclick="confirmExportMesas('pdf')">📄 PDF</button>
     </div>
   </div>
 </div>
@@ -9821,7 +9847,7 @@ function openHorariosMesasModal(materiaId, ciclo) {
     const añoMesa = mesa.mes >= 4 ? inicio : fin;
     const data = getMesaData(materiaId, añoMesa, mesa.id);
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
-      <div style="width:100px;flex-shrink:0;font-size:12px;font-weight:500;color:var(--navy)">${mesa.nombre}</div>
+      <div style="width:130px;flex-shrink:0;font-size:12px;font-weight:500;color:var(--navy)">${mesa.nombre} ${añoMesa}</div>
       <input type="date" class="form-input" id="hm-fecha-${mesa.id}" value="${data.fecha || ''}" style="flex:1.2;font-size:12px;padding:6px 8px">
       <input type="text" class="form-input" id="hm-horario-${mesa.id}" value="${data.horario ? data.horario.replace(/"/g,'&quot;') : ''}" placeholder="Horario" style="flex:1;font-size:12px;padding:6px 8px">
       <input type="text" class="form-input" id="hm-lugar-${mesa.id}" value="${data.lugar ? data.lugar.replace(/"/g,'&quot;') : ''}" placeholder="Lugar" style="flex:1;font-size:12px;padding:6px 8px">
@@ -9872,7 +9898,16 @@ function buildMesaCardHTML(mesaKey, mesa, añoMesa, headerBg, headerColor, chips
 // comisiones (encabezado, encabezado corrido por hoja, numeración, agrupado por año con
 // salto de página). Por materia se listan SIEMPRE las 15 mesas del calendario, con el
 // dato cargado o "Sin datos cargados" si no lo tiene.
-async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
+// Arma la lista de las 15 mesas con su año ya resuelto, según el modo de agrupación elegido.
+function getMesasConAñoCiclo(ciclo) {
+  const { inicio, fin } = getCicloYears(ciclo);
+  return getMesasDelCiclo(ciclo).map(mesa => ({ ...mesa, añoMesa: mesa.mes >= 4 ? inicio : fin }));
+}
+function getMesasConAñoCalendario(añoCal) {
+  return CALENDARIO_MESAS.map(mesa => ({ ...mesa, añoMesa: añoCal }));
+}
+
+async function buildListadoMesasPdf(subtitulo, materiasOrdenadas, mesasConAño) {
   await ensurePDFLib();
   const { PDFDocument, rgb, StandardFonts } = PDFLib;
   const A4 = [595.28, 841.89];
@@ -9893,8 +9928,6 @@ async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
   const contentW = width - ML - MR;
   let y = height - 30;
 
-  const { inicio, fin } = getCicloYears(ciclo);
-
   const addPage = () => {
     page = pdfDoc.addPage(A4);
     y = page.getSize().height - 30;
@@ -9904,7 +9937,7 @@ async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
     const tit = sanitizePdf('·  Listado de mesas de finales');
     page.drawText(tit, { x: ML + carreraW + 6, y, font, size: 9, color: GRAY });
     const titW = font.widthOfTextAtSize(tit, 9);
-    page.drawText(sanitizePdf(`·  Ciclo lectivo ${inicio}-${fin}`), { x: ML + carreraW + 6 + titW + 6, y, font, size: 9, color: GRAY });
+    page.drawText(sanitizePdf(`·  ${subtitulo}`), { x: ML + carreraW + 6 + titW + 6, y, font, size: 9, color: GRAY });
     y -= 10;
     page.drawRectangle({ x: ML, y, width: contentW, height: 0.8, color: rgb(0.85,0.87,0.9) });
     y -= 20;
@@ -9920,7 +9953,7 @@ async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
   y -= 24;
   page.drawText(sanitizePdf('Listado de mesas de finales'), { x: ML, y, font: fontBold, size: 17, color: NAVY });
   y -= 16;
-  page.drawText(sanitizePdf(`Ciclo lectivo ${inicio}-${fin}`), { x: ML, y, font, size: 10, color: GRAY });
+  page.drawText(sanitizePdf(subtitulo), { x: ML, y, font, size: 10, color: GRAY });
   y -= 26;
 
   const drawBloqueLinea = (label, texto, color) => {
@@ -9946,9 +9979,8 @@ async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
       y -= 20;
     }
 
-    const filasMesas = getMesasDelCiclo(ciclo).map(mesa => {
-      const añoMesa = mesa.mes >= 4 ? inicio : fin;
-      const data = getMesaData(m.id, añoMesa, mesa.id);
+    const filasMesas = mesasConAño.map(mesa => {
+      const data = getMesaData(m.id, mesa.añoMesa, mesa.id);
       const partes = [
         data.fecha ? data.fecha.split('-').reverse().join('/') : '',
         data.horario || '',
@@ -9969,7 +10001,7 @@ async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
     page.drawText(sanitizePdf('MESAS'), { x: ML + 14, y: y + 1, font: fontBold, size: 8, color: TEAL });
     y -= 16;
     filasMesas.forEach(({ mesa, txt }) => {
-      drawBloqueLinea(`${mesa.nombre}:`, txt || 'Sin datos cargados', txt ? NAVY : GRAY_LIGHT);
+      drawBloqueLinea(`${mesa.nombre} ${mesa.añoMesa}:`, txt || 'Sin datos cargados', txt ? NAVY : GRAY_LIGHT);
     });
 
     y -= 16;
@@ -9991,14 +10023,13 @@ async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
 }
 
 // Excel con la misma agrupación por materia — siempre las 15 mesas.
-async function buildListadoMesasXlsx(ciclo, materiasOrdenadas) {
+async function buildListadoMesasXlsx(subtitulo, materiasOrdenadas, mesasConAño) {
   await ensureXLSX();
   const XLSX = window.XLSX;
   const wb = XLSX.utils.book_new();
-  const { inicio, fin } = getCicloYears(ciclo);
 
   const wsData = [
-    [INST_NOMBRE], [INST_FACULTAD], ['Listado de mesas de finales'], [`Ciclo lectivo ${inicio}-${fin}`], []
+    [INST_NOMBRE], [INST_FACULTAD], ['Listado de mesas de finales'], [subtitulo], []
   ];
   const merges = [
     { s:{r:0,c:0}, e:{r:0,c:1} }, { s:{r:1,c:0}, e:{r:1,c:1} },
@@ -10021,43 +10052,91 @@ async function buildListadoMesasXlsx(ciclo, materiasOrdenadas) {
     wsData.push([m.nombre]);
     merges.push({ s:{r,c:0}, e:{r,c:1} });
 
-    getMesasDelCiclo(ciclo).forEach(mesa => {
-      const añoMesa = mesa.mes >= 4 ? inicio : fin;
-      const data = getMesaData(m.id, añoMesa, mesa.id);
+    mesasConAño.forEach(mesa => {
+      const data = getMesaData(m.id, mesa.añoMesa, mesa.id);
       const partes = [
         data.fecha ? data.fecha.split('-').reverse().join('/') : '',
         data.horario || '',
         data.lugar || '',
       ].filter(Boolean).join(' · ');
-      wsData.push([mesa.nombre, partes || 'Sin datos cargados']);
+      wsData.push([`${mesa.nombre} ${mesa.añoMesa}`, partes || 'Sin datos cargados']);
     });
     wsData.push([]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   ws['!merges'] = merges;
-  ws['!cols'] = [{ wch: 20 }, { wch: 50 }];
+  ws['!cols'] = [{ wch: 22 }, { wch: 50 }];
   XLSX.utils.book_append_sheet(wb, ws, 'Mesas');
   const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
   return new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 
-async function exportListadoMesas(ciclo, fmt='xlsx') {
-  ciclo = parseInt(ciclo);
+// Años calendario disponibles para exportar por ese modo — la unión de los años que
+// abarca cada ciclo lectivo cargado (cada ciclo cruza dos años calendario).
+function getAñosCalendarioDisponibles() {
+  const ciclos = [...new Set(COMISIONES.map(c => c.año))];
+  const set = new Set();
+  ciclos.forEach(c => { set.add(c); set.add(c + 1); });
+  return [...set].sort((a,b) => b-a);
+}
+
+function openExportMesasModal() {
+  document.getElementById('export-mesas-modo').value = 'ciclo';
+  actualizarOpcionesExportMesas();
+  document.getElementById('modal-export-mesas').classList.add('open');
+}
+
+function actualizarOpcionesExportMesas() {
+  const modo = document.getElementById('export-mesas-modo').value;
+  const label = document.getElementById('export-mesas-valor-label');
+  const select = document.getElementById('export-mesas-valor');
+  if (modo === 'calendario') {
+    label.textContent = 'Año calendario';
+    select.innerHTML = getAñosCalendarioDisponibles().map(y => `<option value="${y}">${y}</option>`).join('');
+  } else {
+    label.textContent = 'Ciclo lectivo';
+    const ciclos = [...new Set(COMISIONES.map(c => c.año))].sort((a,b) => b-a);
+    select.innerHTML = ciclos.map(y => `<option value="${y}">${y}-${y+1}</option>`).join('');
+  }
+}
+
+function confirmExportMesas(fmt) {
+  const modo  = document.getElementById('export-mesas-modo').value;
+  const valor = document.getElementById('export-mesas-valor').value;
+  if (!valor) { showToast('No hay ciclos ni años cargados para exportar.', true); return; }
+  document.getElementById('modal-export-mesas').classList.remove('open');
+  exportListadoMesas(modo, valor, fmt);
+}
+
+async function exportListadoMesas(modo, valor, fmt='xlsx') {
+  valor = parseInt(valor);
   const materiasOrdenadas = ordenarMateriasEstandar(MATERIAS);
   if (materiasOrdenadas.length === 0) {
     showToast('No hay materias cargadas.', true);
     return;
   }
-  const nombre = `Listado_Mesas_Finales_${ciclo}`;
+
+  let subtitulo, mesasConAño, nombre;
+  if (modo === 'calendario') {
+    subtitulo = `Año calendario ${valor}`;
+    mesasConAño = getMesasConAñoCalendario(valor);
+    nombre = `Listado_Mesas_Finales_${valor}`;
+  } else {
+    const { inicio, fin } = getCicloYears(valor);
+    subtitulo = `Ciclo lectivo ${inicio}-${fin}`;
+    mesasConAño = getMesasConAñoCiclo(valor);
+    nombre = `Listado_Mesas_Finales_Ciclo_${valor}`;
+  }
+
   showToast(fmt === 'pdf' ? 'Generando PDF...' : 'Generando Excel...');
   try {
     if (fmt === 'pdf') {
-      const bytes = await buildListadoMesasPdf(ciclo, materiasOrdenadas);
+      const bytes = await buildListadoMesasPdf(subtitulo, materiasOrdenadas, mesasConAño);
       triggerDownload(new Blob([bytes], { type:'application/pdf' }), exportFilename(nombre) + '.pdf');
       showToast('PDF generado correctamente');
     } else {
-      const blob = await buildListadoMesasXlsx(ciclo, materiasOrdenadas);
+      const blob = await buildListadoMesasXlsx(subtitulo, materiasOrdenadas, mesasConAño);
       triggerDownload(blob, exportFilename(nombre) + '.xlsx');
       showToast('Excel generado correctamente');
     }
@@ -10093,7 +10172,12 @@ function renderMesasFinalesView() {
           ${cicloOptions}
         </select>
       </div>
-      <div style="margin-left:auto">${exportBtns(`exportListadoMesas(${ciclo},'xlsx')`, `exportListadoMesas(${ciclo},'pdf')`)}</div>
+      <div style="margin-left:auto">
+        <button onclick="openExportMesasModal()"
+          style="display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--navy);background:white;color:var(--navy);cursor:pointer;font-family:var(--font);font-weight:500">
+          📤 Exportar
+        </button>
+      </div>
     </div>
 
     <!-- Horarios por materia -->
