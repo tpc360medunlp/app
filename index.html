@@ -1755,7 +1755,7 @@ async function ensureJsQR() {
 <!-- MODAL: grilla ágil de horarios de mesas por materia -->
 <div class="modal-overlay" id="modal-horarios-mesas" data-closable="true">
   <div class="modal" style="max-width:640px">
-    <h2 class="modal-title">Horarios de mesas de final</h2>
+    <h2 class="modal-title">Agenda de mesas de final</h2>
     <p class="modal-sub" id="horarios-mesas-sub"></p>
     <div style="display:flex;gap:8px;padding:4px 0 8px;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.04em">
       <div style="width:100px;flex-shrink:0">Mesa</div>
@@ -10082,20 +10082,20 @@ function renderMesasFinalesView() {
 
   // Construir tabla calendario
   document.getElementById('mesas-finales-container').innerHTML = `
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:1.5rem;flex-wrap:wrap">
       <div>
         <label style="font-size:12px;font-weight:500;color:var(--gray-600);display:block;margin-bottom:4px">Ciclo lectivo</label>
         <select class="form-select" onchange="window._finalesCiclo=parseInt(this.value);renderMesasFinalesView()" style="min-width:140px">
           ${cicloOptions}
         </select>
       </div>
-      ${exportBtns(`exportListadoMesas(${ciclo},'xlsx')`, `exportListadoMesas(${ciclo},'pdf')`)}
+      <div style="margin-left:auto">${exportBtns(`exportListadoMesas(${ciclo},'xlsx')`, `exportListadoMesas(${ciclo},'pdf')`)}</div>
     </div>
 
     <!-- Horarios por materia -->
     <div class="area-card" style="margin-bottom:1.5rem">
       <div class="area-header" style="margin-bottom:.5rem">
-        <span class="area-name">Horarios de mesas por materia</span>
+        <span class="area-name">Agenda de mesas por materia</span>
       </div>
       <p style="font-size:12px;color:var(--gray-400);padding:0 14px 10px">Cargá fecha, horario y lugar de las mesas que usa cada materia.</p>
       ${ordenarMateriasEstandar(MATERIAS).map(m => `
@@ -10103,7 +10103,7 @@ function renderMesasFinalesView() {
           <span style="flex:1;font-size:13px;color:var(--navy)">${m.nombre}</span>
           <button onclick="openHorariosMesasModal('${m.id}',${ciclo})" title="Cargar fecha, horario y lugar de las mesas de esta materia"
             style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:11px;border-radius:20px;border:1px solid var(--gray-200);cursor:pointer;font-family:var(--font);font-weight:500;background:white;color:var(--gray-600)">
-            📅 Horarios
+            📅 Agenda
           </button>
         </div>
       `).join('')}
