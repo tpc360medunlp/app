@@ -6716,7 +6716,18 @@ async function buildListadoComisionesPdf(año, materiasOrdenadas, comisionesDelA
   const contentW = width - ML - MR;
   let y = height - 30;
 
-  const addPage = () => { page = pdfDoc.addPage(A4); y = page.getSize().height - 30; };
+  const addPage = () => {
+    page = pdfDoc.addPage(A4);
+    y = page.getSize().height - 30;
+    // Encabezado chico repetido en cada hoja nueva, para no perder contexto al saltar de página
+    const tit = sanitizePdf('Listado de comisiones');
+    page.drawText(tit, { x: ML, y, font: fontBold, size: 10, color: NAVY });
+    const titW = fontBold.widthOfTextAtSize(tit, 10);
+    page.drawText(sanitizePdf(`·  Ciclo lectivo ${año}`), { x: ML + titW + 6, y, font, size: 9, color: GRAY });
+    y -= 10;
+    page.drawRectangle({ x: ML, y, width: contentW, height: 0.8, color: rgb(0.85,0.87,0.9) });
+    y -= 20;
+  };
   const checkY = (needed) => { if (y < 36 + needed) addPage(); };
 
   // Encabezado institucional
@@ -6821,6 +6832,14 @@ async function buildListadoComisionesPdf(año, materiasOrdenadas, comisionesDelA
       page.drawRectangle({ x: ML, y, width: contentW, height: 0.6, color: rgb(0.92,0.93,0.95) });
       y -= 14;
     }
+  });
+
+  // Numeración de página al pie, en todas las hojas
+  const paginas = pdfDoc.getPages();
+  paginas.forEach((pg, i) => {
+    const texto = sanitizePdf(`Página ${i + 1} de ${paginas.length}`);
+    const w = font.widthOfTextAtSize(texto, 8);
+    pg.drawText(texto, { x: (pg.getSize().width - w) / 2, y: 20, font, size: 8, color: GRAY_LIGHT });
   });
 
   return await pdfDoc.save();
