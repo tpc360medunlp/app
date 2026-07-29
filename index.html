@@ -1215,7 +1215,7 @@ async function ensureJsQR() {
         <div class="page-header">
           <div>
             <h1 class="page-title">Mesas de Finales</h1>
-            <p class="page-sub">Horarios y carga de notas de las mesas de examen</p>
+            <p class="page-sub">Agenda y carga de notas de las mesas de examen</p>
           </div>
         </div>
         <div id="mesas-finales-container"></div>
@@ -9817,7 +9817,7 @@ function openHorariosMesasModal(materiaId, ciclo) {
   const materia = MATERIAS.find(m => m.id === materiaId);
   document.getElementById('horarios-mesas-sub').textContent = `${materia?.nombre || ''} · Ciclo ${inicio}-${fin}`;
 
-  const grid = CALENDARIO_MESAS.map(mesa => {
+  const grid = getMesasDelCiclo(ciclo).map(mesa => {
     const añoMesa = mesa.mes >= 4 ? inicio : fin;
     const data = getMesaData(materiaId, añoMesa, mesa.id);
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
@@ -9946,7 +9946,7 @@ async function buildListadoMesasPdf(ciclo, materiasOrdenadas) {
       y -= 20;
     }
 
-    const filasMesas = CALENDARIO_MESAS.map(mesa => {
+    const filasMesas = getMesasDelCiclo(ciclo).map(mesa => {
       const añoMesa = mesa.mes >= 4 ? inicio : fin;
       const data = getMesaData(m.id, añoMesa, mesa.id);
       const partes = [
@@ -10021,7 +10021,7 @@ async function buildListadoMesasXlsx(ciclo, materiasOrdenadas) {
     wsData.push([m.nombre]);
     merges.push({ s:{r,c:0}, e:{r,c:1} });
 
-    CALENDARIO_MESAS.forEach(mesa => {
+    getMesasDelCiclo(ciclo).forEach(mesa => {
       const añoMesa = mesa.mes >= 4 ? inicio : fin;
       const data = getMesaData(m.id, añoMesa, mesa.id);
       const partes = [
