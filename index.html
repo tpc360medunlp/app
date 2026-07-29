@@ -8328,7 +8328,18 @@ async function duplicarComisiones(incluirHorarios) {
     !COMISIONES.some(x => x.materiaId === c.materiaId && x.nombre === c.nombre && x.año === selectedAcademicYear)
   );
 
-  if (nuevas.length === 0) {
+  // Si se pide incluir horarios, además de crear las comisiones nuevas, completar el
+  // teórico/práctico de las que ya existían pero todavía no lo tienen cargado — por
+  // ejemplo, si se había duplicado antes sin tildar esta opción.
+  const paraCompletar = incluirHorarios ? yaExisten
+    .map(origen => ({
+      origen,
+      destino: COMISIONES.find(x => x.materiaId === origen.materiaId && x.nombre === origen.nombre && x.año === selectedAcademicYear)
+    }))
+    .filter(({ origen, destino }) => destino && !destino.teorico && !destino.practico && (origen.teorico || origen.practico))
+    : [];
+
+  if (nuevas.length === 0 && paraCompletar.length === 0) {
     showToast(`Todas las comisiones de ${añoAnterior} ya existen en ${selectedAcademicYear}.`, true);
     return;
   }
@@ -8343,34 +8354,61 @@ async function duplicarComisiones(incluirHorarios) {
   }));
   nuevosRegistros.forEach(r => COMISIONES.push(r));
 
-  const resultados = await Promise.all(nuevosRegistros.map(r =>
+  // Completar en memoria las que ya existían
+  paraCompletar.forEach(({ origen, destino }) => {
+    destino.teorico  = origen.teorico  ? { ...origen.teorico }  : null;
+    destino.practico = origen.practico ? { ...origen.practico } : null;
+  });
+
+  const resultadosInsert = await Promise.all(nuevosRegistros.map(r =>
     _supabase.from('comisiones').insert({
       id: r.id, materia_id: r.materiaId, nombre: r.nombre,
       docente_dni: r.docenteDni, año: r.año, periodo: r.periodo,
       teorico: r.teorico, practico: r.practico,
     })
   ));
-  const fallidas = resultados.filter(r => r.error);
-  if (fallidas.length > 0) {
-    fallidas.forEach(r => console.warn('Error duplicando comisión:', r.error));
+  const resultadosUpdate = await Promise.all(paraCompletar.map(({ destino }) =>
+    _supabase.from('comisiones').update({ teorico: destino.teorico, practico: destino.practico }).eq('id', destino.id)
+  ));
+
+  const fallidasInsert = resultadosInsert.filter(r => r.error);
+  const fallidasUpdate = resultadosUpdate.filter(r => r.error);
+
+  if (fallidasInsert.length > 0) {
+    fallidasInsert.forEach(r => console.warn('Error duplicando comisión:', r.error));
     // Sacar de memoria las que no se guardaron
-    resultados.forEach((r, i) => {
+    resultadosInsert.forEach((r, i) => {
       if (r.error) {
         const idx = COMISIONES.indexOf(nuevosRegistros[i]);
         if (idx >= 0) COMISIONES.splice(idx, 1);
       }
     });
   }
+  if (fallidasUpdate.length > 0) {
+    fallidasUpdate.forEach(r => console.warn('Error completando horarios de comisión:', r.error));
+    // Revertir en memoria las que no se pudieron actualizar
+    resultadosUpdate.forEach((r, i) => {
+      if (r.error) {
+        paraCompletar[i].destino.teorico = null;
+        paraCompletar[i].destino.practico = null;
+      }
+    });
+  }
 
   renderAcademicView();
-  const guardadasOk = nuevosRegistros.length - fallidas.length;
-  if (fallidas.length > 0) {
-    showToast(`${guardadasOk} comisión/es duplicadas · ${fallidas.length} no se pudieron guardar (verificá tu conexión)`, true);
+  const guardadasOk    = nuevosRegistros.length - fallidasInsert.length;
+  const completadasOk  = paraCompletar.length - fallidasUpdate.length;
+  const totalFallidas   = fallidasInsert.length + fallidasUpdate.length;
+
+  if (totalFallidas > 0) {
+    showToast(`${guardadasOk} duplicadas, ${completadasOk} completadas · ${totalFallidas} no se pudieron guardar (verificá tu conexión)`, true);
   } else {
-    const msg = yaExisten.length > 0
-      ? `${nuevas.length} comisión/es duplicadas · ${yaExisten.length} ya existían`
-      : `${nuevas.length} comisión/es duplicadas de ${añoAnterior} a ${selectedAcademicYear}`;
-    showToast(msg);
+    const partes = [];
+    if (nuevosRegistros.length > 0) partes.push(`${nuevosRegistros.length} comisión/es duplicadas`);
+    if (paraCompletar.length > 0) partes.push(`${paraCompletar.length} completadas con horarios`);
+    const sinCambios = yaExisten.length - paraCompletar.length;
+    if (sinCambios > 0) partes.push(`${sinCambios} ya existían`);
+    showToast(partes.join(' · '));
   }
 }
 
