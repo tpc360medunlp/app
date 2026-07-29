@@ -1771,6 +1771,22 @@ async function ensureJsQR() {
   </div>
 </div>
 
+<!-- MODAL: duplicar comisiones del año anterior -->
+<div class="modal-overlay" id="modal-duplicar-comisiones" data-closable="true">
+  <div class="modal" style="max-width:420px">
+    <h2 class="modal-title">Duplicar comisiones del año anterior</h2>
+    <p class="modal-sub">Se van a copiar las comisiones que todavía no existan en el año actual.</p>
+    <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray-600);margin-top:1rem;cursor:pointer">
+      <input type="checkbox" id="field-duplicar-horarios" style="margin-top:2px">
+      <span>Copiar también días, horarios y lugares de teóricos y prácticos (si están cargados)</span>
+    </label>
+    <div class="modal-actions" style="margin-top:1.25rem">
+      <button class="btn-secondary" onclick="document.getElementById('modal-duplicar-comisiones').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmDuplicarComisiones()">Duplicar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: exportar listado de mesas de finales -->
 <div class="modal-overlay" id="modal-export-mesas" data-closable="true">
   <div class="modal" style="max-width:420px">
@@ -8285,7 +8301,18 @@ document.getElementById('modal-qr').dataset.closable='true'; document.getElement
 // ── ACADEMIC MANAGEMENT ───────────────────────────────────
 let selectedAcademicYear = new Date().getFullYear();
 
-async function duplicarComisiones() {
+function openDuplicarComisionesModal() {
+  document.getElementById('field-duplicar-horarios').checked = true;
+  document.getElementById('modal-duplicar-comisiones').classList.add('open');
+}
+
+function confirmDuplicarComisiones() {
+  const incluirHorarios = document.getElementById('field-duplicar-horarios').checked;
+  document.getElementById('modal-duplicar-comisiones').classList.remove('open');
+  duplicarComisiones(incluirHorarios);
+}
+
+async function duplicarComisiones(incluirHorarios) {
   const añoAnterior = selectedAcademicYear - 1;
   const comisionesAnteriores = COMISIONES.filter(c => c.año === añoAnterior);
 
@@ -8312,13 +8339,16 @@ async function duplicarComisiones() {
     materiaId: c.materiaId, nombre: c.nombre,
     docenteDni: c.docenteDni, año: selectedAcademicYear,
     periodo: c.periodo || 1, alumnos: [],
+    teorico:  incluirHorarios && c.teorico  ? { ...c.teorico }  : null,
+    practico: incluirHorarios && c.practico ? { ...c.practico } : null,
   }));
   nuevosRegistros.forEach(r => COMISIONES.push(r));
 
   const resultados = await Promise.all(nuevosRegistros.map(r =>
     _supabase.from('comisiones').insert({
       id: r.id, materia_id: r.materiaId, nombre: r.nombre,
-      docente_dni: r.docenteDni, año: r.año, periodo: r.periodo
+      docente_dni: r.docenteDni, año: r.año, periodo: r.periodo,
+      teorico: r.teorico, practico: r.practico,
     })
   ));
   const fallidas = resultados.filter(r => r.error);
@@ -8392,7 +8422,7 @@ function renderAcademicView(selectedMateriaId = null) {
           <span style="font-size:13px;color:var(--gray-600);font-weight:500">Año académico:</span>
           ${yearSelectorHtml()}
         </div>
-        <button onclick="duplicarComisiones()" title="Duplicar comisiones del año anterior para el año actual"
+        <button onclick="openDuplicarComisionesModal()" title="Duplicar comisiones del año anterior para el año actual"
           style="display:flex;align-items:center;gap:6px;padding:9px 14px;font-size:13px;border-radius:var(--radius-md);border:1.5px solid var(--gray-200);background:white;color:var(--gray-600);cursor:pointer;font-family:var(--font);font-weight:500">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Duplicar del año anterior
@@ -8409,7 +8439,8 @@ function renderAcademicView(selectedMateriaId = null) {
 
   // Vista de comisiones de una materia filtradas por año
   const materia = MATERIAS.find(m => m.id === selectedMateriaId);
-  const comisiones = COMISIONES.filter(c => c.materiaId === selectedMateriaId && c.año === selectedAcademicYear);
+  const comisiones = COMISIONES.filter(c => c.materiaId === selectedMateriaId && c.año === selectedAcademicYear)
+    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
 
   const rows = comisiones.length === 0
     ? `<div style="padding:2rem;text-align:center;color:var(--gray-400)">No hay comisiones para esta materia.</div>`
