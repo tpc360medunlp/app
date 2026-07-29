@@ -1015,7 +1015,7 @@ async function ensureJsQR() {
         <div class="page-header">
           <div>
             <h1 class="page-title">Cronogramas</h1>
-            <p class="page-sub">Consultá fechas de clases, parciales y finales · Tocá 📍 para ver el lugar asignado</p>
+            <p class="page-sub">Consultá fechas de clases, parciales y finales · Tocá 📍 para ver el lugar (y en finales con mesa cargada, también fecha y horario)</p>
           </div>
         </div>
         <div id="teacher-cronograma-container"></div>
@@ -1231,7 +1231,7 @@ async function ensureJsQR() {
         <div class="page-header">
           <div>
             <h1 class="page-title">Cronogramas</h1>
-            <p class="page-sub">Consultá fechas de clases, parciales y finales · Tocá 📍 para ver el lugar asignado</p>
+            <p class="page-sub">Consultá fechas de clases, parciales y finales · Tocá 📍 para ver el lugar (y en finales con mesa cargada, también fecha y horario)</p>
           </div>
         </div>
         <div id="student-cronograma-container"></div>
@@ -14107,6 +14107,7 @@ function cronoRowsHTMLFromCron(cronograma, materiaId, estaMatriculado, filtro) {
     if (tipo==='practico') { color='#1a7a35';       bg='var(--green-light)'; icon='🔬 '; }
     if (tipo==='parcial')  { color='#b05a10';       bg='var(--amber-light)'; icon='📝 '; }
     if (tipo==='final')    { color='#b02030';       bg='var(--red-light)';   icon='🎓 '; }
+    const pinSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
     let popoverHtml = '';
     if (matchInfo) {
       const detalle = [
@@ -14116,12 +14117,12 @@ function cronoRowsHTMLFromCron(cronograma, materiaId, estaMatriculado, filtro) {
       ].filter(Boolean).join(' · ');
       popoverHtml = `
         <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
-          style="cursor:pointer;font-size:12px">📋</span>
-        <span class="lugar-popover">📋 ${escapeHtml(detalle)}</span>`;
+          style="cursor:pointer;display:inline-flex;color:var(--navy)">${pinSvg}</span>
+        <span class="lugar-popover">📍 ${escapeHtml(detalle)}</span>`;
     } else if (lugar) {
       popoverHtml = `
         <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
-          style="cursor:pointer;font-size:12px">📍</span>
+          style="cursor:pointer;display:inline-flex;color:var(--gray-500)">${pinSvg}</span>
         <span class="lugar-popover">📍 ${lugar}</span>`;
     }
     return `<span class="crono-tag" style="display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0">${icon}${texto}${popoverHtml}</span>`;
@@ -14816,6 +14817,7 @@ function renderTeacherCronogramaMateria(materiaId) {
       if (tipo==='practico') { color='#1a7a35';       bg='var(--green-light)'; icon='🔬 '; }
       if (tipo==='parcial')  { color='#b05a10';       bg='var(--amber-light)'; icon='📝 '; }
       if (tipo==='final')    { color='#b02030';       bg='var(--red-light)';   icon='🎓 '; }
+      const pinSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
       let popoverHtml = '';
       if (matchInfo) {
         const detalle = [
@@ -14825,12 +14827,12 @@ function renderTeacherCronogramaMateria(materiaId) {
         ].filter(Boolean).join(' · ');
         popoverHtml = `
           <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
-            style="cursor:pointer;font-size:12px">📋</span>
-          <span class="lugar-popover">📋 ${escapeHtml(detalle)}</span>`;
+            style="cursor:pointer;display:inline-flex;color:var(--navy)">${pinSvg}</span>
+          <span class="lugar-popover">📍 ${escapeHtml(detalle)}</span>`;
       } else if (lugar) {
         popoverHtml = `
           <span onclick="event.stopPropagation();document.querySelectorAll('.crono-tag').forEach(t=>t!==this.closest('.crono-tag')&&t.classList.remove('open'));this.closest('.crono-tag').classList.toggle('open')"
-            style="cursor:pointer;font-size:12px">📍</span>
+            style="cursor:pointer;display:inline-flex;color:var(--gray-500)">${pinSvg}</span>
           <span class="lugar-popover">📍 ${lugar}</span>`;
       }
       return `<span class="crono-tag" style="display:inline-flex;align-items:center;font-size:13px;padding:4px 12px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0">${icon}${texto}${popoverHtml}</span>`;
