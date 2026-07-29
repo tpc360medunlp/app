@@ -587,9 +587,15 @@ async function ensureJsQR() {
     display: none;
     position: absolute; bottom: calc(100% + 6px); left: 0;
     background: var(--navy); color: white;
-    font-size: 12px; padding: 6px 10px; border-radius: var(--radius-md);
+    font-size: 12px; padding: 8px 12px; border-radius: var(--radius-md);
     white-space: nowrap; z-index: 50;
     box-shadow: var(--shadow-md);
+  }
+  .crono-tag .lugar-popover-linea {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .crono-tag .lugar-popover-linea + .lugar-popover-linea {
+    margin-top: 4px;
   }
   .crono-tag .lugar-popover::after {
     content: ''; position: absolute; top: 100%; left: 12px;
@@ -14108,23 +14114,27 @@ function cronoRowsHTMLFromCron(cronograma, materiaId, estaMatriculado, filtro) {
     if (tipo==='parcial')  { color='#b05a10';       bg='var(--amber-light)'; icon='📝 '; }
     if (tipo==='final')    { color='#b02030';       bg='var(--red-light)';   icon='🎓 '; }
     const pinSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+    const buildPopoverLineas = (partes) => partes
+      .filter(p => p.texto)
+      .map(p => `<div class="lugar-popover-linea">${p.icon} ${escapeHtml(p.texto)}</div>`)
+      .join('');
     let popoverHtml = '';
     let clickable = false;
     if (matchInfo) {
-      const detalle = [
-        matchInfo.data.fecha ? matchInfo.data.fecha.split('-').reverse().join('/') : '',
-        matchInfo.data.horario || '',
-        matchInfo.data.lugar || '',
-      ].filter(Boolean).join(' · ');
+      const lineas = buildPopoverLineas([
+        { icon: '📅', texto: matchInfo.data.fecha ? matchInfo.data.fecha.split('-').reverse().join('/') : '' },
+        { icon: '🕐', texto: matchInfo.data.horario || '' },
+        { icon: '📍', texto: matchInfo.data.lugar || '' },
+      ]);
       clickable = true;
       popoverHtml = `
         <span style="display:inline-flex;color:var(--navy);margin-left:4px">${pinSvg}</span>
-        <span class="lugar-popover">📍 ${escapeHtml(detalle)}</span>`;
+        <span class="lugar-popover">${lineas}</span>`;
     } else if (lugar) {
       clickable = true;
       popoverHtml = `
         <span style="display:inline-flex;color:var(--gray-500);margin-left:4px">${pinSvg}</span>
-        <span class="lugar-popover">📍 ${lugar}</span>`;
+        <span class="lugar-popover">${buildPopoverLineas([{ icon: '📍', texto: lugar }])}</span>`;
     }
     const baseStyle = `display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0`;
     const clickAttrs = clickable
@@ -14823,23 +14833,27 @@ function renderTeacherCronogramaMateria(materiaId) {
       if (tipo==='parcial')  { color='#b05a10';       bg='var(--amber-light)'; icon='📝 '; }
       if (tipo==='final')    { color='#b02030';       bg='var(--red-light)';   icon='🎓 '; }
       const pinSvg = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+      const buildPopoverLineas = (partes) => partes
+        .filter(p => p.texto)
+        .map(p => `<div class="lugar-popover-linea">${p.icon} ${escapeHtml(p.texto)}</div>`)
+        .join('');
       let popoverHtml = '';
       let clickable = false;
       if (matchInfo) {
-        const detalle = [
-          matchInfo.data.fecha ? matchInfo.data.fecha.split('-').reverse().join('/') : '',
-          matchInfo.data.horario || '',
-          matchInfo.data.lugar || '',
-        ].filter(Boolean).join(' · ');
+        const lineas = buildPopoverLineas([
+          { icon: '📅', texto: matchInfo.data.fecha ? matchInfo.data.fecha.split('-').reverse().join('/') : '' },
+          { icon: '🕐', texto: matchInfo.data.horario || '' },
+          { icon: '📍', texto: matchInfo.data.lugar || '' },
+        ]);
         clickable = true;
         popoverHtml = `
           <span style="display:inline-flex;color:var(--navy);margin-left:4px">${pinSvg}</span>
-          <span class="lugar-popover">📍 ${escapeHtml(detalle)}</span>`;
+          <span class="lugar-popover">${lineas}</span>`;
       } else if (lugar) {
         clickable = true;
         popoverHtml = `
           <span style="display:inline-flex;color:var(--gray-500);margin-left:4px">${pinSvg}</span>
-          <span class="lugar-popover">📍 ${lugar}</span>`;
+          <span class="lugar-popover">${buildPopoverLineas([{ icon: '📍', texto: lugar }])}</span>`;
       }
       const baseStyle = `display:inline-flex;align-items:center;font-size:13px;padding:4px 12px;border-radius:var(--radius-sm);background:${bg};color:${color};margin:2px 4px 2px 0`;
       const clickAttrs = clickable
