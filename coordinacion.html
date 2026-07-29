@@ -9794,10 +9794,6 @@ function buildMesaFilaHTML(m, añoMesa, mesa, pasada) {
   const mesaNom= (mesa.nombre + ' ' + añoMesa).replace(/'/g, "\\'");
   return `<div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--gray-100);gap:8px">
     <span style="flex:1;font-size:13px;color:var(--navy)">${m.nombre}</span>
-    <button onclick="openHorariosMesasModal('${m.id}','${añoMesa}')" title="Cargar fecha, horario y lugar de las mesas de esta materia"
-      style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;font-size:11px;border-radius:20px;border:1px solid var(--gray-200);cursor:pointer;font-family:var(--font);font-weight:500;background:white;color:var(--gray-600)">
-      📅 Horarios
-    </button>
     <button onclick="openMesaModal('${m.id}','${añoMesa}','${mesa.id}','${nombre}','${mesaNom}')"
       style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:11px;border-radius:20px;border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${bg};color:${color}">
       ${label}${data.cargado ? ' · ' + count + ' alumnos' + fechaStr : ''}
@@ -9807,16 +9803,18 @@ function buildMesaFilaHTML(m, añoMesa, mesa, pasada) {
 
 // ── HORARIOS DE MESAS (grilla ágil por materia) ──────────
 let _horariosMesasMateriaId = null;
-let _horariosMesasAño = null;
+let _horariosMesasCiclo = null;
 
-function openHorariosMesasModal(materiaId, año) {
+function openHorariosMesasModal(materiaId, ciclo) {
   _horariosMesasMateriaId = materiaId;
-  _horariosMesasAño = año;
+  _horariosMesasCiclo = ciclo;
+  const { inicio, fin } = getCicloYears(ciclo);
   const materia = MATERIAS.find(m => m.id === materiaId);
-  document.getElementById('horarios-mesas-sub').textContent = `${materia?.nombre || ''} · Ciclo ${año}`;
+  document.getElementById('horarios-mesas-sub').textContent = `${materia?.nombre || ''} · Ciclo ${inicio}-${fin}`;
 
   const grid = CALENDARIO_MESAS.map(mesa => {
-    const data = getMesaData(materiaId, año, mesa.id);
+    const añoMesa = mesa.mes >= 4 ? inicio : fin;
+    const data = getMesaData(materiaId, añoMesa, mesa.id);
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
       <div style="width:100px;flex-shrink:0;font-size:12px;font-weight:500;color:var(--navy)">${mesa.nombre}</div>
       <input type="date" class="form-input" id="hm-fecha-${mesa.id}" value="${data.fecha || ''}" style="flex:1.2;font-size:12px;padding:6px 8px">
@@ -9834,15 +9832,16 @@ function closeHorariosMesasModal() {
 
 function confirmGuardarHorariosMesas() {
   const materiaId = _horariosMesasMateriaId;
-  const año = _horariosMesasAño;
+  const { inicio, fin } = getCicloYears(_horariosMesasCiclo);
   let cambios = 0;
   CALENDARIO_MESAS.forEach(mesa => {
+    const añoMesa = mesa.mes >= 4 ? inicio : fin;
     const fecha   = document.getElementById(`hm-fecha-${mesa.id}`).value || null;
     const horario = document.getElementById(`hm-horario-${mesa.id}`).value.trim() || null;
     const lugar   = document.getElementById(`hm-lugar-${mesa.id}`).value.trim() || null;
-    const data = getMesaData(materiaId, año, mesa.id);
+    const data = getMesaData(materiaId, añoMesa, mesa.id);
     if (data.fecha !== fecha || data.horario !== horario || data.lugar !== lugar) {
-      setMesaData(materiaId, año, mesa.id, { fecha, horario, lugar });
+      setMesaData(materiaId, añoMesa, mesa.id, { fecha, horario, lugar });
       cambios++;
     }
   });
@@ -9886,6 +9885,23 @@ function renderMesasFinalesView() {
           ${cicloOptions}
         </select>
       </div>
+    </div>
+
+    <!-- Horarios por materia -->
+    <div class="area-card" style="margin-bottom:1.5rem">
+      <div class="area-header" style="margin-bottom:.5rem">
+        <span class="area-name">Horarios de mesas por materia</span>
+      </div>
+      <p style="font-size:12px;color:var(--gray-400);padding:0 14px 10px">Cargá fecha, horario y lugar de las mesas que usa cada materia.</p>
+      ${ordenarMateriasEstandar(MATERIAS).map(m => `
+        <div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--gray-100)">
+          <span style="flex:1;font-size:13px;color:var(--navy)">${m.nombre}</span>
+          <button onclick="openHorariosMesasModal('${m.id}',${ciclo})" title="Cargar fecha, horario y lugar de las mesas de esta materia"
+            style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:11px;border-radius:20px;border:1px solid var(--gray-200);cursor:pointer;font-family:var(--font);font-weight:500;background:white;color:var(--gray-600)">
+            📅 Horarios
+          </button>
+        </div>
+      `).join('')}
     </div>
 
     <!-- Calendario de mesas -->
