@@ -10068,11 +10068,15 @@ async function exportListadoMesas(ciclo, fmt='xlsx') {
 }
 
 function renderMesasFinalesView() {
-  const ciclo = window._finalesCiclo || _finalesCiclo;
+  const años = [...new Set(COMISIONES.map(c => c.año))].sort((a,b) => b-a);
+  let ciclo = window._finalesCiclo || _finalesCiclo;
+  // Si el ciclo guardado (o el default fijo) no coincide con ninguna comisión real,
+  // usar el más reciente disponible en vez de quedarse con un valor que no existe.
+  if (años.length > 0 && !años.includes(ciclo)) ciclo = años[0];
+  window._finalesCiclo = ciclo;
   const { inicio, fin } = getCicloYears(ciclo);
 
   // Selector de ciclo lectivo
-  const años = [...new Set(COMISIONES.map(c => c.año))].sort((a,b) => b-a);
   const cicloOptions = años.map(y =>
     `<option value="${y}" ${y==ciclo?'selected':''}>${y}-${y+1}</option>`
   ).join('');
@@ -10147,10 +10151,12 @@ function renderMesasFinalesView() {
 }
 
 function renderFinalesStatsView() {
-  const ciclo = window._finalesCiclo || _finalesCiclo;
+  const años = [...new Set(COMISIONES.map(c => c.año))].sort((a,b) => b-a);
+  let ciclo = window._finalesCiclo || _finalesCiclo;
+  if (años.length > 0 && !años.includes(ciclo)) ciclo = años[0];
+  window._finalesCiclo = ciclo;
 
   // Selector de ciclo lectivo
-  const años = [...new Set(COMISIONES.map(c => c.año))].sort((a,b) => b-a);
   const cicloOptions = años.map(y =>
     `<option value="${y}" ${y==ciclo?'selected':''}>${y}-${y+1}</option>`
   ).join('');
