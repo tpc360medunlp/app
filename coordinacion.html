@@ -14087,7 +14087,7 @@ function buildInfoCardFinales() {
   </div>`;
 }
 
-function buildTeoricoPracticoHTML(comision) {
+function buildTeoricoPracticoHTML(comision, mostrarNombreComision = true) {
   if (!comision) return '';
   const t = comision.teorico, p = comision.practico;
   const hayTeorico  = t && (t.asincronico || t.dia || t.horario || t.lugar);
@@ -14112,7 +14112,7 @@ function buildTeoricoPracticoHTML(comision) {
     </div>` : '';
 
   return `<div style="margin-bottom:12px">
-    <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px">${comision.nombre}</div>
+    ${mostrarNombreComision ? `<div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:6px">${comision.nombre}</div>` : ''}
     <div style="display:flex;flex-wrap:wrap;gap:10px">${cardTeorico}${cardPractico}</div>
   </div>`;
 }
@@ -14180,11 +14180,8 @@ function renderStudentCronogramaView() {
               </div>
             </button>
             <div id="${comId}" style="display:none;padding-top:8px">
-              <div id="tpinfo-${comId}" style="${currentFiltro==='tp' ? '' : 'display:none'}">${buildTeoricoPracticoHTML(comAlumno)}</div>
-              <div id="parcialesinfo-${comId}" style="${currentFiltro==='parciales' ? '' : 'display:none'}">${buildInfoCardParciales()}</div>
-              <div id="finalesinfo-${comId}" style="${currentFiltro==='finales' ? '' : 'display:none'}">${buildInfoCardFinales()}</div>
               ${cronograma
-                ? cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, currentFiltro)
+                ? cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, currentFiltro, comAlumno)
                 : `<div style="padding:1rem;text-align:center;color:var(--gray-400);font-size:13px">El cronograma aún no fue cargado por coordinación.</div>`
               }
             </div>
@@ -14198,8 +14195,9 @@ function renderStudentCronogramaView() {
 }
 
 // Wrapper que acepta un cronograma directamente (para renderStudentCronogramaView)
-function cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, filtroActual = 'tp') {
+function cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, filtroActual = 'tp', comAlumno = null) {
   const mId = materia.id;
+  const comId = 'crono-mat-' + mId;
   const filtroBtn = (id, label, active) =>
     `<button onclick="cambiarFiltroMateria('${mId}','${id}')"
       id="filtro-${mId}-${id}"
@@ -14213,6 +14211,9 @@ function cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, filtroAc
       ${estaMatriculado ? filtroBtn('parciales','📝 Parciales', filtroActual==='parciales') : ''}
       ${filtroBtn('finales','🎓 Finales', filtroActual==='finales')}
     </div>
+    <div id="tpinfo-${comId}" style="${filtroActual==='tp' ? '' : 'display:none'}">${buildTeoricoPracticoHTML(comAlumno, false)}</div>
+    <div id="parcialesinfo-${comId}" style="${filtroActual==='parciales' ? '' : 'display:none'}">${buildInfoCardParciales()}</div>
+    <div id="finalesinfo-${comId}" style="${filtroActual==='finales' ? '' : 'display:none'}">${buildInfoCardFinales()}</div>
     <div id="crono-rows-${mId}">${cronoRowsHTMLFromCron(cronograma, materia.id, estaMatriculado, filtroActual)}</div>`;
   return btns;
 }
