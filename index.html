@@ -14074,6 +14074,18 @@ async function eliminarCronograma(materiaId, periodo = 1) {
 }
 
 // Arma el bloque fijo de teórico/práctico que aparece arriba del cronograma semanal de una materia.
+function buildInfoCardParciales() {
+  return `<div style="background:var(--amber-light);border:1px solid var(--amber);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--gray-600)">
+    📝 Las fechas precisas, horarios y lugares de cada parcial serán oportunamente anunciados por los docentes de la cátedra.
+  </div>`;
+}
+
+function buildInfoCardFinales() {
+  return `<div style="background:var(--red-light);border:1px solid #b02030;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--gray-600)">
+    🎓 Tocá sobre un final para conocer más detalles (fecha, hora y lugar), si ya están cargados.
+  </div>`;
+}
+
 function buildTeoricoPracticoHTML(comision) {
   if (!comision) return '';
   const t = comision.teorico, p = comision.practico;
@@ -14162,12 +14174,14 @@ function renderStudentCronogramaView() {
               style="width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0">
               <div class="area-header" style="flex:1;margin:0">
                 <svg id="${comId}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--navy)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
-                <div style="font-size:14px;font-weight:500;color:var(--navy);margin-left:6px;text-align:left">${materia.nombre}</div>
+                <div style="font-size:14px;font-weight:500;color:var(--navy);margin-left:6px;text-align:left">${materia.nombre}${comAlumno ? ` · ${comAlumno.nombre}` : ''}</div>
                 ${!cronograma ? `<span style="font-size:11px;color:var(--gray-400);margin-left:8px">Sin cronograma</span>` : ''}
               </div>
             </button>
             <div id="${comId}" style="display:none;padding-top:8px">
-              ${buildTeoricoPracticoHTML(comAlumno)}
+              <div id="tpinfo-${comId}" style="${currentFiltro==='tp' ? '' : 'display:none'}">${buildTeoricoPracticoHTML(comAlumno)}</div>
+              <div id="parcialesinfo-${comId}" style="${currentFiltro==='parciales' ? '' : 'display:none'}">${buildInfoCardParciales()}</div>
+              <div id="finalesinfo-${comId}" style="${currentFiltro==='finales' ? '' : 'display:none'}">${buildInfoCardFinales()}</div>
               ${cronograma
                 ? cronoMateriaHTMLFromCron(cronograma, materia, estaMatriculado, currentFiltro)
                 : `<div style="padding:1rem;text-align:center;color:var(--gray-400);font-size:13px">El cronograma aún no fue cargado por coordinación.</div>`
@@ -14239,6 +14253,17 @@ function cambiarFiltroMateria(materiaId, filtro) {
   })();
   const rowsEl = document.getElementById(`crono-rows-${materiaId}`);
   if (rowsEl && materia) rowsEl.innerHTML = cronoRowsHTML(materia, estaMatriculado, filtro);
+
+  // Mostrar/ocultar el bloque de información fija según la pestaña activa
+  const comId = 'crono-mat-' + materiaId;
+  ['tpinfo', 'parcialesinfo', 'finalesinfo'].forEach(prefijo => {
+    const el = document.getElementById(`${prefijo}-${comId}`);
+    if (!el) return;
+    const corresponde = (prefijo === 'tpinfo' && filtro === 'tp') ||
+                        (prefijo === 'parcialesinfo' && filtro === 'parciales') ||
+                        (prefijo === 'finalesinfo' && filtro === 'finales');
+    el.style.display = corresponde ? '' : 'none';
+  });
 }
 
 function cronoRowsHTML(materia, estaMatriculado, filtro) {
