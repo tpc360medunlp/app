@@ -14950,55 +14950,58 @@ function renderTeacherCronogramaView() {
   );
   const docenteDni = staffEntry ? staffEntry[0] : null;
 
-  // Materias donde el docente es responsable o tiene comisiones asignadas
-  const misMateriasIds = [...new Set([
-    ...MATERIAS.filter(m => m.docenteDni === docenteDni).map(m => m.id),
-    ...COMISIONES.filter(c => c.docenteDni === docenteDni).map(c => c.materiaId),
-  ])];
-  const misMaterias = misMateriasIds.map(id => MATERIAS.find(m => m.id === id)).filter(Boolean);
+  const misComisiones = COMISIONES.filter(c => c.docenteDni === docenteDni);
+  // Materias donde el docente es responsable pero no tiene ninguna comisión propia asignada
+  const materiasSinComision = MATERIAS.filter(m =>
+    m.docenteDni === docenteDni && !misComisiones.some(c => c.materiaId === m.id)
+  );
 
   const container = document.getElementById('teacher-cronograma-container');
 
-  if (misMaterias.length === 0) {
+  if (misComisiones.length === 0 && materiasSinComision.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No tenés materias asignadas.</p></div>`;
     return;
   }
 
-  const matTabsHtml = misMaterias.map((m, i) =>
-    `<button onclick="renderTeacherCronogramaMateria('${m.id}')"
-      id="tcrono-tab-${m.id}"
+  const tabsData = [
+    ...misComisiones.map(c => ({
+      id: `tcrono-tab-comision-${c.id}`,
+      label: `${MATERIAS.find(m => m.id === c.materiaId)?.nombre || ''} · ${c.nombre}`,
+      onclick: `renderTeacherCronogramaComision('${c.id}')`,
+    })),
+    ...materiasSinComision.map(m => ({
+      id: `tcrono-tab-materia-${m.id}`,
+      label: m.nombre,
+      onclick: `renderTeacherCronogramaMateria('${m.id}')`,
+    })),
+  ];
+
+  const matTabsHtml = tabsData.map((t, i) =>
+    `<button onclick="${t.onclick}"
+      id="${t.id}"
       style="padding:8px 14px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;
       background:${i===0?'var(--navy)':'var(--gray-100)'};color:${i===0?'white':'var(--gray-600)'}">
-      ${m.nombre}
+      ${t.label}
     </button>`).join('');
 
   container.innerHTML = `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${matTabsHtml}</div>
     <div id="tcrono-content"></div>`;
 
-  if (misMaterias.length > 0) renderTeacherCronogramaMateria(misMaterias[0].id);
+  if (tabsData.length > 0) {
+    if (misComisiones.length > 0) renderTeacherCronogramaComision(misComisiones[0].id);
+    else renderTeacherCronogramaMateria(materiasSinComision[0].id);
+  }
 }
 
-function renderTeacherCronogramaMateria(materiaId) {
-  document.querySelectorAll('[id^="tcrono-tab-"]').forEach(btn => {
-    btn.style.background = btn.id === `tcrono-tab-${materiaId}` ? 'var(--navy)' : 'var(--gray-100)';
-    btn.style.color      = btn.id === `tcrono-tab-${materiaId}` ? 'white'       : 'var(--gray-600)';
-  });
-
-  const materia = MATERIAS.find(m => m.id === materiaId);
-  const container = document.getElementById('tcrono-content');
+// Contenido compartido (cronograma semanal por período) entre la pestaña de una comisión
+// específica y la de una materia sin comisión asignada — solo cambia el bloque de
+// teórico/práctico que se le agrega arriba.
+function buildTeacherCronogramaContent(materia, htmlTeoricoPractico) {
+  const materiaId = materia.id;
   const regimenCursada = materia?.regimen_cursada || 'anual';
   const nPeriodos = getCantPeriodos(regimenCursada);
 
-  // Comisiones de esta materia a cargo del docente — bloque fijo de teórico/práctico
-  const staffEntry = Object.entries(ENROLLED_STAFF).find(([,s]) =>
-    `${s.nombre} ${s.apellido}` === currentUser.name
-  );
-  const docenteDni = staffEntry ? staffEntry[0] : null;
-  const misComisionesMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.docenteDni === docenteDni);
-  const htmlTeoricoPractico = misComisionesMateria.map(c => buildTeoricoPracticoHTML(c)).join('');
-
-  // Obtener todos los periodos disponibles para esta materia
   let html = htmlTeoricoPractico;
   let alguno = false;
 
@@ -15074,8 +15077,37 @@ function renderTeacherCronogramaMateria(materiaId) {
     </div>`;
   }
 
-  container.innerHTML = alguno ? html
+  return alguno ? html
     : htmlTeoricoPractico + `<div class="empty-state"><div class="empty-icon">📅</div><p>El cronograma de esta materia aún no fue cargado por coordinación.</p></div>`;
+}
+
+function renderTeacherCronogramaComision(comisionId) {
+  document.querySelectorAll('[id^="tcrono-tab-"]').forEach(btn => {
+    btn.style.background = btn.id === `tcrono-tab-comision-${comisionId}` ? 'var(--navy)' : 'var(--gray-100)';
+    btn.style.color      = btn.id === `tcrono-tab-comision-${comisionId}` ? 'white'       : 'var(--gray-600)';
+  });
+
+  const comision = COMISIONES.find(c => c.id === comisionId);
+  const materia  = comision ? MATERIAS.find(m => m.id === comision.materiaId) : null;
+  const container = document.getElementById('tcrono-content');
+  if (!comision || !materia) { container.innerHTML = ''; return; }
+
+  // El nombre de la comisión ya se muestra en la pestaña, no hace falta repetirlo acá
+  const htmlTeoricoPractico = buildTeoricoPracticoHTML(comision, false);
+  container.innerHTML = buildTeacherCronogramaContent(materia, htmlTeoricoPractico);
+}
+
+function renderTeacherCronogramaMateria(materiaId) {
+  document.querySelectorAll('[id^="tcrono-tab-"]').forEach(btn => {
+    btn.style.background = btn.id === `tcrono-tab-materia-${materiaId}` ? 'var(--navy)' : 'var(--gray-100)';
+    btn.style.color      = btn.id === `tcrono-tab-materia-${materiaId}` ? 'white'       : 'var(--gray-600)';
+  });
+
+  const materia = MATERIAS.find(m => m.id === materiaId);
+  const container = document.getElementById('tcrono-content');
+  if (!materia) { container.innerHTML = ''; return; }
+
+  container.innerHTML = buildTeacherCronogramaContent(materia, '');
 }
 
 // ── PWA ───────────────────────────────────────────────────
