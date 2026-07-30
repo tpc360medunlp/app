@@ -1021,7 +1021,7 @@ async function ensureJsQR() {
         <div class="page-header">
           <div>
             <h1 class="page-title">Cronogramas</h1>
-            <p class="page-sub">Consultá la organización de las clases, parciales y finales de tus materias · Tocá una actividad para ver más detalles (lugar, fecha y horario)</p>
+            <p class="page-sub">Consultá la organización de las clases, parciales y finales de tus materias</p>
           </div>
         </div>
         <div id="teacher-cronograma-container"></div>
@@ -1237,7 +1237,7 @@ async function ensureJsQR() {
         <div class="page-header">
           <div>
             <h1 class="page-title">Cronogramas</h1>
-            <p class="page-sub">Consultá la organización de las clases, parciales y finales de tus materias · Tocá una actividad para ver más detalles (lugar, fecha y horario)</p>
+            <p class="page-sub">Consultá la organización de las clases, parciales y finales de tus materias</p>
           </div>
         </div>
         <div id="student-cronograma-container"></div>
@@ -15092,7 +15092,7 @@ function renderTeacherCronogramaComision(comisionId) {
   if (!comision || !materia) { container.innerHTML = ''; return; }
 
   // El nombre de la comisión ya se muestra en la pestaña, no hace falta repetirlo acá
-  const htmlTeoricoPractico = buildTeoricoPracticoHTML(comision, false);
+  const htmlTeoricoPractico = buildTeoricoPracticoHTML(comision, false) + buildInfoCardFinales();
   container.innerHTML = buildTeacherCronogramaContent(materia, htmlTeoricoPractico);
 }
 
