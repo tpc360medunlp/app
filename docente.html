@@ -9775,6 +9775,15 @@ function getCicloLectivoActual() {
   return mes >= 4 ? hoy.getFullYear() : hoy.getFullYear() - 1;
 }
 
+// Ciclos lectivos "activos" para el cronograma según la fecha de hoy. Todo el año es un
+// solo ciclo — excepto en marzo, donde conviven el que está terminando (con finales
+// pendientes) y el que ya arranca a dar clases antes del inicio formal en abril.
+function getCiclosLectivosActivos() {
+  const hoy = new Date();
+  if (hoy.getMonth() + 1 === 3) return [hoy.getFullYear() - 1, hoy.getFullYear()];
+  return [getCicloLectivoActual()];
+}
+
 function getMesasDelCiclo(ciclo) {
   // Meses de abril(ciclo) a marzo(ciclo+1)
   // Orden: abr may jun jul ago sep oct nov dic(ciclo) | feb mar(ciclo+1)
@@ -14127,8 +14136,8 @@ function buildTeoricoPracticoHTML(comision, mostrarNombreComision = true) {
 
 function renderStudentCronogramaView() {
   const email = currentUser.email;
-  const currentYear = getCicloLectivoActual();
-  const misComisiones = COMISIONES.filter(c => c.año === currentYear && c.alumnos.includes(email));
+  const ciclosActivos = getCiclosLectivosActivos();
+  const misComisiones = COMISIONES.filter(c => ciclosActivos.includes(c.año) && c.alumnos.includes(email));
   const misMateriasIds = [...new Set(misComisiones.map(c => c.materiaId))];
   const misMaterias = misMateriasIds.map(id => MATERIAS.find(m => m.id === id)).filter(Boolean);
 
@@ -14257,8 +14266,8 @@ function cambiarFiltroMateria(materiaId, filtro) {
   const materia = MATERIAS.find(m => m.id === materiaId);
   const estaMatriculado = (() => {
     const email = currentUser.email;
-    const currentYear = getCicloLectivoActual();
-    const misComisiones = COMISIONES.filter(c => c.año === currentYear && c.alumnos.includes(email));
+    const ciclosActivos = getCiclosLectivosActivos();
+    const misComisiones = COMISIONES.filter(c => ciclosActivos.includes(c.año) && c.alumnos.includes(email));
     return misComisiones.some(c => c.materiaId === materiaId);
   })();
   const rowsEl = document.getElementById(`crono-rows-${materiaId}`);
@@ -14279,8 +14288,8 @@ function cambiarFiltroMateria(materiaId, filtro) {
 function cronoRowsHTML(materia, estaMatriculado, filtro) {
   // Obtener la comisión del alumno para esta materia
   const email = currentUser?.email;
-  const currentYear = getCicloLectivoActual();
-  const comAlumno = COMISIONES.find(c => c.año === currentYear && c.alumnos.includes(email) && c.materiaId === materia.id);
+  const ciclosActivos = getCiclosLectivosActivos();
+  const comAlumno = COMISIONES.find(c => ciclosActivos.includes(c.año) && c.alumnos.includes(email) && c.materiaId === materia.id);
   const cronograma = getCronogramaComision(materia, comAlumno);
   if (!cronograma) return `<div style="padding:1rem;text-align:center;color:var(--gray-400);font-size:13px">Sin cronograma para este período.</div>`;
   return cronoRowsHTMLFromCron(cronograma, materia.id, estaMatriculado, filtro);
@@ -14958,8 +14967,8 @@ function renderTeacherCronogramaView() {
   );
   const docenteDni = staffEntry ? staffEntry[0] : null;
 
-  const cicloActual = getCicloLectivoActual();
-  const misComisiones = COMISIONES.filter(c => c.docenteDni === docenteDni && c.año === cicloActual);
+  const ciclosActivos = getCiclosLectivosActivos();
+  const misComisiones = COMISIONES.filter(c => c.docenteDni === docenteDni && ciclosActivos.includes(c.año));
   // Materias donde el docente es responsable pero no tiene ninguna comisión propia asignada
   const materiasSinComision = MATERIAS.filter(m =>
     m.docenteDni === docenteDni && !misComisiones.some(c => c.materiaId === m.id)
