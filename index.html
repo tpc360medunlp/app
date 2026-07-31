@@ -11451,7 +11451,7 @@ function renderCoordCudeValidacion() {
           <div>
             <div style="font-size:14px;font-weight:600;color:var(--navy)">${a.apellido}, ${a.nombre}</div>
             <div style="font-size:12px;color:var(--gray-400)">Legajo: ${key} · Archivo: ${a.cude?.archivo || 'no disponible en demo'}
-              ${a.cude?.archivo ? `<button onclick="verArchivoCude('${a.cude.archivo}')"
+              ${a.cude?.archivo ? `<button onclick="verArchivoCude('${key}')"
                 style="margin-left:10px;padding:2px 10px;font-size:11px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:white;color:var(--teal);cursor:pointer;font-family:var(--font)">
                 Ver archivo
               </button>` : ''}
