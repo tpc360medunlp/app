@@ -1771,6 +1771,25 @@ async function ensureJsQR() {
   </div>
 </div>
 
+<!-- MODAL: confirmar subida de CUdE -->
+<div class="modal-overlay" id="modal-confirmar-cude" data-closable="true">
+  <div class="modal" style="max-width:400px">
+    <h2 class="modal-title">Confirmar envío de CUdE</h2>
+    <p class="modal-sub">Revisá que sea el archivo correcto antes de enviarlo a coordinación.</p>
+    <div style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:12px 14px;margin:1rem 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:22px">📄</span>
+      <div>
+        <div id="cude-confirm-nombre" style="font-size:13px;font-weight:500;color:var(--navy);word-break:break-all"></div>
+        <div id="cude-confirm-tamano" style="font-size:12px;color:var(--gray-400)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="cancelarSubidaCude()">Cancelar</button>
+      <button class="btn-primary" onclick="confirmarSubidaCude()">Confirmar y enviar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: duplicar comisiones del año anterior -->
 <div class="modal-overlay" id="modal-duplicar-comisiones" data-closable="true">
   <div class="modal" style="max-width:420px">
@@ -11144,7 +11163,7 @@ function renderStudentCudeView() {
     </p>
     <label style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:13px;cursor:pointer;font-family:var(--font)">
       📄 Subir CUdE (PDF, JPG o PNG · máx. 2MB)
-      <input type="file" accept="application/pdf,image/jpeg,image/png" onchange="subirCudeAlumno(this)" style="display:none">
+      <input type="file" accept="application/pdf,image/jpeg,image/png" onchange="handleCudeFileSelected(this)" style="display:none">
     </label>`;
   } else if (estado === 'pendiente') {
     html += `<p style="font-size:13px;color:var(--gray-600)">Tu CUdE está siendo revisado por coordinación. Te avisaremos cuando esté validado.</p>`;
@@ -11256,7 +11275,9 @@ function updateCudeSolComisiones() {
   group.style.display = 'block';
 }
 
-async function subirCudeAlumno(input) {
+let _cudeArchivoSeleccionado = null;
+
+function handleCudeFileSelected(input) {
   if (!input.files[0]) return;
   const archivo = input.files[0];
   const tiposPermitidos = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -11270,6 +11291,23 @@ async function subirCudeAlumno(input) {
     input.value = '';
     return;
   }
+  _cudeArchivoSeleccionado = archivo;
+  const kb = (archivo.size / 1024).toFixed(0);
+  document.getElementById('cude-confirm-nombre').textContent = archivo.name;
+  document.getElementById('cude-confirm-tamano').textContent = `${kb} KB`;
+  document.getElementById('modal-confirmar-cude').classList.add('open');
+  input.value = '';
+}
+
+function cancelarSubidaCude() {
+  _cudeArchivoSeleccionado = null;
+  document.getElementById('modal-confirmar-cude').classList.remove('open');
+}
+
+async function confirmarSubidaCude() {
+  const archivo = _cudeArchivoSeleccionado;
+  if (!archivo) return;
+  document.getElementById('modal-confirmar-cude').classList.remove('open');
 
   const legajo = getLegajoByEmail(currentUser.email);
   if (!legajo) return;
