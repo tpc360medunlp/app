@@ -5264,8 +5264,8 @@ function getUnseenChanges(email) {
   });
 
   // ── Notas nuevas publicadas ───────────────────────────
-  const currentYear  = new Date().getFullYear();
-  const misComisiones = COMISIONES.filter(c => c.año === currentYear && c.alumnos.includes(email));
+  const ciclosActivos = getCiclosLectivosActivos();
+  const misComisiones = COMISIONES.filter(c => ciclosActivos.includes(c.año) && c.alumnos.includes(email));
   const seenNotas = lastSeenNotasStatus[email] || {};
   misComisiones.forEach(com => {
     NOMBRES_PARCIALES.forEach(parc => {
@@ -5332,8 +5332,8 @@ function markAllAsSeen(email) {
   });
 
   // Notas
-  const currentYear   = new Date().getFullYear();
-  const misComisiones = COMISIONES.filter(c => c.año === currentYear && c.alumnos.includes(email));
+  const ciclosActivos = getCiclosLectivosActivos();
+  const misComisiones = COMISIONES.filter(c => ciclosActivos.includes(c.año) && c.alumnos.includes(email));
   lastSeenNotasStatus[email] = {};
   misComisiones.forEach(com => {
     NOMBRES_PARCIALES.forEach(parc => {
@@ -7741,12 +7741,12 @@ let activeQrDate = null;
 let qrRegistered = new Set();
 
 function getTeacherComisiones() {
-  const currentYear = new Date().getFullYear();
+  const ciclosActivos = getCiclosLectivosActivos();
   const staffEntry = Object.entries(ENROLLED_STAFF).find(([dni, s]) =>
     `${s.nombre} ${s.apellido}` === currentUser.name
   );
   if (!staffEntry) return [];
-  return COMISIONES.filter(c => c.docenteDni === staffEntry[0] && c.año === currentYear);
+  return COMISIONES.filter(c => c.docenteDni === staffEntry[0] && ciclosActivos.includes(c.año));
 }
 
 function getMateriaName(id) {
@@ -14864,6 +14864,8 @@ async function descargarCertFinal(id) {
   const hoy = new Date();
   const fechaEmision = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
 
+  const añoExamen = s.fechaExamen ? s.fechaExamen.split('/')[2] : String(hoy.getFullYear());
+
   let texto = certFinalConfig.textoBase
     .replace(/{APELLIDO}/g,     s.apellido)
     .replace(/{NOMBRE}/g,       s.nombre)
@@ -14871,7 +14873,7 @@ async function descargarCertFinal(id) {
     .replace(/{LEGAJO}/g,       s.dni)
     .replace(/{MATERIA}/g,      materia?.nombre||'')
     .replace(/{FECHA_EXAMEN}/g, s.fechaExamen)
-    .replace(/{AÑO}/g,          String(new Date().getFullYear()))
+    .replace(/{AÑO}/g,          añoExamen)
     .replace(/{FECHA_EMISION}/g,fechaEmision);
 
   showToast('Generando certificado...');
