@@ -14350,13 +14350,14 @@ function cronoRowsHTMLFromCron(cronograma, materiaId, estaMatriculado, filtro) {
     if (filtro==='tp')             actividades = tipoTag(f.teorico,'teorico',f.lugarTeorico||'') + tipoTag(f.practico,'practico',f.lugarPractico||'');
     else if (filtro==='parciales') actividades = tipoTag(f.parcial,'parcial', f.lugarParcial||'');
     else if (filtro==='finales')   actividades = tipoTag(f.final,'final', f.lugarFinal||'', matchMesaParaFinal(materiaId, f.final, f.inicio));
-    if (!actividades) return;
+    if (!actividades && !f.obs) return;
     const fechaLabel = f.inicio
       ? (f.fin && f.fin !== f.inicio ? `Semana del ${f.inicio} al ${f.fin}` : f.inicio)
       : '';
+    const obsHtml = f.obs ? `<div style="font-size:12px;color:var(--gray-400);margin-top:4px">ℹ️ ${escapeHtml(f.obs)}</div>` : '';
     rows += `<div class="skill-row" style="align-items:flex-start;flex-direction:column;gap:4px;padding:10px 16px">
       <div style="font-size:12px;color:var(--gray-400)">${fechaLabel}</div>
-      <div>${actividades}</div>
+      <div>${actividades}${obsHtml}</div>
     </div>`;
   });
 
