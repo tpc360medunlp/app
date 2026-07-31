@@ -11339,6 +11339,8 @@ async function confirmarSubidaCude() {
   ENROLLED_STUDENTS[legajo].cude.activo  = false;
   ENROLLED_STUDENTS[legajo].cude.archivo = archivo.name;
   ENROLLED_STUDENTS[legajo].cude.archivoUrl = archivoUrl;
+  const hoy = new Date();
+  ENROLLED_STUDENTS[legajo].cude.fechaSolicitud = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
 
   const { error: updateError } = await _supabase.from('alumnos')
     .update({ cude: ENROLLED_STUDENTS[legajo].cude })
@@ -11455,7 +11457,7 @@ function renderCoordCudeActivos() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
           <div>
             <div style="font-size:14px;font-weight:600;color:var(--navy)">${a.apellido}, ${a.nombre}</div>
-            <div style="font-size:12px;color:var(--gray-400)">Legajo: ${key} · Archivo: ${a.cude?.archivo || 'no disponible'}
+            <div style="font-size:12px;color:var(--gray-400)">Legajo: ${key} · Solicitado: ${a.cude?.fechaSolicitud || 'sin dato'} · Archivo: ${a.cude?.archivo || 'no disponible'}
               ${a.cude?.archivo ? `<button onclick="verArchivoCude('${key}')"
                 style="margin-left:10px;padding:2px 10px;font-size:11px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:white;color:var(--teal);cursor:pointer;font-family:var(--font)">
                 Ver archivo
@@ -11524,7 +11526,7 @@ function renderCoordCudeValidacion() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
           <div>
             <div style="font-size:14px;font-weight:600;color:var(--navy)">${a.apellido}, ${a.nombre}</div>
-            <div style="font-size:12px;color:var(--gray-400)">Legajo: ${key} · Archivo: ${a.cude?.archivo || 'no disponible en demo'}
+            <div style="font-size:12px;color:var(--gray-400)">Legajo: ${key} · Solicitado: ${a.cude?.fechaSolicitud || 'sin dato'} · Archivo: ${a.cude?.archivo || 'no disponible en demo'}
               ${a.cude?.archivo ? `<button onclick="verArchivoCude('${key}')"
                 style="margin-left:10px;padding:2px 10px;font-size:11px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:white;color:var(--teal);cursor:pointer;font-family:var(--font)">
                 Ver archivo
