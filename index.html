@@ -11114,6 +11114,7 @@ function getCudeAlumno(email) {
 function getCudeEstado(cude) {
   if (!cude) return 'sin_cude';
   if (cude.estado === 'pendiente') return 'pendiente';
+  if (cude.estado === 'rechazado') return 'rechazado';
   if (cude.estado === 'validado') {
     const hoy = new Date().toISOString().slice(0,10);
     if (cude.vencimiento && cude.vencimiento < hoy) return 'vencido';
@@ -11142,6 +11143,7 @@ function renderStudentCudeView() {
   const estadoBadge = {
     sin_cude:  { label: 'Sin CUdE',            color: 'var(--gray-400)',   bg: 'var(--gray-100)'  },
     pendiente: { label: 'Pendiente validación', color: '#b05a10',          bg: 'var(--amber-light)'},
+    rechazado: { label: 'CUdE Rechazado',       color: '#b02030',          bg: 'var(--red-light)'  },
     activo:    { label: 'CUdE Activo',          color: '#1a7a35',          bg: 'var(--green-light)'},
     vencido:   { label: 'CUdE Vencido',         color: '#b02030',          bg: 'var(--red-light)'  },
   }[estado];
@@ -11157,9 +11159,11 @@ function renderStudentCudeView() {
         ${estado === 'activo' ? `<span style="font-size:12px;color:var(--gray-400)">Vence: ${cude.vencimiento.split('-').reverse().join('/')}</span>` : ''}
       </div>`;
 
-  if (estado === 'sin_cude' || estado === 'vencido') {
+  if (estado === 'sin_cude' || estado === 'vencido' || estado === 'rechazado') {
     html += `<p style="font-size:13px;color:var(--gray-600);margin-bottom:1rem">
-      ${estado === 'vencido' ? 'Tu CUdE ha vencido. Podés subir uno nuevo para renovarlo.' : 'Aún no tenés un CUdE registrado en el sistema.'}
+      ${estado === 'vencido' ? 'Tu CUdE ha vencido. Podés subir uno nuevo para renovarlo.'
+        : estado === 'rechazado' ? `Tu CUdE fue rechazado por coordinación${cude.motivoRechazo ? `: <strong>${escapeHtml(cude.motivoRechazo)}</strong>` : '.'} Podés subir uno nuevo.`
+        : 'Aún no tenés un CUdE registrado en el sistema.'}
     </p>
     <label style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:13px;cursor:pointer;font-family:var(--font)">
       📄 Subir CUdE (PDF, JPG o PNG · máx. 2MB)
@@ -11341,6 +11345,7 @@ async function confirmarSubidaCude() {
   ENROLLED_STUDENTS[legajo].cude.archivoUrl = archivoUrl;
   const hoy = new Date();
   ENROLLED_STUDENTS[legajo].cude.fechaSolicitud = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+  ENROLLED_STUDENTS[legajo].cude.motivoRechazo = null;
 
   const { error: updateError } = await _supabase.from('alumnos')
     .update({ cude: ENROLLED_STUDENTS[legajo].cude })
@@ -11595,6 +11600,8 @@ async function aprobarCude(legajo) {
 }
 
 async function rechazarCude(legajo) {
+  const motivo = prompt('Motivo del rechazo (el alumno lo va a ver):');
+  if (motivo === null) return; // canceló
   const keyReal = ENROLLED_STUDENTS[legajo]
     ? legajo
     : Object.keys(ENROLLED_STUDENTS).find(k =>
@@ -11603,10 +11610,12 @@ async function rechazarCude(legajo) {
       );
   if (!keyReal || !ENROLLED_STUDENTS[keyReal]) { showToast('No se encontró el alumno', true); return; }
   const cudeAnterior = ENROLLED_STUDENTS[keyReal].cude ? { ...ENROLLED_STUDENTS[keyReal].cude } : null;
-  ENROLLED_STUDENTS[keyReal].cude = null;
+  ENROLLED_STUDENTS[keyReal].cude.estado = 'rechazado';
+  ENROLLED_STUDENTS[keyReal].cude.motivoRechazo = motivo.trim();
+  ENROLLED_STUDENTS[keyReal].cude.activo = false;
   // Guardar en Supabase
   const { error } = await _supabase.from('alumnos')
-    .update({ cude: null })
+    .update({ cude: ENROLLED_STUDENTS[keyReal].cude })
     .eq('legajo', keyReal);
 
   if (error) {
