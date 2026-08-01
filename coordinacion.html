@@ -11119,9 +11119,17 @@ function buildCortesTemporales(ciclo) {
 
     if (parcialesConNotas.length === 0) return;
 
+    // Para decidir si un alumno ya "completó" la cursada, usar la cantidad real de
+    // parciales que tiene la materia (si está configurada) — no solo los que ya
+    // tienen notas cargadas, para no dar por acreditado a alguien al que todavía
+    // le falta rendir un parcial que no se tomó todavía.
+    const parcialesRequeridos = materia.cantidadParciales
+      ? NOMBRES_PARCIALES.slice(0, materia.cantidadParciales)
+      : parcialesConNotas;
+
     const aprobadosCursada = alumnosCursada.filter(email => {
       const coms = getComisionesMateriaAlumno(email, materia.id, inicio);
-      return parcialesConNotas.every(p =>
+      return parcialesRequeridos.every(p =>
         NOMBRES_FECHAS.some(f => coms.some(com => {
           const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
           return est==='aprobado'||est==='promocion';
@@ -11131,7 +11139,7 @@ function buildCortesTemporales(ciclo) {
 
     const promocionados = aprobadosCursada.filter(email => {
       const coms = getComisionesMateriaAlumno(email, materia.id, inicio);
-      return parcialesConNotas.every(p =>
+      return parcialesRequeridos.every(p =>
         NOMBRES_FECHAS.some(f => coms.some(com =>
           parciales[com.id]?.[p]?.[f]?.[email]?.estado==='promocion'
         ))
