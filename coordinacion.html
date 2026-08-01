@@ -11180,7 +11180,13 @@ function renderStudentCudeView() {
 
   // Sección cambio de comisión
   if (estado === 'activo') {
-    const materiasHabilitadas = getMateriasConPeriodoAbierto(email);
+    // Solo materias donde el alumno realmente está cursando (tiene una comisión asignada) —
+    // "Cambio de comisión" es para cambiar de una existente a otra, no para anotarse en algo nuevo.
+    const cicloActualAlumno = getCicloLectivoActual();
+    const materiaIdsCursando = new Set(
+      COMISIONES.filter(c => c.año === cicloActualAlumno && c.alumnos.includes(email)).map(c => c.materiaId)
+    );
+    const materiasHabilitadas = getMateriasConPeriodoAbierto(email).filter(m => materiaIdsCursando.has(m.id));
     html += `<div class="area-card" style="margin-bottom:1rem">
       <div class="area-header"><span class="area-name">Cambio de comisión</span></div>
       <div style="padding:1.25rem 1.5rem">`;
