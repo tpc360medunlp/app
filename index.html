@@ -640,6 +640,7 @@ async function ensureJsQR() {
     overflow: hidden;
   }
   .mnav-btn {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -657,6 +658,31 @@ async function ensureJsQR() {
     -webkit-tap-highlight-color: transparent;
     border-top: 3px solid transparent;
     min-width: 0;
+  }
+  .mnav-badge {
+    position: absolute;
+    top: 3px;
+    right: calc(50% - 22px);
+    background: #b02030;
+    color: white;
+    border-radius: 10px;
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.3;
+    min-width: 14px;
+    text-align: center;
+  }
+  .mnav-badge-dot {
+    padding: 0;
+    min-width: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .msheet-item .mnav-badge {
+    position: static;
+    margin-left: auto;
   }
   .mnav-btn.active { color: var(--teal-mid); border-top-color: var(--teal-mid); background: rgba(255,255,255,0.04); }
   .mnav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; }
@@ -3063,6 +3089,7 @@ async function enterApp() {
       const firstGroup = getOrderedTeacherGroups().find(g => g.enabled);
       switchTeacherView(firstGroup?.view || 'teacher');
       setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
+      actualizarBadgeAulas();
     }
     else {
       switchCoordView('stats');
@@ -3206,6 +3233,36 @@ function renderMobileHeader() {
   `;
 }
 
+// Mapea el id de cada ítem del menú al id del badge de escritorio correspondiente —
+// así el mobile refleja el mismo número ya calculado, sin duplicar ningún cómputo.
+const NAV_ID_TO_BADGE_ID = {
+  'nav-student-portfolio':     'portfolio-badge-student',
+  'nav-student-notas':         'notas-badge-student',
+  'nav-student-certificados':  'certificados-badge-student',
+  'nav-student-cude':          'cude-badge-student',
+  'nav-student-cartelera':     'cartelera-badge-student',
+  'nav-coord-cude':            'cude-badge-coord',
+  'nav-coord-aulas':           'aulas-badge-coord',
+  'nav-coord-mesas':           'mesas-badge-coord',
+  'nav-coord-cartelera':       'cartelera-badge-coord',
+  'nav-teacher-aulas':         'aulas-badge-teacher',
+};
+
+function getMobileBadgeCount(itemId) {
+  const badgeId = NAV_ID_TO_BADGE_ID[itemId];
+  if (!badgeId) return 0;
+  const el = document.getElementById(badgeId);
+  if (!el || el.style.display === 'none') return 0;
+  const n = parseInt(el.textContent);
+  return isNaN(n) ? 0 : n;
+}
+
+function getMobileBadgeHTML(itemId) {
+  const n = getMobileBadgeCount(itemId);
+  if (n <= 0) return '';
+  return `<span class="mnav-badge">${n > 9 ? '9+' : n}</span>`;
+}
+
 function renderMobileNav() {
   if (window.innerWidth > 768) return;
   const nav = document.getElementById('mobile-nav');
@@ -3221,12 +3278,15 @@ function renderMobileNav() {
       const active = it.id && document.getElementById(it.id)?.classList.contains('active');
       return `<button class="mnav-btn${active?' active':''}" onclick="${it.fn};syncMobileNav()">
         ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
+        ${it.id ? getMobileBadgeHTML(it.id) : ''}
       </button>`;
     }).join('');
 
     if (extra.length > 0) {
+      const hayNovedadesEscondidas = extra.some(it => it.id && getMobileBadgeCount(it.id) > 0);
       html += `<button class="mnav-btn" onclick="openMobileDrawer()">
         ${NAV_ICONS.mas}<span>Más</span>
+        ${hayNovedadesEscondidas ? `<span class="mnav-badge mnav-badge-dot"></span>` : ''}
       </button>`;
     }
     nav.innerHTML = html;
@@ -3260,6 +3320,7 @@ function openMobileDrawer() {
     html += `<button class="msheet-item${active?' active':''}"
       onclick="closeMobileDrawer(); requestAnimationFrame(() => { ${it.fn}; syncMobileNav(); })">
       ${NAV_ICONS[it.i] || ''}<span>${it.l}</span>
+      ${it.id ? getMobileBadgeHTML(it.id) : ''}
     </button>`;
   });
   sheet.innerHTML = html;
@@ -5443,6 +5504,7 @@ function actualizarBadgesNovedadesStudent() {
   setBadge('notas-badge-student', counts.notas);
   setBadge('certificados-badge-student', counts.certificados);
   setBadge('cude-badge-student', counts.cude);
+  renderMobileNav();
 }
 
 function buildNovedadesVistasObj(email) {
@@ -5566,6 +5628,7 @@ async function guardarNovedadesVistasTeacher(docenteDni) {
     .update({ novedades_vistas: buildNovedadesVistasTeacherObj(docenteDni) })
     .eq('dni', docenteDni);
   if (error) console.warn('Error guardando novedades vistas (docente):', error);
+  actualizarBadgeAulas();
 }
 
 // Cada una marca como vista SOLO su propia sección — entrar a "Aulas" no debería
@@ -11650,6 +11713,7 @@ function actualizarBadgeCude() {
     badge.style.display = total > 0 ? 'inline' : 'none';
     badge.textContent = total > 9 ? '9+' : String(total);
   }
+  renderMobileNav();
 }
 
 function renderCoordCudeView() {
@@ -12163,6 +12227,7 @@ function actualizarBadgeMesasFinales() {
   });
   badge.style.display = pendientes > 0 ? 'inline' : 'none';
   badge.textContent = pendientes > 99 ? '99+' : String(pendientes);
+  renderMobileNav();
 }
 
 function actualizarBadgeAulas() {
@@ -12172,14 +12237,18 @@ function actualizarBadgeAulas() {
     badgeCoord.style.display = pendientes > 0 ? 'inline' : 'none';
     badgeCoord.textContent = pendientes > 9 ? '9+' : String(pendientes);
   }
-  // Badge docente: solicitudes propias con respuesta nueva
+  // Badge docente: solicitudes propias confirmadas que todavía no vio
   const dni = getTeacherDni();
-  const confirmadas = solicitudesAulas.filter(s => s.docente_dni === dni && s.estado === 'confirmada').length;
+  const seenAulas = lastSeenAulasStatus[dni] || {};
+  const confirmadas = solicitudesAulas.filter(s =>
+    s.docente_dni === dni && s.estado === 'confirmada' && seenAulas[s.id] !== 'confirmada'
+  ).length;
   const badgeTeacher = document.getElementById('aulas-badge-teacher');
   if (badgeTeacher) {
     badgeTeacher.style.display = confirmadas > 0 ? 'inline' : 'none';
     badgeTeacher.textContent = confirmadas > 9 ? '9+' : String(confirmadas);
   }
+  renderMobileNav();
 }
 
 function renderTeacherAulasView(tab = null) {
@@ -13285,6 +13354,7 @@ async function actualizarBadgeCartelera() {
     badge.style.display = noLeidos > 0 ? 'inline' : 'none';
     badge.textContent = noLeidos > 9 ? '9+' : String(noLeidos);
   }
+  renderMobileNav();
 }
 
 async function renderCartelaView(containerId) {
