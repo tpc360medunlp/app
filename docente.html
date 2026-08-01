@@ -2097,6 +2097,11 @@ async function loadDataFromSupabase() {
           cargo: s.cargo || '',
           activo: s.activo !== false,
         };
+        // Novedades ya vistas por el docente (para que no reaparezcan en cada sesión nueva)
+        const nvT = s.novedades_vistas || {};
+        lastSeenPendingCount[s.dni] = nvT.pendingCount || 0;
+        lastSeenCertStatus[s.dni]   = nvT.certCount    || 0;
+        lastSeenAulasStatus[s.dni]  = nvT.aulasStatus  || {};
       });
     }
 
@@ -3050,6 +3055,7 @@ async function enterApp() {
       setTimeout(() => {
         showInAppNotifications(currentUser.email);
         window._notifShown = true;
+        actualizarBadgesNovedadesStudent();
       }, 600);
       procesarTokenQrSiExiste();
     }
@@ -3058,7 +3064,10 @@ async function enterApp() {
       switchTeacherView(firstGroup?.view || 'teacher');
       setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
     }
-    else switchCoordView('stats');
+    else {
+      switchCoordView('stats');
+      actualizarBadgeMesasFinales();
+    }
 
   } catch(err) {
     console.error('Error al cargar la vista:', err);
@@ -3273,6 +3282,7 @@ function renderSidebar() {
       portfolio: `<button class="nav-item active" id="nav-student-portfolio" onclick="switchStudentView('student')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6"/><path d="M9 2h6l2 4-5 3-5-3z"/><path d="M12 10v4"/><circle cx="12" cy="14" r="2"/></svg>
         <span>Portfolio</span>
+        <span id="portfolio-badge-student" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
       </button>`,
       asistencia: `<button class="nav-item" id="nav-student-attendance" onclick="switchStudentView('student-attendance')">
         <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
@@ -3281,10 +3291,12 @@ function renderSidebar() {
       notas: `<button class="nav-item" id="nav-student-notas" onclick="switchStudentView('student-notas')">
         <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span>Calificaciones/Notas</span>
+        <span id="notas-badge-student" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
       </button>`,
       certificados: `<button class="nav-item" id="nav-student-certificados" onclick="switchStudentView('student-certificados')">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="12" cy="15" r="2"/><path d="M12 17v2"/></svg>
         <span>Certificados</span>
+        <span id="certificados-badge-student" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
       </button>`,
       cronograma: `<button class="nav-item" id="nav-student-cronograma" onclick="switchStudentView('student-cronograma')">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -3298,6 +3310,7 @@ function renderSidebar() {
       cude: `<button class="nav-item" id="nav-student-cude" onclick="switchStudentView('student-cude')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         <span>Mi CUdE</span>
+        <span id="cude-badge-student" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
       </button>`,
     };
     const orderedHtml = getOrderedStudentGroups()
@@ -3363,6 +3376,7 @@ function renderSidebar() {
       <button class="nav-item" id="nav-coord-mesas" onclick="switchCoordView('mesas')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Mesas de Finales</span>
+        <span id="mesas-badge-coord" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
       </button>
       <button class="nav-item" id="nav-coord-certificados" onclick="switchCoordView('certificados')">
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="12" cy="15" r="2"/><path d="M12 17v2"/></svg>
@@ -3479,6 +3493,7 @@ function switchStudentView(view) {
         const banner = document.getElementById('inapp-notif-banner');
         if (banner) banner.remove();
       }
+      actualizarBadgesNovedadesStudent();
     }
     if (view === 'student-attendance')   renderStudentAttendanceView();
     if (view === 'student-notas') {
@@ -3502,11 +3517,21 @@ function switchStudentView(view) {
       if (cf) cf.style.display = _studentNotasTab==='finales'   ? 'block' : 'none';
       if (_studentNotasTab === 'parciales') renderStudentNotasView();
       else renderStudentFinalesView();
+      markAllAsSeen(currentUser.email);
+      actualizarBadgesNovedadesStudent();
     }
-    if (view === 'student-certificados') renderStudentCertificadosView();
+    if (view === 'student-certificados') {
+      renderStudentCertificadosView();
+      markAllAsSeen(currentUser.email);
+      actualizarBadgesNovedadesStudent();
+    }
     if (view === 'student-cronograma')   renderStudentCronogramaView();
     if (view === 'student-cartelera')    renderCartelaView('student-cartelera-container');
-    if (view === 'student-cude')         renderStudentCudeView();
+    if (view === 'student-cude') {
+      renderStudentCudeView();
+      markAllAsSeen(currentUser.email);
+      actualizarBadgesNovedadesStudent();
+    }
   };
 
   doRender();
@@ -5274,6 +5299,7 @@ let lastSeenCertStatus     = {};
 let lastSeenPendingCount   = {};
 let lastSeenCudeStatus     = {};
 let lastSeenCambioComisionStatus = {};
+let lastSeenAulasStatus    = {};
 
 function getUnseenChanges(email) {
   const changes = [];
@@ -5376,7 +5402,40 @@ function getUnseenTeacherChanges(docenteDni) {
     changes.push({ type: 'cert', msg: `🎓 ${nuevas} nueva${nuevas!==1?'s':''} solicitud${nuevas!==1?'es':''} de certificado pendiente${nuevas!==1?'s':''}`, view: 'cert-requests' });
   }
 
+  // Solicitudes de aula confirmadas por coordinación
+  const seenAulas = lastSeenAulasStatus[docenteDni] || {};
+  solicitudesAulas
+    .filter(s => s.docente_dni === docenteDni)
+    .forEach(s => {
+      const prev = seenAulas[s.id];
+      if (prev !== s.estado && s.estado === 'confirmada') {
+        changes.push({ type: 'aula', msg: `🏫 Tu solicitud de aula fue confirmada`, view: 'teacher-aulas' });
+      }
+    });
+
   return changes;
+}
+
+function actualizarBadgesNovedadesStudent() {
+  if (currentRole !== 'student' || !currentUser?.email) return;
+  const changes = getUnseenChanges(currentUser.email);
+  const counts = { portfolio: 0, notas: 0, certificados: 0, cude: 0 };
+  changes.forEach(c => {
+    if (c.view === 'student')               counts.portfolio++;
+    else if (c.view === 'student-notas')        counts.notas++;
+    else if (c.view === 'student-certificados') counts.certificados++;
+    else if (c.view === 'student-cude')         counts.cude++;
+  });
+  const setBadge = (id, n) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = n > 0 ? 'inline' : 'none';
+    el.textContent = n > 9 ? '9+' : String(n);
+  };
+  setBadge('portfolio-badge-student', counts.portfolio);
+  setBadge('notas-badge-student', counts.notas);
+  setBadge('certificados-badge-student', counts.certificados);
+  setBadge('cude-badge-student', counts.cude);
 }
 
 async function markAllAsSeen(email) {
@@ -5436,12 +5495,27 @@ async function markAllAsSeen(email) {
   }
 }
 
-function markTeacherAsSeen(docenteDni) {
+async function markTeacherAsSeen(docenteDni) {
   lastSeenPendingCount[docenteDni] = Object.values(studentRecords)
     .flatMap(recs => Object.values(recs))
     .filter(r => r.status === 'pending' && r.docenteDni === docenteDni).length;
   lastSeenCertStatus[docenteDni] = solicitudesCertFinales
     .filter(s => s.docenteDni === docenteDni && s.estado === 'pendiente').length;
+  lastSeenAulasStatus[docenteDni] = {};
+  solicitudesAulas.filter(s => s.docente_dni === docenteDni).forEach(s => {
+    lastSeenAulasStatus[docenteDni][s.id] = s.estado;
+  });
+
+  // Guardar en Supabase, para que no reaparezcan en la próxima sesión
+  const novedadesVistas = {
+    pendingCount: lastSeenPendingCount[docenteDni],
+    certCount:    lastSeenCertStatus[docenteDni],
+    aulasStatus:  lastSeenAulasStatus[docenteDni],
+  };
+  const { error } = await _supabase.from('staff')
+    .update({ novedades_vistas: novedadesVistas })
+    .eq('dni', docenteDni);
+  if (error) console.warn('Error guardando novedades vistas (docente):', error);
 }
 
 function showInAppNotifications(email) {
@@ -10401,6 +10475,7 @@ function renderMesasFinalesView() {
       }).join('')}
     </div>
   `;
+  actualizarBadgeMesasFinales();
 }
 
 function renderFinalesStatsView() {
@@ -11985,6 +12060,28 @@ async function rechazarSolicitudCambio(solId) {
 
 // ── MÓDULO SOLICITUD DE AULAS ─────────────────────────────
 let solicitudesAulas = [];
+
+function actualizarBadgeMesasFinales() {
+  const badge = document.getElementById('mesas-badge-coord');
+  if (!badge) return;
+  const ciclo = getCicloLectivoActual();
+  const { inicio, fin } = getCicloYears(ciclo);
+  const mesas = getMesasDelCiclo(ciclo);
+  const now = new Date();
+  let pendientes = 0;
+  mesas.forEach(mesa => {
+    const añoMesa = mesa.mes >= 4 ? inicio : fin;
+    const pasada = añoMesa < now.getFullYear() ||
+                   (añoMesa === now.getFullYear() && mesa.mes < now.getMonth() + 1);
+    if (!pasada) return;
+    MATERIAS.forEach(m => {
+      const d = getMesaData(m.id, añoMesa, mesa.id);
+      if (!d.cargado && !d.anulada) pendientes++;
+    });
+  });
+  badge.style.display = pendientes > 0 ? 'inline' : 'none';
+  badge.textContent = pendientes > 99 ? '99+' : String(pendientes);
+}
 
 function actualizarBadgeAulas() {
   const pendientes = solicitudesAulas.filter(s => s.estado === 'pendiente').length;
