@@ -1151,8 +1151,8 @@ async function ensureJsQR() {
       <div id="view-coord-teachers" class="page-view">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Docentes</h1>
-            <p class="page-sub">Listado del cuerpo docente de la carrera</p>
+            <h1 class="page-title">Personal</h1>
+            <p class="page-sub">Listado de docentes, coordinadores y personal no docente de la carrera</p>
           </div>
         </div>
         <div id="teachers-container"></div>
@@ -1454,8 +1454,8 @@ async function ensureJsQR() {
 <!-- MODAL: nuevo/editar docente -->
 <div class="modal-overlay" id="modal-docente">
   <div class="modal">
-    <h2 class="modal-title" id="modal-docente-title">Nuevo docente</h2>
-    <p class="modal-sub">Completá los datos del docente para agregarlo al sistema.</p>
+    <h2 class="modal-title" id="modal-docente-title">Nueva persona</h2>
+    <p class="modal-sub">Completá los datos de la persona para agregarla al sistema.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-field">
         <label class="form-label">Apellido/s</label>
@@ -1502,6 +1502,7 @@ async function ensureJsQR() {
         <option>Ayudante Alumno</option>
         <option>Adscripto</option>
         <option>Colaborador docente</option>
+        <option>Nodocente</option>
       </select>
     </div>
     <div id="doc-error" style="display:none;background:var(--red-light);border:1px solid #f5b8be;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:#b02030;margin-bottom:1rem"></div>
@@ -3196,7 +3197,7 @@ function getNavItems() {
   if (currentRole === 'coordinator') {
     return [
       {i:'stats',     l:'Estadísticas', fn:`switchCoordView('stats')`,        id:'nav-coord-stats'},
-      {i:'docentes',  l:'Docentes',     fn:`switchCoordView('teachers')`,     id:'nav-coord-teachers'},
+      {i:'docentes',  l:'Personal',     fn:`switchCoordView('teachers')`,     id:'nav-coord-teachers'},
       {i:'materias',  l:'Materias',     fn:`switchCoordView('academic')`,     id:'nav-coord-academic'},
       {i:'mesas',     l:'Mesas de Finales', fn:`switchCoordView('mesas')`,    id:'nav-coord-mesas'},
       {i:'cert',      l:'Certificados', fn:`switchCoordView('certificados')`, id:'nav-coord-certificados'},
@@ -3439,7 +3440,7 @@ function renderSidebar() {
       </button>
       <button class="nav-item" id="nav-coord-teachers" onclick="switchCoordView('teachers')">
         <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="14" rx="1"/><line x1="2" y1="16" x2="22" y2="16"/><line x1="6" y1="20" x2="18" y2="20"/><line x1="9" y1="16" x2="7" y2="20"/><line x1="15" y1="16" x2="17" y2="20"/><line x1="6" y1="7" x2="18" y2="7"/><line x1="6" y1="10" x2="14" y2="10"/></svg>
-        <span>Docentes</span>
+        <span>Personal</span>
       </button>
       <button class="nav-item" id="nav-coord-academic" onclick="switchCoordView('academic')">
         <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
@@ -14038,7 +14039,7 @@ function renderTeachersView() {
 
   document.getElementById('teachers-container').innerHTML = `
     <div style="margin-bottom:1.25rem">
-      <button class="btn-cargar" onclick="openDocenteModal(null)" style="padding:9px 16px;font-size:13px">+ Nuevo docente / coordinador</button>
+      <button class="btn-cargar" onclick="openDocenteModal(null)" style="padding:9px 16px;font-size:13px">+ Nueva persona</button>
     </div>
     <div class="area-card">
       <div class="area-header"><span class="area-name">Personal autorizado · ${activos.length} activo/s</span></div>
@@ -14126,9 +14127,10 @@ function toggleRoleChip(btn) {
 }
 
 function toggleCargoField() {
-  const isTeacher = document.getElementById('role-chip-teacher')?.dataset.selected === 'true';
+  const isTeacher     = document.getElementById('role-chip-teacher')?.dataset.selected === 'true';
+  const isCoordinator = document.getElementById('role-chip-coordinator')?.dataset.selected === 'true';
   const group = document.getElementById('field-cargo-group');
-  if (group) group.style.display = isTeacher ? 'block' : 'none';
+  if (group) group.style.display = (isTeacher || isCoordinator) ? 'block' : 'none';
 }
 
 function getSelectedRoles() {
@@ -14165,7 +14167,7 @@ function openDocenteModal(dni) {
     document.getElementById('field-doc-cargo').value    = s.cargo    || '';
     setRoleChips(s.roles || [s.role || 'teacher']);
   } else {
-    document.getElementById('modal-docente-title').textContent = 'Nuevo docente / coordinador';
+    document.getElementById('modal-docente-title').textContent = 'Nueva persona';
     document.getElementById('field-doc-apellido').value = '';
     document.getElementById('field-doc-nombre').value   = '';
     document.getElementById('field-doc-dni').value      = '';
@@ -14187,13 +14189,14 @@ async function confirmSaveDocente() {
   const dni      = document.getElementById('field-doc-dni').value.trim();
   const email    = document.getElementById('field-doc-email').value.trim();
   const roles    = getSelectedRoles();
-  const cargo    = roles.includes('teacher') ? document.getElementById('field-doc-cargo').value : 'Coordinación';
+  const cargo    = document.getElementById('field-doc-cargo').value;
 
   const errEl = document.getElementById('doc-error');
   if (!apellido || !nombre) { errEl.textContent = 'Ingresá nombre y apellido.'; errEl.style.display = 'block'; return; }
   if (!dni || dni.length < 7) { errEl.textContent = 'Ingresá un DNI válido.'; errEl.style.display = 'block'; return; }
   if (!editingDocenteDni && ENROLLED_STAFF[dni]) { errEl.textContent = 'Ya existe una persona con ese DNI.'; errEl.style.display = 'block'; return; }
   if (roles.length === 0) { errEl.textContent = 'Seleccioná al menos un rol.'; errEl.style.display = 'block'; return; }
+  if (!cargo) { errEl.textContent = 'Seleccioná un cargo.'; errEl.style.display = 'block'; return; }
 
   const anterior = ENROLLED_STAFF[dni] ? { ...ENROLLED_STAFF[dni] } : null;
   ENROLLED_STAFF[dni] = {
