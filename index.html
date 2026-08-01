@@ -11246,6 +11246,7 @@ function renderStudentCudeView() {
               <span style="font-size:13px;font-weight:500;color:var(--navy)">${materia?.nombre || ''} → ${comDest?.nombre || ''}</span>
               <span style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;background:${estadoSol.bg};color:${estadoSol.color}">${estadoSol.label}</span>
             </div>
+            ${s.fecha ? `<div style="font-size:11px;color:var(--gray-400);margin-top:2px">Solicitado: ${s.fecha.split('-').reverse().join('/')}</div>` : ''}
             ${s.motivoRechazo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Motivo: ${escapeHtml(s.motivoRechazo)}</div>` : ''}
           </div>`;
         });
@@ -11791,8 +11792,10 @@ async function eliminarPeriodoCude(id) {
 }
 
 function renderCoordCudeSolicitudes() {
-  const pendientes = solicitudesCambioComision.filter(s => s.estado === 'pendiente');
-  const resueltas  = solicitudesCambioComision.filter(s => s.estado !== 'pendiente');
+  const pendientes = solicitudesCambioComision.filter(s => s.estado === 'pendiente')
+    .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+  const resueltas  = solicitudesCambioComision.filter(s => s.estado !== 'pendiente')
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
   if (solicitudesCambioComision.length === 0) {
     return `<div class="empty-state"><div class="empty-icon">📋</div><p>No hay solicitudes de cambio de comisión.</p></div>`;
@@ -11818,6 +11821,7 @@ function renderCoordCudeSolicitudes() {
             <div style="font-size:12px;color:var(--gray-400);margin-top:2px">
               ${comOrig?.nombre || 'Sin comisión'} → ${comDest?.nombre || ''}
             </div>
+            ${s.fecha ? `<div style="font-size:11px;color:var(--gray-400);margin-top:2px">Solicitado: ${s.fecha.split('-').reverse().join('/')}</div>` : ''}
             <div style="font-size:12px;color:var(--gray-500);margin-top:4px;font-style:italic">"${escapeHtml(s.motivo)}"</div>
             ${s.motivoRechazo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Rechazado: ${escapeHtml(s.motivoRechazo)}</div>` : ''}
           </div>
