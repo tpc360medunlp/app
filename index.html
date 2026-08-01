@@ -11211,15 +11211,20 @@ function renderStudentCudeView() {
         html += `</div>`;
       }
 
-      // Formulario nueva solicitud
-      const tienePendiente = misSolicitudes.some(s => s.estado === 'pendiente');
-      if (!tienePendiente) {
+      // Formulario nueva solicitud — se excluye únicamente la materia que ya tiene una
+      // solicitud pendiente, no se bloquea el resto
+      const materiasIdsConPendiente = new Set(
+        misSolicitudes.filter(s => s.estado === 'pendiente').map(s => s.materiaId)
+      );
+      const materiasDisponiblesParaSolicitar = materiasHabilitadas.filter(m => !materiasIdsConPendiente.has(m.id));
+
+      if (materiasDisponiblesParaSolicitar.length > 0) {
         html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Nueva solicitud</div>
           <div class="form-field">
             <label class="form-label">Materia</label>
             <select class="form-select" id="cude-sol-materia" onchange="updateCudeSolComisiones()">
               <option value="">Seleccioná una materia</option>
-              ${materiasHabilitadas.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}
+              ${materiasDisponiblesParaSolicitar.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')}
             </select>
           </div>
           <div class="form-field" id="cude-sol-com-group" style="display:none">
@@ -11517,9 +11522,15 @@ async function actualizarVencimientoCude(legajo) {
 }
 
 function renderCoordCudeValidacion() {
+  const parseFechaDDMMYYYY = (str) => {
+    if (!str) return Infinity; // sin fecha (registros viejos) → al final, no asumimos que son los más antiguos
+    const [d, m, y] = str.split('/').map(Number);
+    return new Date(y, (m||1)-1, d||1).getTime();
+  };
   const pendientes = Object.entries(ENROLLED_STUDENTS)
     .filter(([,a]) => a.cude != null && a.cude?.estado === 'pendiente')
-    .map(([legajo, a]) => ({ legajo, ...a }));
+    .map(([legajo, a]) => ({ legajo, ...a }))
+    .sort((a, b) => parseFechaDDMMYYYY(a.cude?.fechaSolicitud) - parseFechaDDMMYYYY(b.cude?.fechaSolicitud));
 
   if (pendientes.length === 0) {
     return `<div class="empty-state"><div class="empty-icon">✅</div><p>No hay CUdEs pendientes de validación.</p></div>`;
