@@ -9991,6 +9991,24 @@ function getComisionesMateriaAlumno(email, materiaId, año) {
   return [...new Set([...comActual, ...comAnteriores].filter(Boolean))];
 }
 
+// Variante escopeada por período, usada solo en Seguimiento de cohorte y Estadísticas
+// de Finales — para que un alumno que recursa en el 2do cuatrimestre no arrastre
+// resultados de su paso previo por el 1er cuatrimestre de la misma materia y ciclo.
+// No reemplaza a la función compartida de arriba, que se sigue usando en el resto de la app.
+function getComisionesMateriaAlumnoPeriodo(email, materiaId, año, periodo) {
+  if (!email || !materiaId) return [];
+  const legajo = getLegajoByEmail(email);
+  const comActual = COMISIONES.filter(c =>
+    c.materiaId === materiaId && c.año == año && (c.periodo||1) === periodo && c.alumnos.includes(email)
+  );
+  if (!legajo) return comActual;
+  const comAnteriores = historialCambiosComision
+    .filter(h => h.legajo === legajo)
+    .map(h => COMISIONES.find(c => c.id === h.deComId))
+    .filter(c => c && c.materiaId === materiaId && c.año == año && (c.periodo||1) === periodo);
+  return [...new Set([...comActual, ...comAnteriores].filter(Boolean))];
+}
+
 // ── LÓGICA COMPARTIDA DE CONSOLIDADO (usada por vista docente y coordinación) ──
 // Calcula, para un grupo de comisiones de una materia, si cada parcial ya
 // agotó todas sus fechas disponibles (tiene datos cargados en todas).
@@ -11103,11 +11121,17 @@ function buildFinalesStats(ciclo) {
       const pPresentismo= total>0 ? Math.round(presentes/total*100) : 0;
       const pAprobados  = presentes>0 ? Math.round(aprobados/presentes*100) : 0;
 
-      // Cruce cursada
+      // Cruce cursada — cada alumno se clasifica mirando solo su período más reciente
+      // (si recursa en el mismo ciclo, no arrastra resultados de un cuatrimestre anterior)
       const comisiones = COMISIONES.filter(c => c.materiaId===materia.id && c.año==inicio);
       const alumnosCursada = [...new Set(comisiones.flatMap(c => c.alumnos||[]))];
+      const periodoMasRecientePorAlumno = {};
+      alumnosCursada.forEach(email => {
+        const periodosAlumno = comisiones.filter(c => (c.alumnos||[]).includes(email)).map(c => c.periodo||1);
+        periodoMasRecientePorAlumno[email] = Math.max(...periodosAlumno);
+      });
       const aprobadosCursada = alumnosCursada.filter(email => {
-        const coms = getComisionesMateriaAlumno(email, materia.id, inicio);
+        const coms = getComisionesMateriaAlumnoPeriodo(email, materia.id, inicio, periodoMasRecientePorAlumno[email]);
         return NOMBRES_PARCIALES.every(p =>
           NOMBRES_FECHAS.some(f =>
             coms.some(com => { const est=parciales[com.id]?.[p]?.[f]?.[email]?.estado; return est==='aprobado'||est==='promocion'; })
@@ -11115,7 +11139,7 @@ function buildFinalesStats(ciclo) {
         );
       });
       const promocionados = aprobadosCursada.filter(email => {
-        const coms = getComisionesMateriaAlumno(email, materia.id, inicio);
+        const coms = getComisionesMateriaAlumnoPeriodo(email, materia.id, inicio, periodoMasRecientePorAlumno[email]);
         return NOMBRES_PARCIALES.every(p =>
           NOMBRES_FECHAS.some(f => coms.some(com => parciales[com.id]?.[p]?.[f]?.[email]?.estado==='promocion'))
         );
@@ -11233,13 +11257,20 @@ function buildCortesTemporales(ciclo) {
   </div>`;
 
   let hayDatos = false;
+  const PERIODO_LABEL_COHORTE = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
 
   ordenarMateriasEstandar(MATERIAS).forEach(materia => {
-    const comisiones     = COMISIONES.filter(c => c.materiaId===materia.id && c.año==inicio);
+    const comsMateriaTotal = COMISIONES.filter(c => c.materiaId===materia.id && c.año==inicio);
+    if (comsMateriaTotal.length === 0) return;
+    const periodosMateria = [...new Set(comsMateriaTotal.map(c => c.periodo||1))].sort((a,b)=>a-b);
+    const hayMultiplesPeriodos = periodosMateria.length > 1;
+
+    periodosMateria.forEach(periodoActual => {
+    const comisiones     = comsMateriaTotal.filter(c => (c.periodo||1) === periodoActual);
     const alumnosCursada = [...new Set(comisiones.flatMap(c => c.alumnos||[]))];
 
-    // Solo considerar parciales que tienen notas cargadas en alguna comisión
-    const comsMateria = COMISIONES.filter(c => c.materiaId===materia.id && c.año==inicio);
+    // Solo considerar parciales que tienen notas cargadas en alguna comisión de este período
+    const comsMateria = comisiones;
     const parcialesConNotas = NOMBRES_PARCIALES.filter(p =>
       comsMateria.some(com =>
         NOMBRES_FECHAS.some(f => {
@@ -11260,7 +11291,7 @@ function buildCortesTemporales(ciclo) {
       : parcialesConNotas;
 
     const aprobadosCursada = alumnosCursada.filter(email => {
-      const coms = getComisionesMateriaAlumno(email, materia.id, inicio);
+      const coms = getComisionesMateriaAlumnoPeriodo(email, materia.id, inicio, periodoActual);
       return parcialesRequeridos.every(p =>
         NOMBRES_FECHAS.some(f => coms.some(com => {
           const est = parciales[com.id]?.[p]?.[f]?.[email]?.estado;
@@ -11270,7 +11301,7 @@ function buildCortesTemporales(ciclo) {
     });
 
     const promocionados = aprobadosCursada.filter(email => {
-      const coms = getComisionesMateriaAlumno(email, materia.id, inicio);
+      const coms = getComisionesMateriaAlumnoPeriodo(email, materia.id, inicio, periodoActual);
       return parcialesRequeridos.every(p =>
         NOMBRES_FECHAS.some(f => coms.some(com =>
           parciales[com.id]?.[p]?.[f]?.[email]?.estado==='promocion'
@@ -11347,7 +11378,8 @@ function buildCortesTemporales(ciclo) {
 
     const totalAprobadosCursada = aprobadosCursada.length;
 
-    const cardId = 'cortes-' + materia.id + '-' + ciclo;
+    const cardId = 'cortes-' + materia.id + '-' + ciclo + '-' + periodoActual;
+    const nombreConPeriodo = materia.nombre + (hayMultiplesPeriodos ? ' · ' + (PERIODO_LABEL_COHORTE[periodoActual] || `Período ${periodoActual}`) : '');
     const sinDatos = Object.keys(aprobadoEnCorte).length === 0;
     const resumen  = sinDatos
       ? '<span style="font-size:11px;color:var(--gray-400)">Sin datos de finales aún</span>'
@@ -11410,7 +11442,7 @@ function buildCortesTemporales(ciclo) {
     html += '<div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:6px;overflow:hidden">'
       + '<button onclick="toggleFinalesCard(\'' + cardId + '\')" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;background:transparent;border:none;cursor:pointer;font-family:var(--font);text-align:left">'
       + '<svg id="' + cardId + '-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--gray-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>'
-      + '<span style="font-size:13px;font-weight:600;color:var(--navy);flex:1">' + materia.nombre + '</span>'
+      + '<span style="font-size:13px;font-weight:600;color:var(--navy);flex:1">' + nombreConPeriodo + '</span>'
       + '<div style="display:flex;gap:8px;align-items:center">'
       + '<span style="font-size:11px;padding:2px 8px;border-radius:20px;background:var(--gray-100);color:var(--gray-600)">' + totalRegulares + ' regular/es</span>'
       + (promocionados.length>0 ? '<span style="font-size:11px;padding:2px 8px;border-radius:20px;background:#ede7f6;color:#5b2d8e">' + promocionados.length + ' promoc.</span>' : '')
@@ -11422,6 +11454,7 @@ function buildCortesTemporales(ciclo) {
       + '<div style="font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;margin-top:14px;margin-bottom:8px">Total acreditados sobre aprobados cursada</div>'
       + buildBadgeRow(badgesTotal, fechaSeleccionada ? aprobadosAdHoc + promocionados.length : null, totalAprobadosCursada)
       + '</div></div>';
+    });
   });
 
   if (!hayDatos) {
