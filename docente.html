@@ -5450,6 +5450,26 @@ function getUnseenChanges(email) {
   return changes;
 }
 
+// "Huella" de una solicitud de aula — cambia tanto si pasa a confirmada como si
+// coordinación reasigna el aula después de confirmada, para poder detectar ambos casos.
+// Un docente está "involucrado" en una solicitud de aula si la presentó él mismo,
+// o si figura como "docente a cargo" en alguna de las filas (fechas/actividades) —
+// aunque haya sido otra persona quien cargó la solicitud.
+function esDocenteInvolucradoAula(s, docenteDni) {
+  if (s.docente_dni === docenteDni) return true;
+  const staff = ENROLLED_STAFF[docenteDni];
+  if (!staff) return false;
+  const nombreCompleto = `${staff.apellido}, ${staff.nombre}`;
+  return (s.filas || []).some(f => f.docente_act === nombreCompleto);
+}
+
+function getAulaFingerprint(s) {
+  return JSON.stringify({
+    estado: s.estado,
+    aulas: (s.filas || []).map(f => f.aula_otorgada || null),
+  });
+}
+
 function getUnseenTeacherChanges(docenteDni) {
   const changes = [];
 
@@ -5471,14 +5491,15 @@ function getUnseenTeacherChanges(docenteDni) {
     changes.push({ type: 'cert', msg: `🎓 ${nuevas} nueva${nuevas!==1?'s':''} solicitud${nuevas!==1?'es':''} de certificado pendiente${nuevas!==1?'s':''}`, view: 'cert-requests' });
   }
 
-  // Solicitudes de aula confirmadas por coordinación
+  // Solicitudes de aula confirmadas por coordinación (o reasignadas después)
   const seenAulas = lastSeenAulasStatus[docenteDni] || {};
   solicitudesAulas
-    .filter(s => s.docente_dni === docenteDni)
+    .filter(s => esDocenteInvolucradoAula(s, docenteDni) && s.estado === 'confirmada')
     .forEach(s => {
       const prev = seenAulas[s.id];
-      if (prev !== s.estado && s.estado === 'confirmada') {
-        changes.push({ type: 'aula', msg: `🏫 Tu solicitud de aula fue confirmada`, view: 'teacher-aulas' });
+      const fp = getAulaFingerprint(s);
+      if (prev !== fp) {
+        changes.push({ type: 'aula', msg: prev !== undefined ? `🏫 Tu aula asignada fue actualizada` : `🏫 Tu solicitud de aula fue confirmada`, view: 'teacher-aulas' });
       }
     });
 
@@ -5649,8 +5670,8 @@ async function markTeacherCertAsSeen(docenteDni) {
 
 async function markTeacherAulasAsSeen(docenteDni) {
   lastSeenAulasStatus[docenteDni] = {};
-  solicitudesAulas.filter(s => s.docente_dni === docenteDni).forEach(s => {
-    lastSeenAulasStatus[docenteDni][s.id] = s.estado;
+  solicitudesAulas.filter(s => esDocenteInvolucradoAula(s, docenteDni)).forEach(s => {
+    lastSeenAulasStatus[docenteDni][s.id] = getAulaFingerprint(s);
   });
   await guardarNovedadesVistasTeacher(docenteDni);
 }
@@ -5662,8 +5683,8 @@ async function markTeacherAsSeen(docenteDni) {
   lastSeenCertStatus[docenteDni] = solicitudesCertFinales
     .filter(s => s.docenteDni === docenteDni && s.estado === 'pendiente').length;
   lastSeenAulasStatus[docenteDni] = {};
-  solicitudesAulas.filter(s => s.docente_dni === docenteDni).forEach(s => {
-    lastSeenAulasStatus[docenteDni][s.id] = s.estado;
+  solicitudesAulas.filter(s => esDocenteInvolucradoAula(s, docenteDni)).forEach(s => {
+    lastSeenAulasStatus[docenteDni][s.id] = getAulaFingerprint(s);
   });
   await guardarNovedadesVistasTeacher(docenteDni);
 }
@@ -12239,11 +12260,11 @@ function actualizarBadgeAulas() {
     badgeCoord.style.display = pendientes > 0 ? 'inline' : 'none';
     badgeCoord.textContent = pendientes > 9 ? '9+' : String(pendientes);
   }
-  // Badge docente: solicitudes propias confirmadas que todavía no vio
+  // Badge docente: solicitudes donde está involucrado, confirmadas, que todavía no vio
   const dni = getTeacherDni();
   const seenAulas = lastSeenAulasStatus[dni] || {};
   const confirmadas = solicitudesAulas.filter(s =>
-    s.docente_dni === dni && s.estado === 'confirmada' && seenAulas[s.id] !== 'confirmada'
+    esDocenteInvolucradoAula(s, dni) && s.estado === 'confirmada' && seenAulas[s.id] !== getAulaFingerprint(s)
   ).length;
   const badgeTeacher = document.getElementById('aulas-badge-teacher');
   if (badgeTeacher) {
@@ -12291,15 +12312,7 @@ function renderTeacherAulasMisSolicitudes(dni) {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   const comoDocente = solicitudesAulas
-    .filter(s => s.docente_dni !== dni &&
-      (s.filas || []).some(f => {
-        // Buscar si el nombre del docente coincide con alguna fila
-        const staffEntry = ENROLLED_STAFF[dni];
-        if (!staffEntry) return false;
-        const nombre = `${staffEntry.apellido}, ${staffEntry.nombre}`;
-        return f.docente_act === nombre;
-      })
-    )
+    .filter(s => s.docente_dni !== dni && esDocenteInvolucradoAula(s, dni))
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   if (propias.length === 0 && comoDocente.length === 0) {
