@@ -5452,15 +5452,25 @@ function getUnseenChanges(email) {
 
 // "Huella" de una solicitud de aula — cambia tanto si pasa a confirmada como si
 // coordinación reasigna el aula después de confirmada, para poder detectar ambos casos.
+// Resuelve el "docente a cargo" de una fila para mostrarlo — soporta tanto el
+// formato nuevo (guarda el DNI) como el viejo (guardaba el nombre en texto plano).
+function getDocenteActDisplay(docenteAct) {
+  if (!docenteAct) return '';
+  const staff = ENROLLED_STAFF[docenteAct];
+  if (staff) return `${staff.apellido}, ${staff.nombre}`;
+  return docenteAct; // formato viejo: ya es el nombre completo
+}
+
 // Un docente está "involucrado" en una solicitud de aula si la presentó él mismo,
 // o si figura como "docente a cargo" en alguna de las filas (fechas/actividades) —
-// aunque haya sido otra persona quien cargó la solicitud.
+// aunque haya sido otra persona quien cargó la solicitud. Compara por DNI (formato
+// nuevo) y por nombre completo (formato viejo, solicitudes ya guardadas antes).
 function esDocenteInvolucradoAula(s, docenteDni) {
   if (s.docente_dni === docenteDni) return true;
   const staff = ENROLLED_STAFF[docenteDni];
   if (!staff) return false;
   const nombreCompleto = `${staff.apellido}, ${staff.nombre}`;
-  return (s.filas || []).some(f => f.docente_act === nombreCompleto);
+  return (s.filas || []).some(f => f.docente_act === docenteDni || f.docente_act === nombreCompleto);
 }
 
 function getAulaFingerprint(s) {
@@ -12358,7 +12368,7 @@ function renderTeacherAulasMisSolicitudes(dni) {
                   <td style="padding:5px 8px;border:1px solid var(--gray-100)">${fechaDisplay}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.desde} - ${f.hasta}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
-                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.docente_act}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${getDocenteActDisplay(f.docente_act)}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100);color:${f.aula_otorgada ? '#1a7a35' : 'var(--gray-400)'};font-weight:${f.aula_otorgada ? '500' : '400'}">
                     ${f.aula_otorgada || (s.estado === 'pendiente' ? '—' : 'Sin aula asignada')}
                   </td>
@@ -12481,7 +12491,7 @@ function renderFilaAula(n) {
   const docentesDni = Object.keys(ENROLLED_STAFF);
   const opts = docentesDni.map(d => {
     const s = ENROLLED_STAFF[d];
-    return `<option value="${s.apellido}, ${s.nombre}">${s.apellido}, ${s.nombre}</option>`;
+    return `<option value="${d}">${s.apellido}, ${s.nombre}</option>`;
   }).join('');
   const cursada = isCursada();
   const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -12682,7 +12692,7 @@ function enviarSolicitudAula() {
               <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.desde}</td>
               <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.hasta}</td>
               <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
-              <td style="padding:6px 8px;border:1px solid var(--gray-100)">${f.docente_act}</td>
+              <td style="padding:6px 8px;border:1px solid var(--gray-100)">${getDocenteActDisplay(f.docente_act)}</td>
             </tr>`;
           }).join('')}
       </tbody>
@@ -12946,7 +12956,7 @@ function renderSolCoord(s, conAcciones) {
                 <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.desde || ''}</td>
                 <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.hasta || ''}</td>
                 <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.aforo || ''}</td>
-                <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.docente_act || ''}</td>
+                <td style="padding:5px 8px;border:1px solid var(--gray-100)">${getDocenteActDisplay(f.docente_act)}</td>
                 <td style="padding:${conAcciones ? '4px 6px' : '5px 8px'};border:1px solid var(--gray-100)">
                   ${conAcciones
                     ? `<input type="text" value="${f.aula_otorgada || ''}" placeholder="Ej: Aula 5"
@@ -13064,7 +13074,7 @@ async function descargarPlanillaAula(id) {
         [`FECHA${i+1}`]:       fechaLabel,
         [`HORARIO${i+1}`]:     f ? `${f.desde || ''} - ${f.hasta || ''}` : '',
         [`AFORO${i+1}`]:       f?.aforo || '',
-        [`DOCENTE-ACT${i+1}`]: f?.docente_act || '',
+        [`DOCENTE-ACT${i+1}`]: getDocenteActDisplay(f?.docente_act),
       };
     });
 
@@ -13122,7 +13132,7 @@ function editarAulasConfirmadas(id) {
       <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${fechaDisplay}</td>
       <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${f.desde||''} - ${f.hasta||''}</td>
       <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${f.aforo||''}</td>
-      <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${f.docente_act||''}</td>
+      <td style="padding:5px 8px;border:1px solid var(--gray-100);font-size:12px">${getDocenteActDisplay(f.docente_act)}</td>
       <td style="padding:4px 6px;border:1px solid var(--gray-100)">
         <input type="text" value="${f.aula_otorgada||''}" placeholder="Ej: Aula 5"
           id="edit-aula-ot-${id}-${idx}"
