@@ -10703,7 +10703,9 @@ function getRecursantesFuturos(materia, ciclo) {
   return alumnos.filter(email =>
     parcialesRequeridos.some(p => {
       const est = getEstadoYNotaParcial(email, materia.id, ciclo, p, fechasAgotadas[p]).estado;
-      return est === 'desaprobado' || est === 'ausente';
+      // "ausente" solo cuenta como parcial perdido si ese parcial ya agotó sus fechas —
+      // si todavía no se tomó, "ausente" es solo el valor por defecto de "sin datos".
+      return est === 'desaprobado' || (est === 'ausente' && fechasAgotadas[p]);
     })
   ).length;
 }
