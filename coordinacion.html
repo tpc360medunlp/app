@@ -11191,33 +11191,14 @@ function renderStudentCudeView() {
       <div class="area-header"><span class="area-name">Cambio de comisión</span></div>
       <div style="padding:1.25rem 1.5rem">`;
 
-    if (materiasHabilitadas.length === 0) {
+    // El historial de solicitudes del alumno se muestra siempre que tenga alguna, sin
+    // importar si en este momento hay algún período de cambio abierto o no — si no, se
+    // pierde el historial apenas coordinación cierra o borra el período.
+    const misSolicitudes = solicitudesCambioComision.filter(s => s.email === email);
+
+    if (materiasHabilitadas.length === 0 && misSolicitudes.length === 0) {
       html += `<p style="font-size:13px;color:var(--gray-400)">No hay períodos de cambio de comisión abiertos en este momento.</p>`;
     } else {
-      // Solicitudes pendientes del alumno
-      const misSolicitudes = solicitudesCambioComision.filter(s => s.email === email);
-      if (misSolicitudes.length > 0) {
-        html += `<div style="margin-bottom:1.25rem">
-          <div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Mis solicitudes</div>`;
-        misSolicitudes.forEach(s => {
-          const materia = MATERIAS.find(m => m.id === s.materiaId);
-          const comDest = COMISIONES.find(c => c.id === s.aComId);
-          const estadoSol = {
-            'pendiente': { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' },
-            'aprobada':  { label: 'Aprobada',  color: '#1a7a35', bg: 'var(--green-light)' },
-            'rechazada': { label: 'Rechazada', color: '#b02030', bg: 'var(--red-light)'   },
-          }[s.estado] || { label: s.estado, color: 'var(--gray-600)', bg: 'var(--gray-100)' };
-          html += `<div style="padding:10px 12px;border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:6px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px;font-weight:500;color:var(--navy)">${materia?.nombre || ''} → ${comDest?.nombre || ''}</span>
-              <span style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;background:${estadoSol.bg};color:${estadoSol.color}">${estadoSol.label}</span>
-            </div>
-            ${s.motivoRechazo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Motivo: ${escapeHtml(s.motivoRechazo)}</div>` : ''}
-          </div>`;
-        });
-        html += `</div>`;
-      }
-
       // Formulario nueva solicitud — se excluye únicamente la materia que ya tiene una
       // solicitud pendiente, no se bloquea el resto
       const materiasIdsConPendiente = new Set(
@@ -11245,7 +11226,30 @@ function renderStudentCudeView() {
           <button onclick="enviarSolicitudCambio('${email}')"
             style="padding:8px 20px;background:var(--navy);color:white;border:none;border-radius:var(--radius-md);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)">
             Enviar solicitud
-          </button>`;
+          </button>` + (misSolicitudes.length > 0 ? `<div style="border-top:1px solid var(--gray-100);margin:1.25rem 0"></div>` : '');
+      } else if (materiasHabilitadas.length === 0) {
+        html += `<p style="font-size:13px;color:var(--gray-400);margin-bottom:${misSolicitudes.length > 0 ? '1.25rem' : '0'}">No hay períodos de cambio de comisión abiertos en este momento.</p>`;
+      }
+
+      // Historial de solicitudes
+      if (misSolicitudes.length > 0) {
+        html += `<div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Mis solicitudes</div>`;
+        misSolicitudes.forEach(s => {
+          const materia = MATERIAS.find(m => m.id === s.materiaId);
+          const comDest = COMISIONES.find(c => c.id === s.aComId);
+          const estadoSol = {
+            'pendiente': { label: 'Pendiente', color: '#b05a10', bg: 'var(--amber-light)' },
+            'aprobada':  { label: 'Aprobada',  color: '#1a7a35', bg: 'var(--green-light)' },
+            'rechazada': { label: 'Rechazada', color: '#b02030', bg: 'var(--red-light)'   },
+          }[s.estado] || { label: s.estado, color: 'var(--gray-600)', bg: 'var(--gray-100)' };
+          html += `<div style="padding:10px 12px;border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px;font-weight:500;color:var(--navy)">${materia?.nombre || ''} → ${comDest?.nombre || ''}</span>
+              <span style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:12px;background:${estadoSol.bg};color:${estadoSol.color}">${estadoSol.label}</span>
+            </div>
+            ${s.motivoRechazo ? `<div style="font-size:12px;color:#b02030;margin-top:4px">Motivo: ${escapeHtml(s.motivoRechazo)}</div>` : ''}
+          </div>`;
+        });
       }
     }
     html += `</div></div>`;
@@ -11680,6 +11684,10 @@ function renderCoordCudePeriodos() {
         <div style="font-size:12px;color:var(--gray-400)">
           Apertura: ${p.apertura.split('-').reverse().join('/')} · Cierre: ${p.cierre.split('-').reverse().join('/')}
         </div>
+        <button onclick="abrirModalPeriodoCude('${p.id}')"
+          style="margin-top:10px;padding:4px 12px;font-size:12px;background:white;color:var(--navy);border:1px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
+          Editar
+        </button>
         <button onclick="eliminarPeriodoCude('${p.id}')"
           style="margin-top:10px;padding:4px 12px;font-size:12px;background:var(--red-light);color:#b02030;border:1px solid #f5b8be;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font)">
           Eliminar
@@ -11700,17 +11708,25 @@ function toggleChipMateria(id, btn) {
   btn.style.borderColor = sel ? 'var(--gray-200)' : 'var(--navy)';
 }
 
-function abrirModalPeriodoCude() {
+let _editandoPeriodoId = null;
+
+function abrirModalPeriodoCude(periodoId = null) {
+  _editandoPeriodoId = periodoId;
+  const periodo = periodoId ? periodosCambioComision.find(p => p.id === periodoId) : null;
+
   // Poblar chips de materias
-  document.getElementById('chips-materias-periodo').innerHTML = ordenarMateriasEstandar(MATERIAS).map(m =>
-    `<button onclick="toggleChipMateria('${m.id}',this)"
-      data-id="${m.id}" data-sel="0"
-      style="padding:4px 12px;font-size:12px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-600);cursor:pointer;font-family:var(--font)">
+  document.getElementById('chips-materias-periodo').innerHTML = ordenarMateriasEstandar(MATERIAS).map(m => {
+    const sel = periodo ? periodo.materias.includes(m.id) : false;
+    return `<button onclick="toggleChipMateria('${m.id}',this)"
+      data-id="${m.id}" data-sel="${sel ? '1' : '0'}"
+      style="padding:4px 12px;font-size:12px;border-radius:20px;border:1.5px solid ${sel ? 'var(--navy)' : 'var(--gray-200)'};background:${sel ? 'var(--navy)' : 'white'};color:${sel ? 'white' : 'var(--gray-600)'};cursor:pointer;font-family:var(--font)">
       ${m.nombre}
-    </button>`
-  ).join('');
-  document.getElementById('periodo-apertura').value = '';
-  document.getElementById('periodo-cierre').value   = '';
+    </button>`;
+  }).join('');
+  document.getElementById('periodo-apertura').value = periodo?.apertura || '';
+  document.getElementById('periodo-cierre').value   = periodo?.cierre || '';
+  const titleEl = document.querySelector('#modal-periodo-cude .modal-title');
+  if (titleEl) titleEl.textContent = periodo ? 'Editar período de cambio' : 'Nuevo período de cambio';
   document.getElementById('modal-periodo-cude').classList.add('open');
 }
 
@@ -11721,6 +11737,28 @@ async function guardarPeriodoCude() {
   if (materias.length === 0) { showToast('Seleccioná al menos una materia', true); return; }
   if (!apertura || !cierre)  { showToast('Ingresá las fechas del período', true); return; }
   if (apertura > cierre)     { showToast('La apertura no puede ser posterior al cierre', true); return; }
+
+  if (_editandoPeriodoId) {
+    const periodo = periodosCambioComision.find(p => p.id === _editandoPeriodoId);
+    if (!periodo) { showToast('No se encontró el período', true); return; }
+    const anterior = { ...periodo };
+    periodo.materias = materias; periodo.apertura = apertura; periodo.cierre = cierre;
+    const { error } = await _supabase.from('periodos_cambio_comision')
+      .update({ materias, apertura, cierre }).eq('id', _editandoPeriodoId);
+
+    if (error) {
+      console.warn('Error actualizando período:', error);
+      Object.assign(periodo, anterior);
+      showToast('No se pudo actualizar el período. Verificá tu conexión.', true);
+      return;
+    }
+    document.getElementById('modal-periodo-cude').classList.remove('open');
+    _editandoPeriodoId = null;
+    renderCoordCudeView();
+    showToast('Período actualizado correctamente');
+    return;
+  }
+
   const id = 'p' + Date.now();
   const periodo = { id, materias, apertura, cierre };
   periodosCambioComision.push(periodo);
