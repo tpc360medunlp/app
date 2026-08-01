@@ -10701,9 +10701,10 @@ function getRecursantesFuturos(materia, ciclo) {
 
   const fechasAgotadas = getFechasAgotadasPorParcial(comsMat, parcialesRequeridos);
   return alumnos.filter(email =>
-    parcialesRequeridos.some(p =>
-      getEstadoYNotaParcial(email, materia.id, ciclo, p, fechasAgotadas[p]).estado === 'desaprobado'
-    )
+    parcialesRequeridos.some(p => {
+      const est = getEstadoYNotaParcial(email, materia.id, ciclo, p, fechasAgotadas[p]).estado;
+      return est === 'desaprobado' || est === 'ausente';
+    })
   ).length;
 }
 
@@ -10722,10 +10723,12 @@ function buildRecursantesView() {
     const gId = `recur-${materia.id}`;
 
     const filas = todosCiclos.map(ciclo => {
-      const actuales = getRecursantesActuales(materia.id, ciclo, todosCiclos);
-      const futuros  = getRecursantesFuturos(materia, ciclo);
+      const predichos = todosCiclos.includes(ciclo - 1) ? getRecursantesFuturos(materia, ciclo - 1) : null;
+      const actuales  = getRecursantesActuales(materia.id, ciclo, todosCiclos);
+      const futuros   = getRecursantesFuturos(materia, ciclo);
       return `<tr>
         <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;color:var(--navy)">${ciclo}-${ciclo+1}</td>
+        <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center;color:${predichos===null?'var(--gray-400)':'inherit'}">${predichos===null?'—':predichos}</td>
         <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center">${actuales}</td>
         <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center">${futuros}</td>
       </tr>`;
@@ -10744,6 +10747,7 @@ function buildRecursantesView() {
           <thead>
             <tr style="background:var(--gray-50)">
               <th style="padding:8px 12px;text-align:left;border:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">Ciclo lectivo</th>
+              <th style="padding:8px 12px;text-align:center;border:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">Recursantes predichos</th>
               <th style="padding:8px 12px;text-align:center;border:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">Recursantes actuales</th>
               <th style="padding:8px 12px;text-align:center;border:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">Recursantes futuros</th>
             </tr>
