@@ -1075,6 +1075,10 @@ async function ensureJsQR() {
             style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--gray-100);color:var(--gray-600)">
             Finales
           </button>
+          <button id="stats-tab-recursantes" onclick="switchStatsTab('recursantes')"
+            style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--gray-100);color:var(--gray-600)">
+            Recursantes
+          </button>
         </div>
         <!-- Portfolio stats -->
         <div id="stats-panel-portfolio">
@@ -1105,6 +1109,10 @@ async function ensureJsQR() {
         <!-- Finales stats -->
         <div id="stats-panel-finales" style="display:none">
           <div id="coord-finales-container"></div>
+        </div>
+        <!-- Recursantes stats -->
+        <div id="stats-panel-recursantes" style="display:none">
+          <div id="coord-recursantes-container"></div>
         </div>
       </div>
       <div id="view-coord-portfolio" class="page-view">
@@ -6253,7 +6261,7 @@ function togglePortfolioProgress() {
 
 function switchStatsTab(tab) {
   currentStatsTab = tab;
-  ['portfolio','calificaciones','finales'].forEach(t => {
+  ['portfolio','calificaciones','finales','recursantes'].forEach(t => {
     const btn   = document.getElementById(`stats-tab-${t}`);
     const panel = document.getElementById(`stats-panel-${t}`);
     const active = t === tab;
@@ -6265,6 +6273,8 @@ function switchStatsTab(tab) {
     document.getElementById('coord-calif-stats').innerHTML = buildCoordCalifStats();
   } else if (tab === 'finales') {
     renderFinalesStatsView();
+  } else if (tab === 'recursantes') {
+    document.getElementById('coord-recursantes-container').innerHTML = buildRecursantesView();
   } else {
     renderCoordinatorView();
   }
@@ -10656,6 +10666,93 @@ function renderMesasFinalesView() {
     </div>
   `;
   actualizarBadgeMesasFinales();
+}
+
+// Recursantes "actuales" en un ciclo: alumnos inscriptos ese ciclo en la materia que
+// también estuvieron inscriptos en algún ciclo anterior de esa misma materia.
+function getRecursantesActuales(materiaId, ciclo, todosCiclos) {
+  const comsEsteCiclo = COMISIONES.filter(c => c.materiaId === materiaId && c.año === ciclo);
+  const alumnosEsteCiclo = [...new Set(comsEsteCiclo.flatMap(c => c.alumnos || []))];
+  if (alumnosEsteCiclo.length === 0) return 0;
+  const ciclosAnteriores = todosCiclos.filter(c => c < ciclo);
+  if (ciclosAnteriores.length === 0) return 0;
+  const comsAnteriores = COMISIONES.filter(c => c.materiaId === materiaId && ciclosAnteriores.includes(c.año));
+  const alumnosAnteriores = new Set(comsAnteriores.flatMap(c => c.alumnos || []));
+  return alumnosEsteCiclo.filter(email => alumnosAnteriores.has(email)).length;
+}
+
+// Recursantes "futuros" en un ciclo: alumnos inscriptos ese ciclo que ya perdieron
+// (desaprobado consolidado, fechas agotadas) al menos un parcial — candidatos a
+// recursar el ciclo que viene.
+function getRecursantesFuturos(materia, ciclo) {
+  const comsMat = COMISIONES.filter(c => c.materiaId === materia.id && c.año === ciclo);
+  const alumnos = [...new Set(comsMat.flatMap(c => c.alumnos || []))];
+  if (alumnos.length === 0) return 0;
+
+  const parcialesRequeridos = materia.cantidadParciales
+    ? NOMBRES_PARCIALES.slice(0, materia.cantidadParciales)
+    : NOMBRES_PARCIALES.filter(p =>
+        comsMat.some(c => NOMBRES_FECHAS.some(f => {
+          const d = parciales[c.id]?.[p]?.[f];
+          return d && Object.keys(d).filter(k=>k!=='_publicado').length > 0;
+        }))
+      );
+  if (parcialesRequeridos.length === 0) return 0;
+
+  const fechasAgotadas = getFechasAgotadasPorParcial(comsMat, parcialesRequeridos);
+  return alumnos.filter(email =>
+    parcialesRequeridos.some(p =>
+      getEstadoYNotaParcial(email, materia.id, ciclo, p, fechasAgotadas[p]).estado === 'desaprobado'
+    )
+  ).length;
+}
+
+function buildRecursantesView() {
+  const materiasConDatos = ordenarMateriasEstandar(MATERIAS).filter(m =>
+    COMISIONES.some(c => c.materiaId === m.id)
+  );
+
+  if (materiasConDatos.length === 0) {
+    return `<div class="empty-state"><div class="empty-icon">🔄</div><p>No hay datos suficientes todavía.</p></div>`;
+  }
+
+  return materiasConDatos.map(materia => {
+    const todosCiclos = [...new Set(COMISIONES.filter(c => c.materiaId === materia.id).map(c => c.año))]
+      .sort((a,b) => b - a);
+    const gId = `recur-${materia.id}`;
+
+    const filas = todosCiclos.map(ciclo => {
+      const actuales = getRecursantesActuales(materia.id, ciclo, todosCiclos);
+      const futuros  = getRecursantesFuturos(materia, ciclo);
+      return `<tr>
+        <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;color:var(--navy)">${ciclo}-${ciclo+1}</td>
+        <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center">${actuales}</td>
+        <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center">${futuros}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="area-card" style="margin-bottom:.75rem">
+      <button onclick="toggleAttGroup('${gId}')"
+        style="width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0">
+        <div class="area-header" style="flex:1;margin:0">
+          <svg id="${gId}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--navy)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="area-name" style="margin-left:6px">${materia.nombre}</span>
+        </div>
+      </button>
+      <div id="${gId}" style="display:none;padding:0 1.5rem 1rem">
+        <table style="width:100%;border-collapse:collapse;margin-top:8px">
+          <thead>
+            <tr style="background:var(--gray-50)">
+              <th style="padding:8px 12px;text-align:left;border:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">Ciclo lectivo</th>
+              <th style="padding:8px 12px;text-align:center;border:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">Recursantes actuales</th>
+              <th style="padding:8px 12px;text-align:center;border:1px solid var(--gray-100);font-size:12px;color:var(--gray-500)">Recursantes futuros</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderFinalesStatsView() {
