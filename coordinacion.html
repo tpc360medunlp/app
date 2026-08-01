@@ -8841,17 +8841,20 @@ function renderAcademicView(selectedMateriaId = null) {
           const docenteName = staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
           const añoLabel    = m.añoCarrera ? `${m.añoCarrera}° año · ` : '';
           const regimenLabel = m.regimen === 'promocion' ? `Con promoción (≥${m.notaPromocion}) · ` : '';
-          return `<div class="skill-row" style="align-items:center;cursor:pointer" onclick="renderAcademicView('${m.id}')">
+          return `<div class="skill-row" style="align-items:center">
             <div class="area-icon"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
             <div style="flex:1;margin-left:10px">
               <div style="font-size:14px;font-weight:500;color:var(--navy)">${m.nombre}</div>
               <div style="font-size:12px;color:var(--gray-400);margin-top:2px">${añoLabel}${regimenLabel}${comCount} comisión/es en ${selectedAcademicYear} · Resp: ${docenteName}</div>
             </div>
             <button class="btn-cargar" style="background:var(--gray-600);font-size:12px;margin-right:8px"
-              onclick="event.stopPropagation(); openEditMateriaModal('${m.id}')">
+              onclick="openEditMateriaModal('${m.id}')">
               Editar
             </button>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <button class="btn-cargar" style="background:var(--navy);font-size:12px"
+              onclick="renderAcademicView('${m.id}')">
+              Comisiones
+            </button>
           </div>`;
         }).join('');
 
