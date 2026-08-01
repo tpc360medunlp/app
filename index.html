@@ -3856,7 +3856,7 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
     const nombre   = STUDENT_NAMES[email] || email;
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
     const estadosPorParcial = parcialesConNotas.map(p =>
-      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcial[p]).estado
+      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcial[p], periodo).estado
     );
 
     // Estado global
@@ -3908,7 +3908,7 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
   // Notas para el promedio global: nota final de cada alumno en cada parcial
   const notasGlobal = alumnos.flatMap(email =>
     parcialesConNotas.map(p =>
-      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcial[p]).nota
+      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcial[p], periodo).nota
     )
   ).filter(n => n !== null && !isNaN(n));
 
@@ -3956,7 +3956,7 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
     const initials = getApellido(nombre).slice(0,2).toUpperCase();
 
     const { estado, nota: notaFinal, presentaciones } =
-      getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadasParc);
+      getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadasParc, periodo);
     estadosConsolidados.push(estado);
 
     const cfg = {
@@ -3979,7 +3979,7 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
   }).join('');
 
   const notasParcial = alumnos
-    .map(email => getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadasParc).nota)
+    .map(email => getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadasParc, periodo).nota)
     .filter(n => n !== null && !isNaN(n));
 
   return `
@@ -4738,11 +4738,12 @@ function renderStudentFinalesView() {
       return { tipo: 'sin_cursar' };
     }
 
-    // Ordenar por año descendente — el más reciente primero
-    comisiones.sort((a, b) => b.año - a.año);
+    // Ordenar por año descendente, y si coinciden (recursando en el mismo ciclo, otro
+    // cuatrimestre) por período descendente — así se mira primero el intento más reciente
+    comisiones.sort((a, b) => b.año - a.año || (b.periodo||1) - (a.periodo||1));
 
     for (const com of comisiones) {
-      const coms = getComisionesMateriaAlumno(email, materia.id, com.año);
+      const coms = getComisionesMateriaAlumnoPeriodo(email, materia.id, com.año, com.periodo||1);
       // Si la materia tiene la cantidad de parciales configurada, usar esa lista fija
       // (así un parcial que todavía no se tomó/cargó sigue contando como pendiente,
       // en vez de "no existir" para el sistema). Si no está configurada, se infiere
@@ -4975,13 +4976,13 @@ function renderStudentNotasView() {
 
   misComisiones.forEach(comision => {
     const materia = MATERIAS.find(m => m.id === comision.materiaId);
-    const coms    = getComisionesMateriaAlumno(email, comision.materiaId, selCiclo);
+    const coms    = getComisionesMateriaAlumnoPeriodo(email, comision.materiaId, selCiclo, comision.periodo||1);
     let filas = '';
 
     NOMBRES_PARCIALES.forEach(parc => {
       let yaAprobadoEnFechaAnterior = false;
       NOMBRES_FECHAS.forEach(f => {
-        const clave = `${comision.materiaId}_${parc}_${f}`;
+        const clave = `${comision.id}_${parc}_${f}`;
         if (notasVistas.has(clave)) return;
         if (yaAprobadoEnFechaAnterior) return; // fechas posteriores a la aprobación no deberían contar
         let fechaData = null, comOrigen = null;
@@ -5017,6 +5018,11 @@ function renderStudentNotasView() {
     if (!filas) return;
 
     const comId = `notas-com-${comision.id}`;
+    const otrasComisionesMismaMateria = misComisiones.filter(c => c.materiaId === comision.materiaId).length > 1;
+    const PERIODO_LABEL_NOTAS = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
+    const labelPeriodoNotas = otrasComisionesMismaMateria
+      ? ` · ${PERIODO_LABEL_NOTAS[comision.periodo||1] || 'Período '+(comision.periodo||1)}`
+      : '';
     materiasHTML += `
       <div class="area-card" style="margin-bottom:.75rem">
         <button onclick="toggleAttGroup('${comId}')"
@@ -5024,7 +5030,7 @@ function renderStudentNotasView() {
           <div class="area-header" style="flex:1;margin:0">
             <svg id="${comId}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--navy)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
             <div style="font-size:14px;font-weight:500;color:var(--navy);margin-left:6px;text-align:left">
-              ${materia?.nombre || ''}
+              ${materia?.nombre || ''}${labelPeriodoNotas}
             </div>
           </div>
         </button>
@@ -6539,6 +6545,8 @@ function buildCoordCalifStats() {
       }
 
       // ── Consolidado por parcial ───────────────────────────
+      // Escopeado al mismo período de esta comisión, para no mezclar cuatrimestres
+      const comsMatPeriodo = comsMat.filter(c => (c.periodo||1) === (com.periodo||1));
       NOMBRES_PARCIALES.forEach(parc => {
         const tieneNotas = NOMBRES_FECHAS.some(f => {
           const d = parciales[com.id]?.[parc]?.[f];
@@ -6547,14 +6555,14 @@ function buildCoordCalifStats() {
         if (!tieneNotas) return;
 
         // Pre-calcular si todas las fechas de este parcial están agotadas
-        const todasFechasAgotadasThisParc = getFechasAgotadasPorParcial(comsMat, [parc])[parc];
+        const todasFechasAgotadasThisParc = getFechasAgotadasPorParcial(comsMatPeriodo, [parc])[parc];
 
         const estadosCons = alumnos.map(email =>
-          getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).estado
+          getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc, com.periodo||1).estado
         );
 
         const notasCons = alumnos
-          .map(email => getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).nota)
+          .map(email => getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc, com.periodo||1).nota)
           .filter(n => n !== null && !isNaN(n));
         const pctsCons = calcPcts(estadosCons, conPromocion, notasCons);
         html += `<div style="margin-bottom:6px">
@@ -6564,19 +6572,19 @@ function buildCoordCalifStats() {
       });
 
       // ── Global ────────────────────────────────────────────
-      const comsMateria2 = COMISIONES.filter(c => c.materiaId===com.materiaId && c.año==com.año);
+      // Escopeado al mismo período de esta comisión, para no mezclar cuatrimestres
       const parcialesConNotas = NOMBRES_PARCIALES.filter(p =>
-        comsMateria2.some(c2 => NOMBRES_FECHAS.some(f => {
+        comsMatPeriodo.some(c2 => NOMBRES_FECHAS.some(f => {
           const d = parciales[c2.id]?.[p]?.[f];
           return d && Object.keys(d).filter(k=>k!=='_publicado').length>0;
         }))
       );
       if (parcialesConNotas.length > 0) {
         // Pre-calcular fechas agotadas por parcial (una sola vez)
-        const fechasAgotadasPorParcialGlob = getFechasAgotadasPorParcial(comsMateria2, parcialesConNotas);
+        const fechasAgotadasPorParcialGlob = getFechasAgotadasPorParcial(comsMatPeriodo, parcialesConNotas);
         const estadosGlob = alumnos.map(email => {
           const porParcial = parcialesConNotas.map(p =>
-            getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasPorParcialGlob[p]).estado
+            getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasPorParcialGlob[p], com.periodo||1).estado
           );
           if (porParcial.every(e=>e==='promocion'))               return 'promocion';
           if (porParcial.every(e=>e==='aprobado'||e==='promocion')) return 'aprobado';
@@ -6586,7 +6594,7 @@ function buildCoordCalifStats() {
         });
         const notasGlob = alumnos.flatMap(email =>
           parcialesConNotas.map(p =>
-            getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasPorParcialGlob[p]).nota
+            getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasPorParcialGlob[p], com.periodo||1).nota
           )
         ).filter(n => n !== null && !isNaN(n));
         const pctsGlob = calcPcts(estadosGlob, conPromocion, notasGlob);
@@ -6599,13 +6607,19 @@ function buildCoordCalifStats() {
       html += `</div>`; // fin comisión
     });
 
-    // ── Consolidado ciclo lectivo (todas las comisiones de la materia) ──
-    if (comsMat.length > 1) {
-      const todosAlumnos = [...new Set(comsMat.flatMap(c => c.alumnos || []))];
+    // ── Consolidado por período (todas las comisiones de ese período) ──
+    // Se separa por período para no mezclar 1er y 2do cuatrimestre en materias cuatrimestrales
+    const periodosDeLaMateria = [...new Set(comsMat.map(c => c.periodo||1))];
+    const hayMultiplesPeriodosCalif = periodosDeLaMateria.length > 1;
+    periodosDeLaMateria.forEach(periodoDelBloque => {
+      const comsMatPeriodoBloque = comsMat.filter(c => (c.periodo||1) === periodoDelBloque);
+      if (comsMatPeriodoBloque.length <= 1) return;
 
-      // Consolidado global acumulando todas las comisiones
+      const todosAlumnos = [...new Set(comsMatPeriodoBloque.flatMap(c => c.alumnos || []))];
+
+      // Consolidado global acumulando las comisiones de este período
       const parcialesConNotas = NOMBRES_PARCIALES.filter(p =>
-        comsMat.some(com =>
+        comsMatPeriodoBloque.some(com =>
           NOMBRES_FECHAS.some(f => {
             const d = parciales[com.id]?.[p]?.[f];
             return d && Object.keys(d).filter(k=>k!=='_publicado').length > 0;
@@ -6615,14 +6629,14 @@ function buildCoordCalifStats() {
 
       if (parcialesConNotas.length > 0) {
         // Pre-calcular fechas agotadas por parcial (una sola vez)
-        const fechasAgotadasCiclo = getFechasAgotadasPorParcial(comsMat, parcialesConNotas);
+        const fechasAgotadasCiclo = getFechasAgotadasPorParcial(comsMatPeriodoBloque, parcialesConNotas);
 
         const todosEstadosPorParcial = {};
         parcialesConNotas.forEach(p => { todosEstadosPorParcial[p] = []; });
 
         todosAlumnos.forEach(email => {
           parcialesConNotas.forEach(p => {
-            const estado = getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).estado;
+            const estado = getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p], periodoDelBloque).estado;
             todosEstadosPorParcial[p].push(estado);
           });
         });
@@ -6630,7 +6644,7 @@ function buildCoordCalifStats() {
         // Estado global del ciclo
         const estadosCiclo = todosAlumnos.map(email => {
           const porParcial = parcialesConNotas.map(p =>
-            getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).estado
+            getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p], periodoDelBloque).estado
           );
           if (porParcial.every(e=>e==='promocion'))                 return 'promocion';
           if (porParcial.every(e=>e==='aprobado'||e==='promocion')) return 'aprobado';
@@ -6642,7 +6656,7 @@ function buildCoordCalifStats() {
         // Notas ciclo global: nota final por alumno por parcial en todas las comisiones
         const notasCiclo = todosAlumnos.flatMap(email =>
           parcialesConNotas.map(p =>
-            getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).nota
+            getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p], periodoDelBloque).nota
           )
         ).filter(n => n !== null && !isNaN(n));
 
@@ -6651,7 +6665,7 @@ function buildCoordCalifStats() {
         // Desglose por parcial con notas
         const desgloseParciales = parcialesConNotas.map(p => {
           const notasP = todosAlumnos
-            .map(email => getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p]).nota)
+            .map(email => getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCiclo[p], periodoDelBloque).nota)
             .filter(n => n !== null && !isNaN(n));
           const pcts = calcPcts(todosEstadosPorParcial[p], conPromocion, notasP);
           return `<div style="margin-bottom:6px">
@@ -6660,10 +6674,14 @@ function buildCoordCalifStats() {
           </div>`;
         }).join('');
 
+        const labelPeriodoBloque = hayMultiplesPeriodosCalif
+          ? (PERIODO_LABEL_CALIF[periodoDelBloque] || `Período ${periodoDelBloque}`) + ' · '
+          : '';
+
         html += `
           <div style="background:var(--navy);border-radius:var(--radius-md);padding:12px 16px;margin-top:8px">
             <div style="font-size:12px;font-weight:600;color:white;margin-bottom:10px">
-              Ciclo lectivo ${selYear} · todas las comisiones · ${todosAlumnos.length} alumnos
+              ${labelPeriodoBloque}Ciclo lectivo ${selYear} · todas las comisiones · ${todosAlumnos.length} alumnos
             </div>
             ${desgloseParciales}
             <div style="border-top:1px solid rgba(255,255,255,0.15);padding-top:8px;margin-top:4px">
@@ -6672,7 +6690,7 @@ function buildCoordCalifStats() {
             </div>
           </div>`;
       }
-    }
+    });
 
     html += `</div>`; // fin materia
   });
@@ -7501,7 +7519,7 @@ function exportConsolidadoParcial(comId, parcial, fmt='xlsx') {
   const rows = alumnos.map(email => {
     const coms = getComisionesMateriaAlumno(email, materiaId, año);
     const { estado, nota, presentaciones } =
-      getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadas);
+      getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadas, periodo);
     const entry = Object.entries(ENROLLED_STUDENTS).find(([,s]) => s.email === email);
     const doc   = entry?.[1]?.doc || '—';
     const notaDisplay = nota ?? '—';
@@ -7653,18 +7671,19 @@ function exportEstadisticasCalif(fmt='xlsx') {
         // Consolidado por parcial — usar helper compartido (misma lógica que docente/coordinación)
         const tieneNotas = NOMBRES_FECHAS.some(f=>{const d=parciales[com.id]?.[parc]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;});
         if (!tieneNotas) return;
-        const todasFechasAgotadasThisParc = getFechasAgotadasPorParcial(comsMat, [parc])[parc];
+        const comsMatPeriodoExp = comsMat.filter(c => (c.periodo||1) === (com.periodo||1));
+        const todasFechasAgotadasThisParc = getFechasAgotadasPorParcial(comsMatPeriodoExp, [parc])[parc];
         const estadosCons = alumnos.map(email =>
-          getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).estado
+          getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc, com.periodo||1).estado
         );
         const notasCons = alumnos
-          .map(email => getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc).nota)
+          .map(email => getEstadoYNotaParcial(email, com.materiaId, com.año, parc, todasFechasAgotadasThisParc, com.periodo||1).nota)
           .filter(n=>n!==null&&!isNaN(n));
         rows.push(calcRow(materia, com.nombre, parc, 'Consolidado', estadosCons, notasCons));
       });
 
-      // Global por comisión — usar helper compartido
-      const comsMateriaExp = COMISIONES.filter(c => c.materiaId === com.materiaId && c.año == com.año);
+      // Global por comisión — escopeado al mismo período, para no mezclar cuatrimestres
+      const comsMateriaExp = comsMat.filter(c => (c.periodo||1) === (com.periodo||1));
       const parcialesConNotas = NOMBRES_PARCIALES.filter(p=>
         comsMateriaExp.some(c2 => NOMBRES_FECHAS.some(f=>{const d=parciales[c2.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;}))
       );
@@ -7672,7 +7691,7 @@ function exportEstadisticasCalif(fmt='xlsx') {
       const fechasAgotadasGlobExp = getFechasAgotadasPorParcial(comsMateriaExp, parcialesConNotas);
       const estadosGlob = alumnos.map(email=>{
         const pp = parcialesConNotas.map(p =>
-          getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasGlobExp[p]).estado
+          getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasGlobExp[p], com.periodo||1).estado
         );
         if(pp.every(e=>e==='promocion'))return 'promocion';
         if(pp.every(e=>e==='aprobado'||e==='promocion'))return 'aprobado';
@@ -7681,30 +7700,38 @@ function exportEstadisticasCalif(fmt='xlsx') {
         return 'ausente';
       });
       const notasGlob = alumnos.flatMap(email =>
-        parcialesConNotas.map(p => getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasGlobExp[p]).nota)
+        parcialesConNotas.map(p => getEstadoYNotaParcial(email, com.materiaId, com.año, p, fechasAgotadasGlobExp[p], com.periodo||1).nota)
       ).filter(n=>n!==null&&!isNaN(n));
       rows.push(calcRow(materia, com.nombre, 'Todos los parciales', 'Global comision', estadosGlob, notasGlob));
     });
 
-    // Ciclo lectivo — todas las comisiones, usar helper compartido
-    if (comsMat.length > 1) {
-      const todosAlumnos = [...new Set(comsMat.flatMap(c=>c.alumnos||[]))];
-      const parcialesConNotasCiclo = NOMBRES_PARCIALES.filter(p=>comsMat.some(com=>NOMBRES_FECHAS.some(f=>{const d=parciales[com.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;})));
-      const fechasAgotadasCicloExp = getFechasAgotadasPorParcial(comsMat, parcialesConNotasCiclo);
+    // Ciclo lectivo — por período, para no mezclar cuatrimestres
+    const PERIODO_LABEL_EXP = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
+    const periodosDeLaMateriaExp = [...new Set(comsMat.map(c => c.periodo||1))];
+    periodosDeLaMateriaExp.forEach(periodoExp => {
+      const comsMatPeriodoCiclo = comsMat.filter(c => (c.periodo||1) === periodoExp);
+      if (comsMatPeriodoCiclo.length <= 1) return;
+      const etiquetaComision = periodosDeLaMateriaExp.length > 1
+        ? `Todas las comisiones (${PERIODO_LABEL_EXP[periodoExp] || 'Período '+periodoExp})`
+        : 'Todas las comisiones';
+
+      const todosAlumnos = [...new Set(comsMatPeriodoCiclo.flatMap(c=>c.alumnos||[]))];
+      const parcialesConNotasCiclo = NOMBRES_PARCIALES.filter(p=>comsMatPeriodoCiclo.some(com=>NOMBRES_FECHAS.some(f=>{const d=parciales[com.id]?.[p]?.[f];return d&&Object.keys(d).filter(k=>k!=='_publicado').length>0;})));
+      const fechasAgotadasCicloExp = getFechasAgotadasPorParcial(comsMatPeriodoCiclo, parcialesConNotasCiclo);
 
       parcialesConNotasCiclo.forEach(parc => {
         const estadosCiclo = todosAlumnos.map(email =>
-          getEstadoYNotaParcial(email, mId, selYear, parc, fechasAgotadasCicloExp[parc]).estado
+          getEstadoYNotaParcial(email, mId, selYear, parc, fechasAgotadasCicloExp[parc], periodoExp).estado
         );
         const notasCiclo = todosAlumnos
-          .map(email => getEstadoYNotaParcial(email, mId, selYear, parc, fechasAgotadasCicloExp[parc]).nota)
+          .map(email => getEstadoYNotaParcial(email, mId, selYear, parc, fechasAgotadasCicloExp[parc], periodoExp).nota)
           .filter(n=>n!==null&&!isNaN(n));
-        rows.push(calcRow(materia, 'Todas las comisiones', parc, 'Ciclo lectivo', estadosCiclo, notasCiclo));
+        rows.push(calcRow(materia, etiquetaComision, parc, 'Ciclo lectivo', estadosCiclo, notasCiclo));
       });
 
       const estadosGlobCiclo = todosAlumnos.map(email=>{
         const pp = parcialesConNotasCiclo.map(p =>
-          getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCicloExp[p]).estado
+          getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCicloExp[p], periodoExp).estado
         );
         if(pp.every(e=>e==='promocion'))return 'promocion';
         if(pp.every(e=>e==='aprobado'||e==='promocion'))return 'aprobado';
@@ -7713,10 +7740,10 @@ function exportEstadisticasCalif(fmt='xlsx') {
         return 'ausente';
       });
       const notasGlobCiclo = todosAlumnos.flatMap(email =>
-        parcialesConNotasCiclo.map(p => getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCicloExp[p]).nota)
+        parcialesConNotasCiclo.map(p => getEstadoYNotaParcial(email, mId, selYear, p, fechasAgotadasCicloExp[p], periodoExp).nota)
       ).filter(n=>n!==null&&!isNaN(n));
-      rows.push(calcRow(materia, 'Todas las comisiones', 'Todos los parciales', 'Global ciclo lectivo', estadosGlobCiclo, notasGlobCiclo));
-    }
+      rows.push(calcRow(materia, etiquetaComision, 'Todos los parciales', 'Global ciclo lectivo', estadosGlobCiclo, notasGlobCiclo));
+    });
   });
 
   const nombre = `Estadisticas_Calificaciones_${selYear}`.replace(/ /g,'_');
@@ -7782,7 +7809,7 @@ function exportResultadoGlobal(comId, fmt='xlsx') {
     const doc   = entry?.[1]?.doc || '—';
 
     const estadosPorParcial = parcialesConNotas.map(p =>
-      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcialExp[p]).estado
+      getEstadoYNotaParcial(email, materiaId, año, p, fechasAgotadasPorParcialExp[p], periodo).estado
     );
 
     let estadoGlobal;
@@ -10028,8 +10055,10 @@ function getFechasAgotadasPorParcial(comisionesDeLaMateria, listaParciales) {
 
 // Determina el estado (y la nota asociada) de un alumno en un parcial específico,
 // contemplando todas las comisiones donde cursó esa materia (por si cambió de comisión).
-function getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadas) {
-  const coms = getComisionesMateriaAlumno(email, materiaId, año);
+function getEstadoYNotaParcial(email, materiaId, año, parcial, todasFechasAgotadas, periodo) {
+  const coms = periodo
+    ? getComisionesMateriaAlumnoPeriodo(email, materiaId, año, periodo)
+    : getComisionesMateriaAlumno(email, materiaId, año);
 
   const presentaciones = NOMBRES_FECHAS.filter(f =>
     coms.some(com => {
@@ -10739,7 +10768,7 @@ function getRecursantesFuturos(materia, cp) {
   const fechasAgotadas = getFechasAgotadasPorParcial(comsMat, parcialesRequeridos);
   return alumnos.filter(email =>
     parcialesRequeridos.some(p => {
-      const est = getEstadoYNotaParcial(email, materia.id, cp.ciclo, p, fechasAgotadas[p]).estado;
+      const est = getEstadoYNotaParcial(email, materia.id, cp.ciclo, p, fechasAgotadas[p], cp.periodo).estado;
       // "ausente" solo cuenta como parcial perdido si ese parcial ya agotó sus fechas —
       // si todavía no se tomó, "ausente" es solo el valor por defecto de "sin datos".
       return est === 'desaprobado' || (est === 'ausente' && fechasAgotadas[p]);
@@ -15305,12 +15334,12 @@ function renderStudentCertificadosView(tab = null) {
 
     misComisiones.forEach(comision => {
       const materia = MATERIAS.find(m => m.id === comision.materiaId);
-      const coms    = getComisionesMateriaAlumno(email, comision.materiaId, selCiclo);
+      const coms    = getComisionesMateriaAlumnoPeriodo(email, comision.materiaId, selCiclo, comision.periodo||1);
       let filas = '';
 
       NOMBRES_PARCIALES.forEach(parc => {
         NOMBRES_FECHAS.forEach(f => {
-          const clave = `${comision.materiaId}_${parc}_${f}`;
+          const clave = `${comision.id}_${parc}_${f}`;
           if (notasVistas.has(clave)) return;
           let fechaData = null;
           for (const com of coms) {
@@ -15335,8 +15364,13 @@ function renderStudentCertificadosView(tab = null) {
         });
       });
       if (!filas) return;
+      const otrasComisionesMismaMateriaCert = misComisiones.filter(c => c.materiaId === comision.materiaId).length > 1;
+      const PERIODO_LABEL_CERT = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
+      const labelPeriodoCert = otrasComisionesMismaMateriaCert
+        ? ` · ${PERIODO_LABEL_CERT[comision.periodo||1] || 'Período '+(comision.periodo||1)}`
+        : '';
       html += `<div class="area-card" style="margin-bottom:1rem">
-        <div class="area-header"><div style="font-size:14px;font-weight:500;color:var(--navy)">${materia?.nombre||''}</div></div>
+        <div class="area-header"><div style="font-size:14px;font-weight:500;color:var(--navy)">${materia?.nombre||''}${labelPeriodoCert}</div></div>
         ${filas}
       </div>`;
     });
