@@ -2115,6 +2115,13 @@ async function loadDataFromSupabase() {
           cude: a.cude || null,
         };
         STUDENT_NAMES[a.email] = `${a.apellido}, ${a.nombre}`;
+        // Novedades ya vistas por el alumno (para que no reaparezcan en cada sesión nueva)
+        const nv = a.novedades_vistas || {};
+        lastSeenSkillStatus[a.email] = nv.skillStatus || {};
+        lastSeenNotasStatus[a.email] = nv.notasStatus || {};
+        lastSeenCertStatus[a.email]  = nv.certStatus  || {};
+        lastSeenCudeStatus[a.email]  = nv.cudeStatus  || null;
+        lastSeenCambioComisionStatus[a.email] = nv.cambioComisionStatus || {};
       });
     }
 
@@ -5264,6 +5271,8 @@ let lastSeenSkillStatus = {};
 let lastSeenNotasStatus    = {};
 let lastSeenCertStatus     = {};
 let lastSeenPendingCount   = {};
+let lastSeenCudeStatus     = {};
+let lastSeenCambioComisionStatus = {};
 
 function getUnseenChanges(email) {
   const changes = [];
@@ -5315,6 +5324,33 @@ function getUnseenChanges(email) {
       }
     });
 
+  // ── CUdE validado/rechazado ────────────────────────────
+  const legajoCude = getLegajoByEmail(email);
+  const cudeActual = legajoCude ? ENROLLED_STUDENTS[legajoCude]?.cude : null;
+  if (cudeActual) {
+    const prevCude = lastSeenCudeStatus[email];
+    if (prevCude !== cudeActual.estado) {
+      if (cudeActual.estado === 'validado')
+        changes.push({ type: 'cude_ok',  msg: `✅ Tu CUdE fue validado por coordinación`, view: 'student-cude' });
+      else if (cudeActual.estado === 'rechazado')
+        changes.push({ type: 'cude_rej', msg: `❌ Tu CUdE fue rechazado · revisá el motivo`, view: 'student-cude' });
+    }
+  }
+
+  // ── Cambio de comisión aprobado/rechazado ─────────────
+  const seenCambios = lastSeenCambioComisionStatus[email] || {};
+  solicitudesCambioComision
+    .filter(s => s.email === email)
+    .forEach(s => {
+      const prev = seenCambios[s.id];
+      if (prev !== s.estado) {
+        if (s.estado === 'aprobada')
+          changes.push({ type: 'cambio_ok',  msg: `✅ Tu cambio de comisión fue aprobado`, view: 'student-cude' });
+        else if (s.estado === 'rechazada')
+          changes.push({ type: 'cambio_rej', msg: `❌ Tu cambio de comisión fue rechazado · revisá el motivo`, view: 'student-cude' });
+      }
+    });
+
   return changes;
 }
 
@@ -5342,7 +5378,7 @@ function getUnseenTeacherChanges(docenteDni) {
   return changes;
 }
 
-function markAllAsSeen(email) {
+async function markAllAsSeen(email) {
   // Portfolio
   const recs = studentRecords[email] || {};
   lastSeenSkillStatus[email] = {};
@@ -5370,6 +5406,33 @@ function markAllAsSeen(email) {
   solicitudesCertFinales.filter(s => s.email === email).forEach(s => {
     lastSeenCertStatus[email][s.id] = s.estado;
   });
+
+  // CUdE
+  const legajoCude = getLegajoByEmail(email);
+  const cudeActual = legajoCude ? ENROLLED_STUDENTS[legajoCude]?.cude : null;
+  lastSeenCudeStatus[email] = cudeActual?.estado || null;
+
+  // Cambio de comisión
+  lastSeenCambioComisionStatus[email] = {};
+  solicitudesCambioComision.filter(s => s.email === email).forEach(s => {
+    lastSeenCambioComisionStatus[email][s.id] = s.estado;
+  });
+
+  // Guardar en Supabase, para que no reaparezcan en la próxima sesión
+  const legajo = getLegajoByEmail(email);
+  if (legajo) {
+    const novedadesVistas = {
+      skillStatus: lastSeenSkillStatus[email],
+      notasStatus: lastSeenNotasStatus[email],
+      certStatus:  lastSeenCertStatus[email],
+      cudeStatus:  lastSeenCudeStatus[email],
+      cambioComisionStatus: lastSeenCambioComisionStatus[email],
+    };
+    const { error } = await _supabase.from('alumnos')
+      .update({ novedades_vistas: novedadesVistas })
+      .eq('legajo', legajo);
+    if (error) console.warn('Error guardando novedades vistas:', error);
+  }
 }
 
 function markTeacherAsSeen(docenteDni) {
