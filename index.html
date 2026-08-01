@@ -11275,12 +11275,12 @@ function updateCudeSolComisiones() {
   if (!materiaId) { group.style.display = 'none'; return; }
 
   // Comisión actual del alumno en esa materia
-  const comActual = COMISIONES.find(c => c.materiaId === materiaId && c.alumnos.includes(email));
-  // Otras comisiones disponibles de esa materia (mismo año)
-  const año = new Date().getFullYear();
+  const cicloActual = getCicloLectivoActual();
+  const comActual = COMISIONES.find(c => c.materiaId === materiaId && c.año === cicloActual && c.alumnos.includes(email));
+  // Otras comisiones disponibles de esa materia (mismo ciclo lectivo)
   const otras = COMISIONES.filter(c =>
     c.materiaId === materiaId &&
-    c.año === año &&
+    c.año === cicloActual &&
     c.id !== comActual?.id
   );
 
@@ -11384,7 +11384,8 @@ async function enviarSolicitudCambio(email) {
   const motivo    = document.getElementById('cude-sol-motivo').value.trim();
   if (!materiaId || !aComId) { showToast('Seleccioná una materia y comisión destino', true); return; }
   if (!motivo) { showToast('Ingresá el motivo del cambio', true); return; }
-  const comActual = COMISIONES.find(c => c.materiaId === materiaId && c.alumnos.includes(email));
+  const cicloActual = getCicloLectivoActual();
+  const comActual = COMISIONES.find(c => c.materiaId === materiaId && c.año === cicloActual && c.alumnos.includes(email));
   const id = 'sol' + Date.now();
   const legajo = getLegajoByEmail(email);
   const solicitud = {
