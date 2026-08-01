@@ -3493,7 +3493,7 @@ function switchStudentView(view) {
     if (view === 'student') {
       renderStudentView();
       if (window._notifShown) {
-        markAllAsSeen(currentUser.email);
+        markPortfolioAsSeen(currentUser.email);
         const banner = document.getElementById('inapp-notif-banner');
         if (banner) banner.remove();
       }
@@ -3521,19 +3521,19 @@ function switchStudentView(view) {
       if (cf) cf.style.display = _studentNotasTab==='finales'   ? 'block' : 'none';
       if (_studentNotasTab === 'parciales') renderStudentNotasView();
       else renderStudentFinalesView();
-      markAllAsSeen(currentUser.email);
+      markNotasAsSeen(currentUser.email);
       actualizarBadgesNovedadesStudent();
     }
     if (view === 'student-certificados') {
       renderStudentCertificadosView();
-      markAllAsSeen(currentUser.email);
+      markCertificadosAsSeen(currentUser.email);
       actualizarBadgesNovedadesStudent();
     }
     if (view === 'student-cronograma')   renderStudentCronogramaView();
     if (view === 'student-cartelera')    renderCartelaView('student-cartelera-container');
     if (view === 'student-cude') {
       renderStudentCudeView();
-      markAllAsSeen(currentUser.email);
+      markCudeAsSeen(currentUser.email);
       actualizarBadgesNovedadesStudent();
     }
   };
@@ -4991,20 +4991,20 @@ function switchTeacherView(view) {
     if (view === 'teacher') {
       renderTeacherView();
       const dni = getTeacherDni();
-      if (dni) { markTeacherAsSeen(dni); const b=document.getElementById('inapp-notif-banner'); if(b) b.remove(); }
+      if (dni) { markTeacherPortfolioAsSeen(dni); const b=document.getElementById('inapp-notif-banner'); if(b) b.remove(); }
     }
     if (view === 'attendance')          renderAttendanceView();
     if (view === 'notas')               renderNotasView();
     if (view === 'cert-requests') {
       renderCertRequestsView();
       const dni = getTeacherDni();
-      if (dni) markTeacherAsSeen(dni);
+      if (dni) markTeacherCertAsSeen(dni);
     }
     if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
     if (view === 'teacher-aulas') {
       renderTeacherAulasView();
       const dni = getTeacherDni();
-      if (dni) markTeacherAsSeen(dni);
+      if (dni) markTeacherAulasAsSeen(dni);
     }
   };
 
@@ -5446,15 +5446,83 @@ function actualizarBadgesNovedadesStudent() {
   setBadge('cude-badge-student', counts.cude);
 }
 
+function buildNovedadesVistasObj(email) {
+  return {
+    skillStatus: lastSeenSkillStatus[email] || {},
+    notasStatus: lastSeenNotasStatus[email] || {},
+    certStatus:  lastSeenCertStatus[email]  || {},
+    cudeStatus:  lastSeenCudeStatus[email]  || null,
+    cambioComisionStatus: lastSeenCambioComisionStatus[email] || {},
+  };
+}
+
+async function guardarNovedadesVistasStudent(email) {
+  const legajo = getLegajoByEmail(email);
+  if (!legajo) return;
+  const { error } = await _supabase.from('alumnos')
+    .update({ novedades_vistas: buildNovedadesVistasObj(email) })
+    .eq('legajo', legajo);
+  if (error) console.warn('Error guardando novedades vistas:', error);
+  actualizarBadgesNovedadesStudent();
+}
+
+// Cada una marca como vista SOLO su propia sección — entrar a "Notas" no debería
+// limpiarle a un alumno el cartelito de "Mi CUdE" que todavía no miró, por ejemplo.
+async function markPortfolioAsSeen(email) {
+  const recs = studentRecords[email] || {};
+  lastSeenSkillStatus[email] = {};
+  Object.entries(recs).forEach(([skillId, rec]) => {
+    lastSeenSkillStatus[email][skillId] = rec.status;
+  });
+  await guardarNovedadesVistasStudent(email);
+}
+
+async function markNotasAsSeen(email) {
+  const ciclosActivos = getCiclosLectivosActivos();
+  const misComisiones = COMISIONES.filter(c => ciclosActivos.includes(c.año) && c.alumnos.includes(email));
+  lastSeenNotasStatus[email] = {};
+  misComisiones.forEach(com => {
+    NOMBRES_PARCIALES.forEach(parc => {
+      NOMBRES_FECHAS.forEach(fecha => {
+        const data = parciales[com.id]?.[parc]?.[fecha];
+        if (data?._publicado && data[email]) {
+          lastSeenNotasStatus[email][`${com.id}_${parc}_${fecha}`] = true;
+        }
+      });
+    });
+  });
+  await guardarNovedadesVistasStudent(email);
+}
+
+async function markCertificadosAsSeen(email) {
+  lastSeenCertStatus[email] = {};
+  solicitudesCertFinales.filter(s => s.email === email).forEach(s => {
+    lastSeenCertStatus[email][s.id] = s.estado;
+  });
+  await guardarNovedadesVistasStudent(email);
+}
+
+async function markCudeAsSeen(email) {
+  const legajoCude = getLegajoByEmail(email);
+  const cudeActual = legajoCude ? ENROLLED_STUDENTS[legajoCude]?.cude : null;
+  lastSeenCudeStatus[email] = cudeActual?.estado || null;
+  lastSeenCambioComisionStatus[email] = {};
+  solicitudesCambioComision.filter(s => s.email === email).forEach(s => {
+    lastSeenCambioComisionStatus[email][s.id] = s.estado;
+  });
+  await guardarNovedadesVistasStudent(email);
+}
+
+// Marca las 4 secciones a la vez — se usa solo cuando el alumno interactúa con el
+// cartelito de novedades sin ir a una sección puntual (ver más abajo, ya no se usa
+// para eso tampoco, pero queda por si hace falta marcar todo de una en otro lugar).
 async function markAllAsSeen(email) {
-  // Portfolio
   const recs = studentRecords[email] || {};
   lastSeenSkillStatus[email] = {};
   Object.entries(recs).forEach(([skillId, rec]) => {
     lastSeenSkillStatus[email][skillId] = rec.status;
   });
 
-  // Notas
   const ciclosActivos = getCiclosLectivosActivos();
   const misComisiones = COMISIONES.filter(c => ciclosActivos.includes(c.año) && c.alumnos.includes(email));
   lastSeenNotasStatus[email] = {};
@@ -5469,39 +5537,59 @@ async function markAllAsSeen(email) {
     });
   });
 
-  // Certificados
   lastSeenCertStatus[email] = {};
   solicitudesCertFinales.filter(s => s.email === email).forEach(s => {
     lastSeenCertStatus[email][s.id] = s.estado;
   });
 
-  // CUdE
   const legajoCude = getLegajoByEmail(email);
   const cudeActual = legajoCude ? ENROLLED_STUDENTS[legajoCude]?.cude : null;
   lastSeenCudeStatus[email] = cudeActual?.estado || null;
 
-  // Cambio de comisión
   lastSeenCambioComisionStatus[email] = {};
   solicitudesCambioComision.filter(s => s.email === email).forEach(s => {
     lastSeenCambioComisionStatus[email][s.id] = s.estado;
   });
 
-  // Guardar en Supabase, para que no reaparezcan en la próxima sesión
-  const legajo = getLegajoByEmail(email);
-  if (legajo) {
-    const novedadesVistas = {
-      skillStatus: lastSeenSkillStatus[email],
-      notasStatus: lastSeenNotasStatus[email],
-      certStatus:  lastSeenCertStatus[email],
-      cudeStatus:  lastSeenCudeStatus[email],
-      cambioComisionStatus: lastSeenCambioComisionStatus[email],
-    };
-    const { error } = await _supabase.from('alumnos')
-      .update({ novedades_vistas: novedadesVistas })
-      .eq('legajo', legajo);
-    if (error) console.warn('Error guardando novedades vistas:', error);
-  }
-  actualizarBadgesNovedadesStudent();
+  await guardarNovedadesVistasStudent(email);
+}
+
+function buildNovedadesVistasTeacherObj(docenteDni) {
+  return {
+    pendingCount: lastSeenPendingCount[docenteDni] || 0,
+    certCount:    lastSeenCertStatus[docenteDni]   || 0,
+    aulasStatus:  lastSeenAulasStatus[docenteDni]  || {},
+  };
+}
+
+async function guardarNovedadesVistasTeacher(docenteDni) {
+  const { error } = await _supabase.from('staff')
+    .update({ novedades_vistas: buildNovedadesVistasTeacherObj(docenteDni) })
+    .eq('dni', docenteDni);
+  if (error) console.warn('Error guardando novedades vistas (docente):', error);
+}
+
+// Cada una marca como vista SOLO su propia sección — entrar a "Aulas" no debería
+// limpiarle al docente el aviso de una práctica de portfolio que todavía no vio.
+async function markTeacherPortfolioAsSeen(docenteDni) {
+  lastSeenPendingCount[docenteDni] = Object.values(studentRecords)
+    .flatMap(recs => Object.values(recs))
+    .filter(r => r.status === 'pending' && r.docenteDni === docenteDni).length;
+  await guardarNovedadesVistasTeacher(docenteDni);
+}
+
+async function markTeacherCertAsSeen(docenteDni) {
+  lastSeenCertStatus[docenteDni] = solicitudesCertFinales
+    .filter(s => s.docenteDni === docenteDni && s.estado === 'pendiente').length;
+  await guardarNovedadesVistasTeacher(docenteDni);
+}
+
+async function markTeacherAulasAsSeen(docenteDni) {
+  lastSeenAulasStatus[docenteDni] = {};
+  solicitudesAulas.filter(s => s.docente_dni === docenteDni).forEach(s => {
+    lastSeenAulasStatus[docenteDni][s.id] = s.estado;
+  });
+  await guardarNovedadesVistasTeacher(docenteDni);
 }
 
 async function markTeacherAsSeen(docenteDni) {
@@ -5514,17 +5602,7 @@ async function markTeacherAsSeen(docenteDni) {
   solicitudesAulas.filter(s => s.docente_dni === docenteDni).forEach(s => {
     lastSeenAulasStatus[docenteDni][s.id] = s.estado;
   });
-
-  // Guardar en Supabase, para que no reaparezcan en la próxima sesión
-  const novedadesVistas = {
-    pendingCount: lastSeenPendingCount[docenteDni],
-    certCount:    lastSeenCertStatus[docenteDni],
-    aulasStatus:  lastSeenAulasStatus[docenteDni],
-  };
-  const { error } = await _supabase.from('staff')
-    .update({ novedades_vistas: novedadesVistas })
-    .eq('dni', docenteDni);
-  if (error) console.warn('Error guardando novedades vistas (docente):', error);
+  await guardarNovedadesVistasTeacher(docenteDni);
 }
 
 function showInAppNotifications(email) {
@@ -5554,7 +5632,7 @@ function showNotifBanner(changes, id, role) {
 
   const list = changes.map(c =>
     `<div style="font-size:13px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.1)"
-      onclick="${role==='student' ? `switchStudentView('${c.view}')` : `switchTeacherView('${c.view}')`};document.getElementById('inapp-notif-banner').remove();${role==='student'?`markAllAsSeen('${id}')`:`markTeacherAsSeen('${id}')`}"
+      onclick="${role==='student' ? `switchStudentView('${c.view}')` : `switchTeacherView('${c.view}')`};document.getElementById('inapp-notif-banner').remove()"
       style="cursor:pointer">${c.msg}</div>`
   ).join('');
 
