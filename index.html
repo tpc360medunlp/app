@@ -3832,9 +3832,11 @@ function buildConsolidadoGlobal(comId, alumnos, conPromocion) {
   const materia   = MATERIAS.find(m => m.id === comision?.materiaId);
   const año       = comision?.año || new Date().getFullYear();
   const materiaId = comision?.materiaId;
+  const periodo   = comision?.periodo || 1;
 
-  // Parciales que tienen al menos una nota cargada en cualquier comisión de la materia
-  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
+  // Parciales que tienen al menos una nota cargada en alguna comisión de la materia
+  // en el MISMO período (para no mezclar 1er y 2do cuatrimestre en materias cuatrimestrales)
+  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año && (c.periodo||1) === periodo);
   const parcialesConNotas = NOMBRES_PARCIALES.filter(p =>
     comsMateria.some(com =>
       NOMBRES_FECHAS.some(f => {
@@ -3936,8 +3938,10 @@ function buildConsolidadoParcial(comId, parcial, alumnos, conPromocion) {
   const año       = comision?.año || new Date().getFullYear();
   const materiaId = comision?.materiaId;
 
-  // Pre-calcular fechasCargadas del parcial (una sola vez)
-  const comsMateria2 = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
+  // Pre-calcular fechasCargadas del parcial (una sola vez) — escopeado al mismo período
+  // de esta comisión, para no mezclar 1er y 2do cuatrimestre
+  const periodo = comision?.periodo || 1;
+  const comsMateria2 = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año && (c.periodo||1) === periodo);
   const fechasCargadasParc = NOMBRES_FECHAS.filter(f =>
     comsMateria2.some(com => {
       const d = parciales[com.id]?.[parcial]?.[f];
@@ -7483,8 +7487,10 @@ function exportConsolidadoParcial(comId, parcial, fmt='xlsx') {
   const subtitulo = `${materia?.nombre||''} · ${com?.nombre||''} · Ciclo ${año} · ${parcial}`;
   const headers   = ['Apellido y Nombre', 'Documento', 'Nota Final', 'Estado', 'Fechas rendidas'];
 
-  // Misma lógica que la vista en pantalla (docente/coordinación)
-  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
+  // Misma lógica que la vista en pantalla (docente/coordinación) — escopeado al mismo
+  // período de esta comisión, para no mezclar 1er y 2do cuatrimestre
+  const periodo = com?.periodo || 1;
+  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año && (c.periodo||1) === periodo);
   const todasFechasAgotadas = getFechasAgotadasPorParcial(comsMateria, [parcial])[parcial];
 
   const estadoLabels = {
@@ -7751,8 +7757,10 @@ function exportResultadoGlobal(comId, fmt='xlsx') {
   const año       = com?.año || new Date().getFullYear();
   const materiaId = com?.materiaId;
 
-  // Parciales con notas en cualquier comisión de la misma materia
-  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año);
+  // Parciales con notas en alguna comisión de la misma materia y período (para no
+  // mezclar 1er y 2do cuatrimestre en materias cuatrimestrales)
+  const periodo = com?.periodo || 1;
+  const comsMateria = COMISIONES.filter(c => c.materiaId === materiaId && c.año == año && (c.periodo||1) === periodo);
   const parcialesConNotas = NOMBRES_PARCIALES.filter(p =>
     comsMateria.some(com2 =>
       NOMBRES_FECHAS.some(f => {
