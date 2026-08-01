@@ -6481,6 +6481,8 @@ function buildCoordCalifStats() {
     const materia = MATERIAS.find(m => m.id === mId);
     const comsMat = comisiones.filter(c => c.materiaId === mId);
     const conPromocion = materia?.regimen === 'promocion';
+    const hayMultiplesPeriodos = new Set(comsMat.map(c => c.periodo||1)).size > 1;
+    const PERIODO_LABEL_CALIF = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
 
     html += `<div style="margin-bottom:1.5rem">
       <div style="font-size:14px;font-weight:600;color:var(--navy);padding:10px 0 8px;border-bottom:2px solid var(--teal);margin-bottom:12px">
@@ -6494,9 +6496,12 @@ function buildCoordCalifStats() {
 
       const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === com.docenteDni);
       const docenteNombre = staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
+      const periodoTag = hayMultiplesPeriodos
+        ? ` <span style="font-size:11px;font-weight:400;color:var(--teal)">(${PERIODO_LABEL_CALIF[com.periodo||1] || `Período ${com.periodo||1}`})</span>`
+        : '';
 
       html += `<div style="margin-bottom:1rem">
-        <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:8px">${com.nombre} · ${docenteNombre}</div>`;
+        <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:8px">${com.nombre}${periodoTag} · ${docenteNombre}</div>`;
 
       // ── Estadísticas por fecha ────────────────────────────
       let hayFechas = false;
@@ -10669,22 +10674,29 @@ function renderMesasFinalesView() {
 
 // Recursantes "actuales" en un ciclo: alumnos inscriptos ese ciclo en la materia que
 // también estuvieron inscriptos en algún ciclo anterior de esa misma materia.
-function getRecursantesActuales(materiaId, ciclo, todosCiclos) {
-  const comsEsteCiclo = COMISIONES.filter(c => c.materiaId === materiaId && c.año === ciclo);
-  const alumnosEsteCiclo = [...new Set(comsEsteCiclo.flatMap(c => c.alumnos || []))];
-  if (alumnosEsteCiclo.length === 0) return 0;
-  const ciclosAnteriores = todosCiclos.filter(c => c < ciclo);
-  if (ciclosAnteriores.length === 0) return 0;
-  const comsAnteriores = COMISIONES.filter(c => c.materiaId === materiaId && ciclosAnteriores.includes(c.año));
-  const alumnosAnteriores = new Set(comsAnteriores.flatMap(c => c.alumnos || []));
-  return alumnosEsteCiclo.filter(email => alumnosAnteriores.has(email)).length;
+// "cp" = objeto {ciclo, periodo}. Compara cronológicamente dos combinaciones ciclo+período.
+function cpEsAnterior(a, b) {
+  if (a.ciclo !== b.ciclo) return a.ciclo < b.ciclo;
+  return a.periodo < b.periodo;
 }
 
-// Recursantes "futuros" en un ciclo: alumnos inscriptos ese ciclo que ya perdieron
+function getRecursantesActuales(materiaId, cpActual, todosCP) {
+  const comsEsteCp = COMISIONES.filter(c => c.materiaId === materiaId && c.año === cpActual.ciclo && (c.periodo||1) === cpActual.periodo);
+  const alumnosEsteCp = [...new Set(comsEsteCp.flatMap(c => c.alumnos || []))];
+  if (alumnosEsteCp.length === 0) return 0;
+  const anteriores = todosCP.filter(cp => cpEsAnterior(cp, cpActual));
+  if (anteriores.length === 0) return 0;
+  const comsAnteriores = COMISIONES.filter(c => c.materiaId === materiaId &&
+    anteriores.some(cp => cp.ciclo === c.año && cp.periodo === (c.periodo||1)));
+  const alumnosAnteriores = new Set(comsAnteriores.flatMap(c => c.alumnos || []));
+  return alumnosEsteCp.filter(email => alumnosAnteriores.has(email)).length;
+}
+
+// Recursantes "futuros" en un ciclo+período: alumnos inscriptos ahí que ya perdieron
 // (desaprobado consolidado, fechas agotadas) al menos un parcial — candidatos a
-// recursar el ciclo que viene.
-function getRecursantesFuturos(materia, ciclo) {
-  const comsMat = COMISIONES.filter(c => c.materiaId === materia.id && c.año === ciclo);
+// recursar más adelante. Escopeado por período para no mezclar 1er y 2do cuatrimestre.
+function getRecursantesFuturos(materia, cp) {
+  const comsMat = COMISIONES.filter(c => c.materiaId === materia.id && c.año === cp.ciclo && (c.periodo||1) === cp.periodo);
   const alumnos = [...new Set(comsMat.flatMap(c => c.alumnos || []))];
   if (alumnos.length === 0) return 0;
 
@@ -10701,7 +10713,7 @@ function getRecursantesFuturos(materia, ciclo) {
   const fechasAgotadas = getFechasAgotadasPorParcial(comsMat, parcialesRequeridos);
   return alumnos.filter(email =>
     parcialesRequeridos.some(p => {
-      const est = getEstadoYNotaParcial(email, materia.id, ciclo, p, fechasAgotadas[p]).estado;
+      const est = getEstadoYNotaParcial(email, materia.id, cp.ciclo, p, fechasAgotadas[p]).estado;
       // "ausente" solo cuenta como parcial perdido si ese parcial ya agotó sus fechas —
       // si todavía no se tomó, "ausente" es solo el valor por defecto de "sin datos".
       return est === 'desaprobado' || (est === 'ausente' && fechasAgotadas[p]);
@@ -10718,17 +10730,27 @@ function buildRecursantesView() {
     return `<div class="empty-state"><div class="empty-icon">🔄</div><p>No hay datos suficientes todavía.</p></div>`;
   }
 
+  const PERIODO_LABEL = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
+
   return materiasConDatos.map(materia => {
-    const todosCiclos = [...new Set(COMISIONES.filter(c => c.materiaId === materia.id).map(c => c.año))]
-      .sort((a,b) => b - a);
+    // Todas las combinaciones (ciclo, período) que realmente existen para esta materia
+    const comsMateria = COMISIONES.filter(c => c.materiaId === materia.id);
+    const clavesUnicas = [...new Set(comsMateria.map(c => `${c.año}|${c.periodo||1}`))];
+    const todosCP = clavesUnicas
+      .map(k => { const [ciclo, periodo] = k.split('|').map(Number); return { ciclo, periodo }; })
+      .sort((a,b) => cpEsAnterior(a,b) ? 1 : (cpEsAnterior(b,a) ? -1 : 0)); // más reciente primero
+
+    const hayMultiplesPeriodos = new Set(comsMateria.map(c => c.periodo||1)).size > 1;
     const gId = `recur-${materia.id}`;
 
-    const filas = todosCiclos.map(ciclo => {
-      const predichos = todosCiclos.includes(ciclo - 1) ? getRecursantesFuturos(materia, ciclo - 1) : null;
-      const actuales  = getRecursantesActuales(materia.id, ciclo, todosCiclos);
-      const futuros   = getRecursantesFuturos(materia, ciclo);
+    const filas = todosCP.map((cp, idx) => {
+      const cpAnterior = todosCP[idx + 1]; // el siguiente en la lista es el cronológicamente anterior (orden desc)
+      const predichos = cpAnterior ? getRecursantesFuturos(materia, cpAnterior) : null;
+      const actuales  = getRecursantesActuales(materia.id, cp, todosCP);
+      const futuros   = getRecursantesFuturos(materia, cp);
+      const cicloLabel = `${cp.ciclo}-${cp.ciclo+1}${hayMultiplesPeriodos ? ' · ' + (PERIODO_LABEL[cp.periodo] || `Período ${cp.periodo}`) : ''}`;
       return `<tr>
-        <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;color:var(--navy)">${ciclo}-${ciclo+1}</td>
+        <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;color:var(--navy)">${cicloLabel}</td>
         <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center;color:${predichos===null?'var(--gray-400)':'inherit'}">${predichos===null?'—':predichos}</td>
         <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center">${actuales}</td>
         <td style="padding:8px 12px;border:1px solid var(--gray-100);font-size:13px;text-align:center">${futuros}</td>
