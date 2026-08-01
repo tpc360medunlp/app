@@ -5501,6 +5501,7 @@ async function markAllAsSeen(email) {
       .eq('legajo', legajo);
     if (error) console.warn('Error guardando novedades vistas:', error);
   }
+  actualizarBadgesNovedadesStudent();
 }
 
 async function markTeacherAsSeen(docenteDni) {
@@ -5557,10 +5558,6 @@ function showNotifBanner(changes, id, role) {
       style="cursor:pointer">${c.msg}</div>`
   ).join('');
 
-  const dismissFn = role === 'student'
-    ? `markAllAsSeen('${id}')`
-    : `markTeacherAsSeen('${id}')`;
-
   banner.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:12px">
       <div style="flex:1">
@@ -5569,7 +5566,7 @@ function showNotifBanner(changes, id, role) {
         </div>
         ${list}
       </div>
-      <button onclick="document.getElementById('inapp-notif-banner').remove();${dismissFn}"
+      <button onclick="document.getElementById('inapp-notif-banner').remove()"
         style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0">✕</button>
     </div>`;
 
