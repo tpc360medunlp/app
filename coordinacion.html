@@ -11478,7 +11478,8 @@ function renderStudentCudeView() {
     // El historial de solicitudes del alumno se muestra siempre que tenga alguna, sin
     // importar si en este momento hay algún período de cambio abierto o no — si no, se
     // pierde el historial apenas coordinación cierra o borra el período.
-    const misSolicitudes = solicitudesCambioComision.filter(s => s.email === email);
+    const misSolicitudes = solicitudesCambioComision.filter(s => s.email === email)
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
     if (materiasHabilitadas.length === 0 && misSolicitudes.length === 0) {
       html += `<p style="font-size:13px;color:var(--gray-400)">No hay períodos de cambio de comisión abiertos en este momento.</p>`;
