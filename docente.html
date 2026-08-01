@@ -3057,6 +3057,7 @@ async function enterApp() {
         window._notifShown = true;
         actualizarBadgesNovedadesStudent();
       }, 600);
+      actualizarBadgeCartelera();
       procesarTokenQrSiExiste();
     }
     else if (currentRole === 'teacher') {
@@ -3067,6 +3068,9 @@ async function enterApp() {
     else {
       switchCoordView('stats');
       actualizarBadgeMesasFinales();
+      actualizarBadgeCude();
+      actualizarBadgeAulas();
+      actualizarBadgeCartelera();
     }
 
   } catch(err) {
@@ -4997,7 +5001,11 @@ function switchTeacherView(view) {
       if (dni) markTeacherAsSeen(dni);
     }
     if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
-    if (view === 'teacher-aulas')       renderTeacherAulasView();
+    if (view === 'teacher-aulas') {
+      renderTeacherAulasView();
+      const dni = getTeacherDni();
+      if (dni) markTeacherAsSeen(dni);
+    }
   };
 
   doRender();
@@ -13171,6 +13179,39 @@ async function fetchCatedra(catedra) {
 
 const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// Calcula y actualiza el badge de Cartelera sin renderizar toda la pantalla —
+// para poder llamarla apenas se inicia sesión, no solo al entrar a esa sección.
+async function actualizarBadgeCartelera() {
+  const { data: pubData } = await _supabase
+    .from('cartelera_publicaciones')
+    .select('id, fecha_pub, fecha_mod')
+    .order('updated_at', { ascending: false });
+  if (!pubData || pubData.length === 0) return;
+
+  const fechas = pubData.map(p => parseFechaCartelera(p.fecha_mod ? p.fecha_mod.substring(0,10) : p.fecha_pub));
+
+  const lsKey = 'cartelera_ultima_visita';
+  let ultimaVisita = new Date(0);
+  const legajo = currentUser?.role === 'Estudiante' || currentUser?.role === 'Docente'
+    ? getLegajoByEmail(currentUser.email) : null;
+
+  if (legajo) {
+    const { data: visitaData, error: visitaError } = await _supabase.from('cartelera_visitas')
+      .select('ultima_visita').eq('legajo', legajo).single();
+    if (!visitaError && visitaData?.ultima_visita) ultimaVisita = new Date(visitaData.ultima_visita);
+  } else if (localStorage.getItem(lsKey)) {
+    ultimaVisita = new Date(localStorage.getItem(lsKey));
+  }
+
+  const noLeidos = fechas.filter(f => f && f > ultimaVisita).length;
+  const badgeId = currentRole === 'coordinator' ? 'cartelera-badge-coord' : 'cartelera-badge-student';
+  const badge = document.getElementById(badgeId);
+  if (badge) {
+    badge.style.display = noLeidos > 0 ? 'inline' : 'none';
+    badge.textContent = noLeidos > 9 ? '9+' : String(noLeidos);
+  }
+}
 
 async function renderCartelaView(containerId) {
   const container = document.getElementById(containerId);
