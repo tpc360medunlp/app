@@ -6478,12 +6478,15 @@ function buildCoordCalifStats() {
         ${conPromocion ? `<span style="font-size:11px;font-weight:400;color:#5b2d8e;margin-left:8px">Con promoción ≥${materia.notaPromocion}</span>` : ''}
       </div>`;
 
-    comsMat.forEach(com => {
+    comsMat.slice().sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es')).forEach(com => {
       const alumnos = com.alumnos || [];
       if (alumnos.length === 0) return;
 
+      const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === com.docenteDni);
+      const docenteNombre = staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
+
       html += `<div style="margin-bottom:1rem">
-        <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:8px">Comisión ${com.nombre}</div>`;
+        <div style="font-size:13px;font-weight:500;color:var(--gray-600);margin-bottom:8px">${com.nombre} · ${docenteNombre}</div>`;
 
       // ── Estadísticas por fecha ────────────────────────────
       let hayFechas = false;
