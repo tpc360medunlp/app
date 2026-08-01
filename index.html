@@ -1069,7 +1069,7 @@ async function ensureJsQR() {
           </button>
           <button id="stats-tab-calificaciones" onclick="switchStatsTab('calificaciones')"
             style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--gray-100);color:var(--gray-600)">
-            Calificaciones
+            Parciales
           </button>
           <button id="stats-tab-finales" onclick="switchStatsTab('finales')"
             style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--gray-100);color:var(--gray-600)">
@@ -6437,7 +6437,7 @@ function renderCoordinatorView() {
 
 // ── ESTADÍSTICAS DE CALIFICACIONES (COORDINACIÓN) ─────────
 function buildCoordCalifStats() {
-  const selYear    = window._coordCalifYear    || new Date().getFullYear();
+  const selYear    = window._coordCalifYear    || getCicloLectivoActual();
   const selMateria = window._coordCalifMateria || '';
 
   // Selector año lectivo
@@ -7582,7 +7582,7 @@ function buildPadronFooterNote(alumnos, comId) {
   return lines;
 }
 function exportEstadisticasCalif(fmt='xlsx') {
-  const selYear    = window._coordCalifYear    || new Date().getFullYear();
+  const selYear    = window._coordCalifYear    || getCicloLectivoActual();
   const selMateria = window._coordCalifMateria || '';
   const comisiones = COMISIONES.filter(c => c.año==selYear && (!selMateria||c.materiaId===selMateria));
 
