@@ -5516,7 +5516,7 @@ function getUnseenTeacherChanges(docenteDni) {
       : fp.semanaLabel;
     changes.push({
       type: 'final_proximo',
-      msg: `🎓 Final próximo: ${fp.materia.nombre} — ${fp.mesaNombre} — ${cuando}`,
+      msg: `🎓 FINAL PRÓXIMO · ${fp.materia.nombre} · ${fp.mesaNombre} · ${cuando}`,
       view: 'teacher-cronograma',
       destacado: true,
     });
@@ -15913,7 +15913,7 @@ function renderTeacherCronogramaView() {
       : `renderTeacherCronogramaMateria('${fp.materia.id}')`;
     return `<div onclick="${goToTab}"
       style="background:var(--red-light);border:1.5px solid #b02030;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;cursor:pointer;font-size:13px;color:var(--navy)">
-      🎓 <strong>Final próximo:</strong> ${fp.materia.nombre} — ${fp.mesaNombre} — ${cuando}
+      🎓 <strong>FINAL PRÓXIMO</strong> · ${fp.materia.nombre} · ${fp.mesaNombre} · ${cuando}
     </div>`;
   }).join('');
 
