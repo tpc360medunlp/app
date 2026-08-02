@@ -805,6 +805,8 @@ async function ensureJsQR() {
     .sidebar-overlay { display: none !important; }
     #mobile-nav { display: flex; }
     #mobile-header { display: flex; }
+    .tcrono-tabs { flex-direction: column !important; }
+    .tcrono-tabs button { width: 100%; }
     .main-content {
       margin-left: 0 !important;
       padding: calc(56px + env(safe-area-inset-top, 0px) + 1rem) 1rem 5rem !important;
@@ -15918,8 +15920,8 @@ function renderTeacherCronogramaView() {
   }).join('');
 
   container.innerHTML = `
-    ${alertaHtml}
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${matTabsHtml}</div>
+    ${alertaHtml ? `<div style="margin-bottom:1.25rem">${alertaHtml}</div>` : ''}
+    <div class="tcrono-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${matTabsHtml}</div>
     <div id="tcrono-content"></div>`;
 
   if (tabsData.length > 0) {
