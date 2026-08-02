@@ -15939,23 +15939,24 @@ function renderCoordPortfolioView(selectedAreaId = null) {
       : SKILLS_DATA.map((a, aIdx) => {
           const isFirst = aIdx === 0;
           const isLast  = aIdx === SKILLS_DATA.length - 1;
-          return `<div class="skill-row" style="align-items:center;cursor:pointer" onclick="renderCoordPortfolioView('${a.id}')">
+          return `<div class="skill-row" style="align-items:center">
             <div class="area-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6317.49 5923.86" style="width:100%;height:100%"><use href="#tpc360-logo-mark"/></svg></div>
             <div style="flex:1;margin-left:10px">
               <div style="font-size:14px;font-weight:500;color:var(--navy)">${a.name}</div>
               <div style="font-size:12px;color:var(--gray-400);margin-top:2px">${a.skills.length} habilidad/es</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:2px;margin-right:6px">
-              <button onclick="event.stopPropagation(); moverArea('${a.id}',-1)" ${isFirst?'disabled':''}
+              <button onclick="moverArea('${a.id}',-1)" ${isFirst?'disabled':''}
                 style="padding:2px 7px;font-size:11px;background:${isFirst?'var(--gray-100)':'var(--gray-200)'};color:${isFirst?'var(--gray-300)':'var(--navy)'};border:none;border-radius:3px;cursor:${isFirst?'default':'pointer'};font-family:var(--font);line-height:1">▲</button>
-              <button onclick="event.stopPropagation(); moverArea('${a.id}',1)" ${isLast?'disabled':''}
+              <button onclick="moverArea('${a.id}',1)" ${isLast?'disabled':''}
                 style="padding:2px 7px;font-size:11px;background:${isLast?'var(--gray-100)':'var(--gray-200)'};color:${isLast?'var(--gray-300)':'var(--navy)'};border:none;border-radius:3px;cursor:${isLast?'default':'pointer'};font-family:var(--font);line-height:1">▼</button>
             </div>
             <button class="btn-cargar" style="background:var(--gray-600);font-size:12px;margin-right:6px"
-              onclick="event.stopPropagation(); openPortfolioAreaModal('${a.id}')">Editar</button>
-            <button class="btn-cargar" style="background:#b02030;font-size:12px;margin-right:8px"
-              onclick="event.stopPropagation(); eliminarArea('${a.id}')">Eliminar</button>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--gray-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              onclick="openPortfolioAreaModal('${a.id}')">Editar</button>
+            <button class="btn-cargar" style="background:#b02030;font-size:12px;margin-right:6px"
+              onclick="eliminarArea('${a.id}')">Eliminar</button>
+            <button class="btn-cargar" style="background:var(--navy);font-size:12px"
+              onclick="renderCoordPortfolioView('${a.id}')">Habilidades</button>
           </div>`;
         }).join('');
 
