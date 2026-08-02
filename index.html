@@ -3099,6 +3099,7 @@ async function enterApp() {
       switchTeacherView(firstGroup?.view || 'teacher');
       setTimeout(() => showTeacherNotifications(getTeacherDni()), 600);
       actualizarBadgeAulas();
+      actualizarBadgeCronogramaTeacher();
     }
     else {
       switchCoordView('stats');
@@ -3255,6 +3256,7 @@ const NAV_ID_TO_BADGE_ID = {
   'nav-coord-mesas':           'mesas-badge-coord',
   'nav-coord-cartelera':       'cartelera-badge-coord',
   'nav-teacher-aulas':         'aulas-badge-teacher',
+  'nav-teacher-cronograma':    'cronograma-badge-teacher',
 };
 
 function getMobileBadgeCount(itemId) {
@@ -3417,6 +3419,7 @@ function renderSidebar() {
       cronograma: `<button class="nav-item" id="nav-teacher-cronograma" onclick="switchTeacherView('teacher-cronograma')">
         <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Cronogramas</span>
+        <span id="cronograma-badge-teacher" style="display:none;background:#b02030;color:white;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:600;margin-left:auto"></span>
       </button>`,
       solicitudAulas: `<button class="nav-item" id="nav-teacher-aulas" onclick="switchTeacherView('teacher-aulas')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -5079,7 +5082,10 @@ function switchTeacherView(view) {
       const dni = getTeacherDni();
       if (dni) markTeacherCertAsSeen(dni);
     }
-    if (view === 'teacher-cronograma')  renderTeacherCronogramaView();
+    if (view === 'teacher-cronograma') {
+      renderTeacherCronogramaView();
+      actualizarBadgeCronogramaTeacher();
+    }
     if (view === 'teacher-aulas') {
       renderTeacherAulasView();
       const dni = getTeacherDni();
@@ -5501,6 +5507,20 @@ function getAulaFingerprint(s) {
 function getUnseenTeacherChanges(docenteDni) {
   const changes = [];
 
+  // Finales próximos — se muestran siempre mientras sigan vigentes, no dependen de
+  // si ya se vieron antes (a diferencia del resto de las novedades de este listado)
+  getFinalesProximosDocente(docenteDni).forEach(fp => {
+    const cuando = fp.fechaExacta
+      ? `${String(fp.fechaExacta.getDate()).padStart(2,'0')}/${String(fp.fechaExacta.getMonth()+1).padStart(2,'0')}${fp.horario ? ' · '+fp.horario : ''}${fp.lugar ? ' · '+fp.lugar : ''}`
+      : fp.semanaLabel;
+    changes.push({
+      type: 'final_proximo',
+      msg: `🎓 Final próximo: ${fp.materia.nombre} — ${fp.mesaNombre} — ${cuando}`,
+      view: 'teacher-cronograma',
+      destacado: true,
+    });
+  });
+
   // Nuevas validaciones pendientes
   const seenPending = lastSeenPendingCount[docenteDni] || 0;
   const currentPending = Object.values(studentRecords)
@@ -5743,9 +5763,8 @@ function showNotifBanner(changes, id, role) {
   `;
 
   const list = changes.map(c =>
-    `<div style="font-size:13px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.1)"
-      onclick="${role==='student' ? `switchStudentView('${c.view}')` : `switchTeacherView('${c.view}')`};document.getElementById('inapp-notif-banner').remove()"
-      style="cursor:pointer">${c.msg}</div>`
+    `<div style="font-size:13px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.1);cursor:pointer;${c.destacado ? 'background:rgba(176,32,48,0.25);border-radius:6px;padding:6px 8px;font-weight:600;margin-bottom:4px' : ''}"
+      onclick="${role==='student' ? `switchStudentView('${c.view}')` : `switchTeacherView('${c.view}')`};document.getElementById('inapp-notif-banner').remove()">${c.msg}</div>`
   ).join('');
 
   banner.innerHTML = `
@@ -11518,6 +11537,89 @@ function buildCortesTemporales(ciclo) {
 // Para materias anuales: cronograma[1] (siempre periodo 1)
 // Para cuatrimestrales: cronograma[1] o cronograma[2]
 // Para bimestrales: cronograma[1..4]
+// Parsea una fecha en formato DD/MM/YYYY o YYYY-MM-DD, lo que venga.
+function parseFechaFlexible(str) {
+  if (!str) return null;
+  if (str.includes('-')) {
+    const [y,m,d] = str.split('-').map(Number);
+    if (!y||!m||!d) return null;
+    return new Date(y, m-1, d);
+  }
+  if (str.includes('/')) {
+    const [d,m,y] = str.split('/').map(Number);
+    if (!y||!m||!d) return null;
+    return new Date(y, m-1, d);
+  }
+  return null;
+}
+
+// Finales que se acercan para un docente — considera tanto sus comisiones propias
+// como las materias donde figura como responsable sin comisión propia. Usa la fecha
+// exacta de la Agenda cuando existe (avisa 7 días antes), o la semana del cronograma
+// cuando no (avisa 5 días antes del inicio) — y en los dos casos se mantiene activo
+// hasta que la fecha (o la semana) ya haya pasado, no es un aviso de una sola vez.
+function getFinalesProximosDocente(docenteDni) {
+  const resultado = [];
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const unDia = 86400000;
+
+  const materiaIds = new Set([
+    ...COMISIONES.filter(c => c.docenteDni === docenteDni).map(c => c.materiaId),
+    ...MATERIAS.filter(m => m.docenteDni === docenteDni).map(m => m.id),
+  ]);
+
+  materiaIds.forEach(materiaId => {
+    const materia = MATERIAS.find(m => m.id === materiaId);
+    if (!materia || !materia.cronograma) return;
+
+    const comisionDocente = COMISIONES.find(c => c.materiaId === materiaId && c.docenteDni === docenteDni);
+    const nPeriodos = getCantPeriodos(materia.regimen_cursada || 'anual');
+    const yaAgregados = new Set(); // evitar duplicar el mismo final si aparece en más de un período
+
+    for (let p = 1; p <= nPeriodos; p++) {
+      const cronograma = getCronogramaComision(materia, { periodo: p });
+      if (!cronograma?.filas) continue;
+
+      cronograma.filas.forEach(f => {
+        if (!f.final) return;
+        const matchInfo = matchMesaParaFinal(materiaId, f.final, f.inicio);
+        let fechaExacta = null, activo = false, semanaLabel = null;
+
+        if (matchInfo?.data?.fecha) {
+          fechaExacta = parseFechaFlexible(matchInfo.data.fecha);
+          if (fechaExacta) {
+            const diasFaltantes = Math.round((fechaExacta - hoy) / unDia);
+            activo = diasFaltantes >= 0 && diasFaltantes <= 7;
+          }
+        } else if (f.inicio) {
+          const inicioSemana = parseFechaFlexible(f.inicio);
+          const finSemana = f.fin ? parseFechaFlexible(f.fin) : (inicioSemana ? new Date(inicioSemana.getTime() + 6*unDia) : null);
+          if (inicioSemana && finSemana) {
+            const diasHastaInicio = Math.round((inicioSemana - hoy) / unDia);
+            const yaPaso = hoy > finSemana;
+            activo = !yaPaso && diasHastaInicio <= 5;
+            semanaLabel = (f.fin && f.fin !== f.inicio) ? `semana del ${f.inicio} al ${f.fin}` : `semana del ${f.inicio}`;
+          }
+        }
+
+        if (activo) {
+          const clave = materiaId + '_' + f.final + '_' + (f.inicio||'');
+          if (yaAgregados.has(clave)) return;
+          yaAgregados.add(clave);
+          resultado.push({
+            materia, mesaNombre: f.final, fechaExacta, semanaLabel,
+            lugar: matchInfo?.data?.lugar || null,
+            horario: matchInfo?.data?.horario || null,
+            comisionId: comisionDocente ? comisionDocente.id : null,
+          });
+        }
+      });
+    }
+  });
+
+  return resultado;
+}
+
 function getCronogramaComision(materia, comision) {
   if (!materia?.cronograma) return null;
   const periodo = comision?.periodo || 1;
@@ -12484,6 +12586,16 @@ function actualizarBadgeMesasFinales() {
   });
   badge.style.display = pendientes > 0 ? 'inline' : 'none';
   badge.textContent = pendientes > 99 ? '99+' : String(pendientes);
+  renderMobileNav();
+}
+
+function actualizarBadgeCronogramaTeacher() {
+  const dni = getTeacherDni();
+  const badge = document.getElementById('cronograma-badge-teacher');
+  if (!badge || !dni) return;
+  const cantidad = getFinalesProximosDocente(dni).length;
+  badge.style.display = cantidad > 0 ? 'inline' : 'none';
+  badge.textContent = cantidad > 9 ? '9+' : String(cantidad);
   renderMobileNav();
 }
 
@@ -15789,7 +15901,23 @@ function renderTeacherCronogramaView() {
       ${t.label}
     </button>`).join('');
 
+  // Tarjeta de alerta — finales que se acercan, arriba de todo, visible sin importar la pestaña
+  const finalesProximos = getFinalesProximosDocente(docenteDni);
+  const alertaHtml = finalesProximos.length === 0 ? '' : finalesProximos.map(fp => {
+    const cuando = fp.fechaExacta
+      ? `${String(fp.fechaExacta.getDate()).padStart(2,'0')}/${String(fp.fechaExacta.getMonth()+1).padStart(2,'0')}${fp.horario ? ' · '+fp.horario : ''}${fp.lugar ? ' · '+fp.lugar : ''}`
+      : `${fp.semanaLabel} (sin fecha confirmada)`;
+    const goToTab = fp.comisionId
+      ? `renderTeacherCronogramaComision('${fp.comisionId}')`
+      : `renderTeacherCronogramaMateria('${fp.materia.id}')`;
+    return `<div onclick="${goToTab}"
+      style="background:var(--red-light);border:1.5px solid #b02030;border-radius:var(--radius-md);padding:10px 14px;margin-bottom:8px;cursor:pointer;font-size:13px;color:var(--navy)">
+      🎓 <strong>Final próximo:</strong> ${fp.materia.nombre} — ${fp.mesaNombre} — ${cuando}
+    </div>`;
+  }).join('');
+
   container.innerHTML = `
+    ${alertaHtml}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${matTabsHtml}</div>
     <div id="tcrono-content"></div>`;
 
