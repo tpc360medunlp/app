@@ -8271,12 +8271,9 @@ function renderAttendanceView(selectedComId, selectedDate, mode, nuevaFechaParam
   });
 
   const resumenPresentismoHtml = resumenPresentismo.length === 0 ? '' : `
-    <div class="area-card" style="margin-bottom:.75rem;border:1.5px solid var(--teal);background:white">
+    <div class="area-card" style="margin-bottom:.75rem;border:3px solid var(--teal);background:var(--teal-light)">
       <button onclick="toggleAttGroup('att-resumen-${selCom}')"
         style="width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <span style="font-size:15px">📊</span>
-        </div>
         <div class="area-header" style="flex:1;margin:0">
           <span class="area-name" style="margin-left:0;font-size:15px;font-weight:700;color:var(--navy)">Resumen de presentismo por alumno</span>
         </div>
