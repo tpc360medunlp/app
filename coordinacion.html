@@ -5024,19 +5024,24 @@ function renderStudentNotasView() {
     return;
   }
 
-  // Construir lista de materias sin agrupar por año
+  // Construir lista de materias — si el alumno cambió de comisión, se combinan las
+  // notas de todas sus comisiones de esa materia en una sola tarjeta (igual que en
+  // Asistencia), en vez de mostrar una tarjeta separada por cada comisión.
   const notasVistas = new Set();
   let materiasHTML = '';
+  const materiaIds = [...new Set(misComisiones.map(c => c.materiaId))];
 
-  misComisiones.forEach(comision => {
-    const materia = MATERIAS.find(m => m.id === comision.materiaId);
-    const coms    = getComisionesMateriaAlumnoPeriodo(email, comision.materiaId, selCiclo, comision.periodo||1);
+  materiaIds.forEach(materiaId => {
+    const materia = MATERIAS.find(m => m.id === materiaId);
+    const comsDeEstaMateria = misComisiones.filter(c => c.materiaId === materiaId);
+    const comisionActual = comsDeEstaMateria.find(c => c.alumnos.includes(email)) || comsDeEstaMateria[0];
+    const coms = comsDeEstaMateria;
     let filas = '';
 
     NOMBRES_PARCIALES.forEach(parc => {
       let yaAprobadoEnFechaAnterior = false;
       NOMBRES_FECHAS.forEach(f => {
-        const clave = `${comision.id}_${parc}_${f}`;
+        const clave = `${materiaId}_${parc}_${f}`;
         if (notasVistas.has(clave)) return;
         if (yaAprobadoEnFechaAnterior) return; // fechas posteriores a la aprobación no deberían contar
         let fechaData = null, comOrigen = null;
@@ -5054,7 +5059,7 @@ function renderStudentNotasView() {
         const estadoColor = estado==='aprobado'?'#1a7a35':estado==='desaprobado'?'#b02030':estado==='promocion'?'#5b2d8e':'#b05a10';
         const estadoBg    = estado==='aprobado'?'var(--green-light)':estado==='desaprobado'?'var(--red-light)':estado==='promocion'?'#ede7f6':'var(--amber-light)';
         const estadoLabel = estado==='promocion'?'⭐ Promocion':estado.charAt(0).toUpperCase()+estado.slice(1);
-        const origenLabel = comOrigen && comOrigen.id !== comision.id
+        const origenLabel = comOrigen && comOrigen.id !== comisionActual.id
           ? `<span style="font-size:11px;color:#854F0B;margin-left:6px">(${comOrigen.nombre})</span>` : '';
         filas += `<div class="skill-row" style="align-items:center">
           <div style="flex:1">
@@ -5071,11 +5076,11 @@ function renderStudentNotasView() {
 
     if (!filas) return;
 
-    const comId = `notas-com-${comision.id}`;
-    const otrasComisionesMismaMateria = misComisiones.filter(c => c.materiaId === comision.materiaId).length > 1;
+    const comId = `notas-com-${materiaId}`;
+    const periodosDistintos = new Set(comsDeEstaMateria.map(c => c.periodo||1)).size;
     const PERIODO_LABEL_NOTAS = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
-    const labelPeriodoNotas = otrasComisionesMismaMateria
-      ? ` · ${PERIODO_LABEL_NOTAS[comision.periodo||1] || 'Período '+(comision.periodo||1)}`
+    const labelPeriodoNotas = periodosDistintos > 1
+      ? ` · ${PERIODO_LABEL_NOTAS[comisionActual.periodo||1] || 'Período '+(comisionActual.periodo||1)}`
       : '';
     materiasHTML += `
       <div class="area-card" style="margin-bottom:.75rem">
@@ -15560,20 +15565,22 @@ function renderStudentCertificadosView(tab = null) {
 
     const notasVistas = new Set();
     let html = '';
+    const materiaIdsCert = [...new Set(misComisiones.map(c => c.materiaId))];
 
-    misComisiones.forEach(comision => {
-      const materia = MATERIAS.find(m => m.id === comision.materiaId);
-      const coms    = getComisionesMateriaAlumnoPeriodo(email, comision.materiaId, selCiclo, comision.periodo||1);
+    materiaIdsCert.forEach(materiaId => {
+      const materia = MATERIAS.find(m => m.id === materiaId);
+      const comsDeEstaMateria = misComisiones.filter(c => c.materiaId === materiaId);
+      const coms = comsDeEstaMateria;
       let filas = '';
 
       NOMBRES_PARCIALES.forEach(parc => {
         NOMBRES_FECHAS.forEach(f => {
-          const clave = `${comision.id}_${parc}_${f}`;
+          const clave = `${materiaId}_${parc}_${f}`;
           if (notasVistas.has(clave)) return;
-          let fechaData = null;
+          let fechaData = null, comOrigen = null;
           for (const com of coms) {
             const d = parciales[com.id]?.[parc]?.[f];
-            if (d?._publicado && d[email]) { fechaData = d; break; }
+            if (d?._publicado && d[email]) { fechaData = d; comOrigen = com; break; }
           }
           if (!fechaData) return;
           notasVistas.add(clave);
@@ -15585,7 +15592,7 @@ function renderStudentCertificadosView(tab = null) {
           filas += `<div class="skill-row" style="align-items:center">
             <span style="flex:1;font-size:13px;color:var(--navy)">${parc} · ${f}</span>
             <span class="badge" style="background:${estadoBg};color:${estadoColor};margin-right:10px">${estado.charAt(0).toUpperCase()+estado.slice(1)}</span>
-            <button onclick="generarCertificado('${comision.id}','${parc}','${f}','${email}')"
+            <button onclick="generarCertificado('${comOrigen.id}','${parc}','${f}','${email}')"
               style="padding:6px 14px;font-size:12px;font-weight:500;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);background:var(--navy);color:white">
               📄 Generar certificado
             </button>
@@ -15593,10 +15600,11 @@ function renderStudentCertificadosView(tab = null) {
         });
       });
       if (!filas) return;
-      const otrasComisionesMismaMateriaCert = misComisiones.filter(c => c.materiaId === comision.materiaId).length > 1;
+      const periodosDistintosCert = new Set(comsDeEstaMateria.map(c => c.periodo||1)).size;
+      const comisionActualCert = comsDeEstaMateria.find(c => c.alumnos.includes(email)) || comsDeEstaMateria[0];
       const PERIODO_LABEL_CERT = { 1: '1er cuatrimestre', 2: '2do cuatrimestre' };
-      const labelPeriodoCert = otrasComisionesMismaMateriaCert
-        ? ` · ${PERIODO_LABEL_CERT[comision.periodo||1] || 'Período '+(comision.periodo||1)}`
+      const labelPeriodoCert = periodosDistintosCert > 1
+        ? ` · ${PERIODO_LABEL_CERT[comisionActualCert.periodo||1] || 'Período '+(comisionActualCert.periodo||1)}`
         : '';
       html += `<div class="area-card" style="margin-bottom:1rem">
         <div class="area-header"><div style="font-size:14px;font-weight:500;color:var(--navy)">${materia?.nombre||''}${labelPeriodoCert}</div></div>
