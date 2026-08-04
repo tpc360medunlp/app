@@ -807,6 +807,7 @@ async function ensureJsQR() {
     #mobile-header { display: flex; }
     .tcrono-tabs { flex-direction: column !important; }
     .tcrono-tabs button { width: 100%; }
+    .aulas-tabs button { flex: 1; }
     .main-content {
       margin-left: 0 !important;
       padding: calc(56px + env(safe-area-inset-top, 0px) + 1rem) 1rem 5rem !important;
@@ -2533,6 +2534,32 @@ function getComisionOrigenNombre(email, comIdActual) {
   return comOrigen ? comOrigen.nombre : null;
 }
 
+// Presentismo combinado de un alumno en una comisión — si cambió de comisión dentro
+// de la misma materia, suma también sus comisiones anteriores. Usado en pantalla y
+// en las dos exportaciones (Excel/PDF), para que el número sea siempre el mismo.
+function getPresentismoCombinado(email, comId) {
+  const com = COMISIONES.find(c => c.id === comId);
+  if (!com) return { totalClases: 0, presentes: 0, pct: null };
+
+  const comisionesRelevantes = [com];
+  getHistorialAlumno(email).forEach(h => {
+    if (h.deComId && h.deComId !== comId) {
+      const comAnterior = COMISIONES.find(c => c.id === h.deComId && c.materiaId === com.materiaId && c.año === com.año);
+      if (comAnterior && !comisionesRelevantes.find(c => c.id === comAnterior.id)) comisionesRelevantes.push(comAnterior);
+    }
+  });
+
+  let totalClases = 0, presentes = 0;
+  comisionesRelevantes.forEach(c2 => {
+    const fechasC2 = getFechasAlumnoEnComision(email, c2.id);
+    totalClases += fechasC2.length;
+    presentes   += fechasC2.filter(f => asistencia[c2.id]?.[f]?.[email] === 'presente').length;
+  });
+
+  const pct = totalClases > 0 ? Math.round(presentes/totalClases*100) : null;
+  return { totalClases, presentes, pct };
+}
+
 async function registrarCambioComision(email, deComId, aComId) {
   const legajo = getLegajoByEmail(email);
   if (!legajo) return { ok: false, motivo: 'sin_legajo' };
@@ -4075,7 +4102,7 @@ function _renderNotasViewInternal(selectedComId, selectedParcial, selectedFecha)
     // Mostrar lista de parciales primero (inmediato), luego consolidado (diferido)
     const consolidadoId = `consolidado-${selCom}`;
     document.getElementById('notas-container').innerHTML = `
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
+      <div class="tcrono-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
       <div class="area-card">
         <div class="area-header"><span class="area-name">${getMateriaName(comision.materiaId)} · ${comision.nombre}</span></div>
         ${rows}
@@ -4117,7 +4144,7 @@ function _renderNotasViewInternal(selectedComId, selectedParcial, selectedFecha)
     // Mostrar fechas primero (inmediato), luego consolidado (diferido)
     const consolidadoParcialId = `consolidado-parc-${selCom}-${selParc}`;
     document.getElementById('notas-container').innerHTML = `
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
+      <div class="tcrono-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem">
         <button onclick="renderNotasView('${selCom}',null,null)"
           style="display:flex;align-items:center;gap:6px;background:var(--gray-100);border:none;border-radius:var(--radius-md);padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--gray-600)">
@@ -4295,7 +4322,7 @@ function _renderNotasViewInternal(selectedComId, selectedParcial, selectedFecha)
   ].join('');
 
   document.getElementById('notas-container').innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
+    <div class="tcrono-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
       <button onclick="renderNotasView('${selCom}',null,null)"
         style="display:flex;align-items:center;gap:6px;background:var(--gray-100);border:none;border-radius:var(--radius-md);padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);color:var(--gray-600)">
@@ -6074,7 +6101,7 @@ async function confirmExportAsistenciaPdf() {
   const headers   = ['Apellido y Nombre', 'Documento', ...fechasSel.map(f => {
     const [y,m,d] = f.split('-');
     return `${d}/${m}/${y.slice(2)}`;
-  }), 'Presentes', '%'];
+  }), 'Presentes', '% Total'];
 
   const rows = alumnos.map(email => {
     const nombre       = STUDENT_NAMES[email] || email;
@@ -6083,7 +6110,8 @@ async function confirmExportAsistenciaPdf() {
     const fechaIngreso = getFechaIngresoComision(email, comId);
     const fechasAlumno = fechasSel.filter(f => !fechaIngreso || f >= fechaIngreso);
     const presentes    = fechasAlumno.filter(f => regs[f]?.[email] === 'presente').length;
-    const pct          = fechasAlumno.length > 0 ? Math.round(presentes/fechasAlumno.length*100) + '%' : '—';
+    const combinado     = getPresentismoCombinado(email, comId);
+    const pct          = combinado.pct !== null ? combinado.pct + '%' : '—';
     const origen       = getComisionOrigenNombre(email, comId);
     const nombreConOrigen = origen ? `${nombre} (*)` : nombre;
     return [nombreConOrigen, doc, ...fechasSel.map(f => {
@@ -7462,7 +7490,7 @@ function exportAsistencia(comId, fmt='xlsx') {
   const headers   = ['Apellido y Nombre', 'Documento', ...fechas.map(f => {
     const [d,m,a] = formatFecha(f).split('/');
     return `${d}/${m}/${a.slice(2)}`; // dd/mm/aa
-  }), 'Presentes', '%'];
+  }), 'Presentes', '% Total'];
 
   const rows = alumnos.map(email => {
     const nombre       = STUDENT_NAMES[email] || email;
@@ -7471,7 +7499,8 @@ function exportAsistencia(comId, fmt='xlsx') {
     const fechaIngreso = getFechaIngresoComision(email, comId);
     const fechasAlumno = getFechasAlumnoEnComision(email, comId);
     const presentes    = fechasAlumno.filter(f => regs[f]?.[email] === 'presente').length;
-    const pct          = fechasAlumno.length > 0 ? Math.round(presentes/fechasAlumno.length*100) + '%' : '—';
+    const combinado     = getPresentismoCombinado(email, comId);
+    const pct          = combinado.pct !== null ? combinado.pct + '%' : '—';
     const origen       = getComisionOrigenNombre(email, comId);
     const nombreConOrigen = origen ? `${nombre} (Proviene de ${origen})` : nombre;
     return [nombreConOrigen, doc, ...fechas.map(f => {
@@ -8235,35 +8264,23 @@ function renderAttendanceView(selectedComId, selectedDate, mode, nuevaFechaParam
   // misma materia, se combina con su/s comisión/es anterior/es en un solo número,
   // igual que ve el propio alumno en su vista.
   const resumenPresentismo = alumnos.map(email => {
-    const comisionesRelevantes = [comision];
-    getHistorialAlumno(email).forEach(h => {
-      if (h.deComId && h.deComId !== comision.id) {
-        const comAnterior = COMISIONES.find(c => c.id === h.deComId && c.materiaId === comision.materiaId && c.año === comision.año);
-        if (comAnterior && !comisionesRelevantes.find(c => c.id === comAnterior.id)) comisionesRelevantes.push(comAnterior);
-      }
-    });
-
-    let totalClases = 0, presentes = 0;
-    comisionesRelevantes.forEach(com => {
-      const fechasCom = getFechasAlumnoEnComision(email, com.id);
-      totalClases += fechasCom.length;
-      presentes    += fechasCom.filter(f => asistencia[com.id]?.[f]?.[email] === 'presente').length;
-    });
-
-    const pct = totalClases > 0 ? Math.round(presentes/totalClases*100) : null;
+    const { totalClases, presentes, pct } = getPresentismoCombinado(email, selCom);
     let origen = null;
     try { origen = getComisionOrigenNombre(email, selCom); } catch(e) { origen = null; }
     return { email, nombre: STUDENT_NAMES[email] || email, totalClases, presentes, pct, origen };
   });
 
   const resumenPresentismoHtml = resumenPresentismo.length === 0 ? '' : `
-    <div class="area-card" style="margin-bottom:.75rem;border-left:4px solid var(--teal);background:var(--teal-light)">
+    <div class="area-card" style="margin-bottom:.75rem;border:1.5px solid var(--teal);background:white">
       <button onclick="toggleAttGroup('att-resumen-${selCom}')"
-        style="width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0">
-        <div class="area-header" style="flex:1;margin:0">
-          <svg id="att-resumen-${selCom}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
-          <span class="area-name" style="margin-left:6px;color:var(--teal)">📊 Resumen de presentismo por alumno</span>
+        style="width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <span style="font-size:15px">📊</span>
         </div>
+        <div class="area-header" style="flex:1;margin:0">
+          <span class="area-name" style="margin-left:0;font-size:15px;font-weight:700;color:var(--navy)">Resumen de presentismo por alumno</span>
+        </div>
+        <svg id="att-resumen-${selCom}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;margin-right:2px"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div id="att-resumen-${selCom}" style="display:none;background:white;border-radius:0 0 var(--radius-md) var(--radius-md)">
         ${resumenPresentismo.map(r => {
@@ -8412,7 +8429,7 @@ function renderAttendanceView(selectedComId, selectedDate, mode, nuevaFechaParam
   `;
 
   document.getElementById('attendance-container').innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
+    <div class="tcrono-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">${comHtml}</div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
       <div style="flex:1;font-size:14px;font-weight:500;color:var(--navy)">${getMateriaName(comision.materiaId)} · ${comision.nombre}</div>
       <span id="attendance-saved-indicator" style="font-size:12px;font-weight:500;opacity:0;transition:opacity 0.3s;margin-right:4px"></span>
@@ -12706,7 +12723,7 @@ function renderTeacherAulasView(tab = null) {
       ${label}
     </button>`;
 
-  let html = `<div style="display:flex;gap:8px;margin-bottom:1.25rem">
+  let html = `<div class="aulas-tabs" style="display:flex;gap:8px;margin-bottom:1.25rem">
     ${tabBtn('mis-solicitudes','Mis solicitudes')}
     ${tabBtn('nueva-solicitud','+ Nueva solicitud')}
   </div>`;
