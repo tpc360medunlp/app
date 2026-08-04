@@ -546,7 +546,7 @@ async function ensureJsQR() {
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 600; color: var(--teal); flex-shrink: 0;
   }
-  .student-name-text { flex: 1; font-size: 13px; color: var(--navy); }
+  .student-name-text { flex: 1; min-width: 0; font-size: 13px; color: var(--navy); }
   .mini-progress { width: 80px; }
   .mini-bar-bg { height: 4px; background: var(--gray-100); border-radius: 2px; }
   .mini-bar-fill { height: 4px; border-radius: 2px; background: var(--teal); }
@@ -813,6 +813,7 @@ async function ensureJsQR() {
       margin-left: 0 !important;
       padding: calc(56px + env(safe-area-inset-top, 0px) + 1rem) 1rem 5rem !important;
       -webkit-overflow-scrolling: touch;
+      overflow-x: hidden;
     }
     .page-header { flex-direction: column; gap: 10px; }
     .login-bg-lines { display: none; }
@@ -10944,6 +10945,7 @@ function buildRecursantesView() {
         </div>
       </button>
       <div id="${gId}" style="display:none;padding:0 1.5rem 1rem">
+        <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;margin-top:8px">
           <thead>
             <tr style="background:var(--gray-50)">
@@ -10955,6 +10957,7 @@ function buildRecursantesView() {
           </thead>
           <tbody>${filas}</tbody>
         </table>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -11330,6 +11333,7 @@ function buildFinalesStats(ciclo) {
           ${regularesAFinal>0 ? buildFinalBadge('Regulares → Final', regularesQueFueron.length+'/'+regularesAFinal+' ('+pCruce+'%)', '#854F0B','var(--amber-light)') : ''}
           ${promocionados.length>0 ? buildFinalBadge('Promocionaron', promocionados.length, '#5b2d8e','#ede7f6') : ''}
         </div>
+        <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
           <thead>
             <tr style="background:var(--gray-50);font-size:11px;color:var(--gray-400);text-transform:uppercase">
@@ -11350,7 +11354,8 @@ function buildFinalesStats(ciclo) {
               <td style="padding:7px 8px;text-align:center">${promedio}</td>
             </tr>
           </tfoot>
-        </table>`;
+        </table>
+        </div>`;
     } else {
       detalle = `<p style="font-size:13px;color:var(--gray-400);padding:8px 0">No hay resultados cargados para esta materia en el ciclo ${inicio}-${fin}.</p>`;
     }
