@@ -809,11 +809,17 @@ async function ensureJsQR() {
     .tcrono-tabs button { width: 100%; }
     .aulas-tabs button { flex: 1; }
     .mobile-full-btn { width: 100% !important; }
+    .dist-row { gap: 6px !important; }
+    .dist-row > div:first-child { width: 56px !important; font-size: 12px !important; }
+    .dist-row > div:nth-child(3) { width: 34px !important; }
+    .dist-row-word { display: none; }
+    .dist-row > div:last-child { width: 34px !important; }
+    .skill-mini-bar { width: 70px !important; }
     .main-content {
       margin-left: 0 !important;
       padding: calc(56px + env(safe-area-inset-top, 0px) + 1rem) 1rem 5rem !important;
       -webkit-overflow-scrolling: touch;
-      overflow-x: hidden;
+      overflow-x: auto;
     }
     .page-header { flex-direction: column; gap: 10px; }
     .login-bg-lines { display: none; }
@@ -6404,14 +6410,14 @@ function renderCoordinatorView() {
       const barW = Math.round(r.count / maxCount * 100);
       const pctOfTotal = Math.round(r.count / activeStudents.length * 100);
       distHtml += `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+        <div class="dist-row" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
           <div style="width:80px;font-size:13px;color:var(--gray-600);flex-shrink:0">${r.label}</div>
           <div style="flex:1;height:20px;background:var(--gray-100);border-radius:4px;overflow:hidden">
             <div style="height:100%;width:${barW}%;background:${r.color};border-radius:4px;transition:width .6s ease"></div>
           </div>
           <div style="width:80px;text-align:right;flex-shrink:0">
             <span style="font-size:14px;font-weight:500;color:var(--navy)">${r.count}</span>
-            <span style="font-size:12px;color:var(--gray-400)"> alumnos</span>
+            <span class="dist-row-word" style="font-size:12px;color:var(--gray-400)"> alumnos</span>
           </div>
           <div style="width:40px;text-align:right;flex-shrink:0">
             <span style="font-size:12px;color:var(--gray-400)">${pctOfTotal}%</span>
@@ -6430,7 +6436,7 @@ function renderCoordinatorView() {
     skillProgressHtml += `<div class="student-row">
       <div class="student-name-text" style="font-size:13px">${name}</div>
       <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-        <div style="width:120px">
+        <div class="skill-mini-bar" style="width:120px">
           <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${pct}%"></div></div>
         </div>
         <span style="font-size:12px;color:var(--gray-400);font-family:var(--mono);width:40px;text-align:right">${validated}/${students.length}</span>
