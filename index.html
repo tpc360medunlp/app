@@ -12788,11 +12788,11 @@ function renderTeacherAulasMisSolicitudes(dni) {
           <table style="width:100%;border-collapse:collapse;font-size:12px">
             <thead>
               <tr style="background:var(--gray-50)">
+                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>
                 <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Fecha</th>
                 <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Horario</th>
-                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
                 <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Docente a cargo</th>
-                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aula otorgada</th>
+                <th style="padding:5px 8px;text-align:left;border:1px solid var(--gray-100)">Aforo</th>
               </tr>
             </thead>
             <tbody>
@@ -12801,13 +12801,13 @@ function renderTeacherAulasMisSolicitudes(dni) {
                   ? `${f.dia} (${f.fecha.split('-').reverse().join('/')} al ${f.fecha_fin.split('-').reverse().join('/')})`
                   : f.fecha.split('-').reverse().join('/');
                 return `<tr>
-                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${fechaDisplay}</td>
-                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.desde} - ${f.hasta}</td>
-                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
-                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${getDocenteActDisplay(f.docente_act)}</td>
                   <td style="padding:5px 8px;border:1px solid var(--gray-100);color:${f.aula_otorgada ? '#1a7a35' : 'var(--gray-400)'};font-weight:${f.aula_otorgada ? '500' : '400'}">
                     ${f.aula_otorgada || (s.estado === 'pendiente' ? '—' : 'Sin aula asignada')}
                   </td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${fechaDisplay}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.desde} - ${f.hasta}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${getDocenteActDisplay(f.docente_act)}</td>
+                  <td style="padding:5px 8px;border:1px solid var(--gray-100)">${f.aforo}</td>
                 </tr>`;
               }).join('')}
             </tbody>
