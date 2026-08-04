@@ -3676,25 +3676,37 @@ function renderStudentAttendanceView() {
   // Lista plana de materias sin agrupar por año
   let html = selectorHTML + scanBtnHTML;
 
-  misComisiones.forEach(comision => {
-    const materia    = MATERIAS.find(m => m.id === comision.materiaId);
-    const comId      = `com-group-${comision.id}`;
-    const registros  = asistencia[comision.id] || {};
-    const fechas     = getFechasAlumnoEnComision(email, comision.id);
-    const totalClases= fechas.length;
-    const presentes  = fechas.filter(f => registros[f]?.[email] === 'presente').length;
-    const ausentes   = totalClases - presentes;
+  // Agrupar por materia — si el alumno cambió de comisión, se combinan las clases de
+  // todas sus comisiones de esa materia (actual + anteriores) en un solo número,
+  // en vez de mostrar una tarjeta separada por cada una.
+  const materiaIds = [...new Set(misComisiones.map(c => c.materiaId))];
+
+  materiaIds.forEach(materiaId => {
+    const materia = MATERIAS.find(m => m.id === materiaId);
+    const comsDeEstaMateria = misComisiones.filter(c => c.materiaId === materiaId);
+    const comisionActual = comsDeEstaMateria.find(c => c.alumnos.includes(email)) || comsDeEstaMateria[0];
+    const comId = `com-group-${materiaId}`;
+
+    let fechasCombinadas = [];
+    comsDeEstaMateria.forEach(com => {
+      getFechasAlumnoEnComision(email, com.id).forEach(f => fechasCombinadas.push({ fecha: f, comId: com.id }));
+    });
+    fechasCombinadas.sort((a,b) => a.fecha.localeCompare(b.fecha));
+
+    const totalClases = fechasCombinadas.length;
+    const presentes    = fechasCombinadas.filter(({fecha, comId: cid}) => asistencia[cid]?.[fecha]?.[email] === 'presente').length;
+    const ausentes      = totalClases - presentes;
     const pct        = totalClases > 0 ? Math.round(presentes / totalClases * 100) : null;
     const pctColor   = pct === null ? 'var(--gray-400)' : pct >= 80 ? '#1a7a35' : pct >= 70 ? '#b05a10' : '#b02030';
     const pctBg      = pct === null ? 'var(--gray-100)' : pct >= 80 ? 'var(--green-light)' : pct >= 70 ? 'var(--amber-light)' : 'var(--red-light)';
-    const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === comision.docenteDni);
+    const staffEntry = Object.entries(ENROLLED_STAFF).find(([d]) => d === comisionActual.docenteDni);
     const docenteName= staffEntry ? `${staffEntry[1].apellido}, ${staffEntry[1].nombre}` : 'Sin asignar';
-    const origen     = getComisionOrigenNombre(email, comision.id);
+    const huboCambio = comsDeEstaMateria.length > 1;
 
-    const filasHtml = fechas.length === 0
+    const filasHtml = fechasCombinadas.length === 0
       ? `<div style="padding:1rem;text-align:center;color:var(--gray-400);font-size:13px">Sin clases registradas aún.</div>`
-      : fechas.map(fecha => {
-          const estado = registros[fecha]?.[email] || 'presente';
+      : fechasCombinadas.map(({fecha, comId: cid}) => {
+          const estado = asistencia[cid]?.[fecha]?.[email] || 'presente';
           return `<div class="skill-row" style="align-items:center">
             <span style="flex:1;font-size:13px;color:var(--gray-600)">${formatFecha(fecha)}</span>
             <span class="badge ${estado === 'presente' ? 'badge-validated' : 'badge-rejected'}">
@@ -3713,7 +3725,7 @@ function renderStudentAttendanceView() {
               <div style="font-size:14px;font-weight:500;color:var(--navy)">${materia?.nombre || 'Materia'}</div>
               <div style="font-size:12px;color:var(--gray-400);margin-top:2px">
                 Docente: ${docenteName}
-                ${origen ? `<span style="color:#854F0B;margin-left:8px">· Proviene de ${origen}</span>` : ''}
+                ${huboCambio ? `<span style="color:#854F0B;margin-left:8px">· Incluye clases de tu/s comisión/es anterior/es</span>` : ''}
               </div>
             </div>
             <div style="text-align:center;background:${pctBg};border-radius:var(--radius-md);padding:6px 12px;flex-shrink:0">
@@ -8218,6 +8230,51 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
   const fechasRegistradas = Object.keys(asistencia[selCom] || {}).sort().reverse();
   const tieneRegistroSelDate = !!(asistencia[selCom] && asistencia[selCom][selDate]);
 
+  // Resumen de presentismo por alumno — si el alumno cambió de comisión dentro de esta
+  // misma materia, se combina con su/s comisión/es anterior/es en un solo número,
+  // igual que ve el propio alumno en su vista.
+  const resumenPresentismo = alumnos.map(email => {
+    const comisionesRelevantes = [comision];
+    getHistorialAlumno(email).forEach(h => {
+      if (h.deComId && h.deComId !== comision.id) {
+        const comAnterior = COMISIONES.find(c => c.id === h.deComId && c.materiaId === comision.materiaId && c.año === comision.año);
+        if (comAnterior && !comisionesRelevantes.find(c => c.id === comAnterior.id)) comisionesRelevantes.push(comAnterior);
+      }
+    });
+
+    let totalClases = 0, presentes = 0;
+    comisionesRelevantes.forEach(com => {
+      const fechasCom = getFechasAlumnoEnComision(email, com.id);
+      totalClases += fechasCom.length;
+      presentes    += fechasCom.filter(f => asistencia[com.id]?.[f]?.[email] === 'presente').length;
+    });
+
+    const pct = totalClases > 0 ? Math.round(presentes/totalClases*100) : null;
+    return { email, nombre: STUDENT_NAMES[email] || email, totalClases, presentes, pct };
+  });
+
+  const resumenPresentismoHtml = resumenPresentismo.length === 0 ? '' : `
+    <div class="area-card" style="margin-bottom:.75rem">
+      <button onclick="toggleAttGroup('att-resumen-${selCom}')"
+        style="width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0">
+        <div class="area-header" style="flex:1;margin:0">
+          <svg id="att-resumen-${selCom}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--navy)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="area-name" style="margin-left:6px">Resumen de presentismo por alumno</span>
+        </div>
+      </button>
+      <div id="att-resumen-${selCom}" style="display:none">
+        ${resumenPresentismo.map(r => {
+          const color = r.pct===null ? 'var(--gray-400)' : r.pct>=80 ? '#1a7a35' : r.pct>=70 ? '#b05a10' : '#b02030';
+          const bg    = r.pct===null ? 'var(--gray-100)' : r.pct>=80 ? 'var(--green-light)' : r.pct>=70 ? 'var(--amber-light)' : 'var(--red-light)';
+          return `<div class="skill-row" style="align-items:center">
+            <span style="flex:1;font-size:13px;color:var(--navy)">${r.nombre}</span>
+            <span style="font-size:11px;color:var(--gray-400);margin-right:10px">${r.totalClases>0 ? r.presentes+'/'+r.totalClases+' clases' : 'Sin clases registradas'}</span>
+            <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:${bg};color:${color}">${r.pct===null?'—':r.pct+'%'}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
   // Arma el bloque de detalle (fecha editable + botones + lista de alumnos) de una fecha puntual
   const buildDetailBlock = (fecha, registro, cerradoF) => {
     const listHtmlFecha = alumnos.length === 0
@@ -8356,6 +8413,7 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
         style="padding:6px 12px;font-size:12px;border-radius:var(--radius-md);border:none;background:var(--navy);color:white;cursor:pointer;font-family:var(--font);font-weight:600">+ Nuevo registro</button>
     </div>
     ${nuevoRegistroHtml}
+    ${resumenPresentismoHtml}
     ${registrosHtml}
   `;
 }
