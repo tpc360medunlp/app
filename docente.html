@@ -8257,15 +8257,15 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
   });
 
   const resumenPresentismoHtml = resumenPresentismo.length === 0 ? '' : `
-    <div class="area-card" style="margin-bottom:.75rem">
+    <div class="area-card" style="margin-bottom:.75rem;border-left:4px solid var(--teal);background:var(--teal-light)">
       <button onclick="toggleAttGroup('att-resumen-${selCom}')"
         style="width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0">
         <div class="area-header" style="flex:1;margin:0">
-          <svg id="att-resumen-${selCom}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--navy)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
-          <span class="area-name" style="margin-left:6px">Resumen de presentismo por alumno</span>
+          <svg id="att-resumen-${selCom}-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+          <span class="area-name" style="margin-left:6px;color:var(--teal)">📊 Resumen de presentismo por alumno</span>
         </div>
       </button>
-      <div id="att-resumen-${selCom}" style="display:none">
+      <div id="att-resumen-${selCom}" style="display:none;background:white;border-radius:0 0 var(--radius-md) var(--radius-md)">
         ${resumenPresentismo.map(r => {
           const color = r.pct===null ? 'var(--gray-400)' : r.pct>=80 ? '#1a7a35' : r.pct>=70 ? '#b05a10' : '#b02030';
           const bg    = r.pct===null ? 'var(--gray-100)' : r.pct>=80 ? 'var(--green-light)' : r.pct>=70 ? 'var(--amber-light)' : 'var(--red-light)';
