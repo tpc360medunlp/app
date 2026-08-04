@@ -808,6 +808,7 @@ async function ensureJsQR() {
     .tcrono-tabs { flex-direction: column !important; }
     .tcrono-tabs button { width: 100%; }
     .aulas-tabs button { flex: 1; }
+    .mobile-full-btn { width: 100% !important; }
     .main-content {
       margin-left: 0 !important;
       padding: calc(56px + env(safe-area-inset-top, 0px) + 1rem) 1rem 5rem !important;
@@ -1065,7 +1066,7 @@ async function ensureJsQR() {
           </div>
         </div>
         <!-- Tabs -->
-        <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem">
           <button id="stats-tab-portfolio" onclick="switchStatsTab('portfolio')"
             style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:var(--navy);color:white">
             Portfolio
@@ -3608,7 +3609,7 @@ function switchStudentView(view) {
       _studentNotasTab = showParciales ? 'parciales' : 'finales';
       const tabsEl = document.getElementById('student-notas-tabs');
       if (tabsEl) {
-        tabsEl.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:1.25rem">
+        tabsEl.innerHTML = `<div class="aulas-tabs" style="display:flex;gap:8px;margin-bottom:1.25rem">
           ${showParciales ? `<button id="notas-tab-parciales" onclick="switchNotasTab('parciales')"
             style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${_studentNotasTab==='parciales'?'var(--navy)':'var(--gray-100)'};color:${_studentNotasTab==='parciales'?'white':'var(--gray-600)'}">
             Parciales</button>` : ''}
@@ -3686,7 +3687,7 @@ function renderStudentAttendanceView() {
         </select>
       </div>` : '';
 
-  const scanBtnHTML = `<button class="btn-cargar" onclick="abrirEscanerQr()" style="margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;width:fit-content">
+  const scanBtnHTML = `<button class="btn-cargar mobile-full-btn" onclick="abrirEscanerQr()" style="margin-bottom:1.25rem;display:flex;align-items:center;justify-content:center;gap:8px;width:fit-content">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>
     Escanear QR de asistencia
   </button>`;
@@ -14097,7 +14098,7 @@ async function toggleStudentView(key) {
     const showP = studentViewConfig.notas_parciales.enabled;
     const showF = studentViewConfig.notas_finales.enabled;
     _studentNotasTab = showP ? 'parciales' : 'finales';
-    notasTabsEl.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:1.25rem">
+    notasTabsEl.innerHTML = `<div class="aulas-tabs" style="display:flex;gap:8px;margin-bottom:1.25rem">
       ${showP ? `<button id="notas-tab-parciales" onclick="switchNotasTab('parciales')"
         style="padding:9px 20px;font-size:13px;border-radius:var(--radius-md);border:none;cursor:pointer;font-family:var(--font);font-weight:500;background:${_studentNotasTab==='parciales'?'var(--navy)':'var(--gray-100)'};color:${_studentNotasTab==='parciales'?'white':'var(--gray-600)'}">Parciales</button>` : ''}
       ${showF ? `<button id="notas-tab-finales" onclick="switchNotasTab('finales')"
@@ -15504,7 +15505,7 @@ function renderStudentCertificadosView(tab = null) {
   const subtituloFinales = `<p style="font-size:13px;color:var(--gray-600);margin-bottom:1.25rem;background:var(--amber-light);border-radius:var(--radius-md);padding:10px 14px;border-left:3px solid #b05a10">
     📋 El certificado debe solicitarse completando el formulario. Una vez que el docente a cargo lo valide, podrás descargarlo.
   </p>`;
-  const tabsHtml = `<div style="display:flex;gap:8px;margin-bottom:1.25rem">
+  const tabsHtml = `<div class="aulas-tabs" style="display:flex;gap:8px;margin-bottom:1.25rem">
     ${studentViewConfig.certificados_parciales.enabled ? tabBtn('parciales','Parciales') : ''}
     ${studentViewConfig.certificados_finales.enabled   ? tabBtn('finales','Finales')     : ''}
   </div>`;
