@@ -14800,7 +14800,7 @@ async function generarCertificado(comId, parcial, fechaParcial, email) {
   const alumno   = Object.entries(ENROLLED_STUDENTS).find(([,s]) => s.email === email);
   if (!rec || !alumno) { showToast('No se encontraron datos para generar el certificado', true); return; }
 
-  const [dni, datos] = alumno;
+  const [legajoKey, datos] = alumno;
   const notasFecha = parciales[comId]?.[parcial]?.[fechaParcial];
   const hoy = new Date();
   const fechaEmision = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
@@ -14816,8 +14816,8 @@ async function generarCertificado(comId, parcial, fechaParcial, email) {
   let texto = certConfig.textoBase
     .replace(/{APELLIDO}/g,      datos.apellido)
     .replace(/{NOMBRE}/g,        datos.nombre)
-    .replace(/{DNI}/g,           dni)
-    .replace(/{LEGAJO}/g,        dni)
+    .replace(/{DNI}/g,           datos.doc || '—')
+    .replace(/{LEGAJO}/g,        datos.legajo || legajoKey)
     .replace(/{PARCIAL}/g,       parcial)
     .replace(/{FECHA_PARCIAL}/g, fechaParcial)
     .replace(/{FECHA_EXAMEN}/g,  fechaExamen)
@@ -15872,7 +15872,7 @@ async function descargarCertFinal(id) {
     .replace(/{APELLIDO}/g,     s.apellido)
     .replace(/{NOMBRE}/g,       s.nombre)
     .replace(/{DNI}/g,          s.dni)
-    .replace(/{LEGAJO}/g,       s.dni)
+    .replace(/{LEGAJO}/g,       getLegajoByEmail(s.email) || s.dni)
     .replace(/{MATERIA}/g,      materia?.nombre||'')
     .replace(/{FECHA_EXAMEN}/g, s.fechaExamen)
     .replace(/{AÑO}/g,          añoExamen)
