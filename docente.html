@@ -8251,7 +8251,9 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
     });
 
     const pct = totalClases > 0 ? Math.round(presentes/totalClases*100) : null;
-    return { email, nombre: STUDENT_NAMES[email] || email, totalClases, presentes, pct };
+    let origen = null;
+    try { origen = getComisionOrigenNombre(email, selCom); } catch(e) { origen = null; }
+    return { email, nombre: STUDENT_NAMES[email] || email, totalClases, presentes, pct, origen };
   });
 
   const resumenPresentismoHtml = resumenPresentismo.length === 0 ? '' : `
@@ -8268,7 +8270,10 @@ function renderAttendanceView(selectedComId, selectedDate, mode) {
           const color = r.pct===null ? 'var(--gray-400)' : r.pct>=80 ? '#1a7a35' : r.pct>=70 ? '#b05a10' : '#b02030';
           const bg    = r.pct===null ? 'var(--gray-100)' : r.pct>=80 ? 'var(--green-light)' : r.pct>=70 ? 'var(--amber-light)' : 'var(--red-light)';
           return `<div class="skill-row" style="align-items:center">
-            <span style="flex:1;font-size:13px;color:var(--navy)">${r.nombre}</span>
+            <div style="flex:1">
+              <span style="font-size:13px;color:var(--navy)">${r.nombre}${getCudeBadge(r.email)}</span>
+              ${r.origen ? `<div style="font-size:11px;color:#854F0B">(Proviene de ${r.origen})</div>` : ''}
+            </div>
             <span style="font-size:11px;color:var(--gray-400);margin-right:10px">${r.totalClases>0 ? r.presentes+'/'+r.totalClases+' clases' : 'Sin clases registradas'}</span>
             <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:${bg};color:${color}">${r.pct===null?'—':r.pct+'%'}</span>
           </div>`;
