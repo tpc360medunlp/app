@@ -1351,6 +1351,9 @@ async function ensureJsQR() {
       <div style="position:absolute;inset:0;pointer-events:none;border:3px solid rgba(255,255,255,0.4);border-radius:var(--radius-md);margin:12%"></div>
     </div>
     <div id="escaner-qr-error" style="display:none;background:var(--red-light);border:1px solid #f5b8be;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;color:#b02030;margin-bottom:1rem;text-align:left"></div>
+    <p style="font-size:12px;color:var(--gray-400);margin-bottom:1rem">
+      💡 Si la cámara no responde o no aparece el pedido de permiso, escaneá el código directamente con la app de <strong>Cámara</strong> del celular — el link te va a llevar acá mismo.
+    </p>
     <button class="btn-secondary" style="width:100%" onclick="cerrarEscanerQr()">Cancelar</button>
   </div>
 </div>
@@ -2813,7 +2816,16 @@ async function verifyDni() {
   }
 
   enterApp();
+  // Recordar la verificación para no pedir el documento de nuevo en cada recarga —
+  // se vuelve a pedir solo si cambia la cuenta de Google o el rol.
+  localStorage.setItem('tpc360_verified', JSON.stringify({
+    email: googleEmail,
+    id: currentRole === 'student' ? normalizeLegajo(raw) : raw,
+    role: currentRole
+  }));
 }
+
+
 
 // ── AUTENTICACIÓN SUPABASE ────────────────────────────────
 
@@ -2853,6 +2865,38 @@ _supabase.auth.onAuthStateChange(async (event, session) => {
     // Cargar datos de Supabase antes de mostrar el formulario
     await loadDataFromSupabase();
 
+    // Si ya se verificó el documento antes en esta misma cuenta de Google y rol,
+    // no volver a pedirlo en cada recarga — entrar directo.
+    try {
+      const verificado = JSON.parse(localStorage.getItem('tpc360_verified') || 'null');
+      if (verificado && verificado.email?.toLowerCase() === googleEmail.toLowerCase() && verificado.role === currentRole) {
+        let entroDirecto = false;
+        if (currentRole === 'student') {
+          const alumno = ENROLLED_STUDENTS[verificado.id];
+          if (alumno && alumno.email && alumno.email.toLowerCase() === googleEmail.toLowerCase()) {
+            const email = alumno.email;
+            if (!studentRecords[email]) studentRecords[email] = {};
+            if (!STUDENT_NAMES[email]) STUDENT_NAMES[email] = `${alumno.apellido}, ${alumno.nombre}`;
+            currentUser = { name: `${alumno.nombre} ${alumno.apellido}`, email, role: 'Estudiante', initials: (alumno.nombre[0] + alumno.apellido[0]).toUpperCase() };
+            entroDirecto = true;
+          }
+        } else {
+          const persona = ENROLLED_STAFF[verificado.id];
+          const roles = persona?.roles || [persona?.role];
+          if (persona && roles.includes(currentRole) && (!persona.email || persona.email.toLowerCase() === googleEmail.toLowerCase())) {
+            currentUser = {
+              name: `${persona.nombre} ${persona.apellido}`,
+              email: persona.email || googleEmail,
+              role: currentRole === 'coordinator' ? 'Coordinación' : 'Docente',
+              initials: (persona.nombre[0] + persona.apellido[0]).toUpperCase()
+            };
+            entroDirecto = true;
+          }
+        }
+        if (entroDirecto) { enterApp(); return; }
+      }
+    } catch (e) { /* si algo falla acá, seguir con el flujo normal de verificación */ }
+
     // Restaurar el formulario de verificación
     if (step2) {
       step2.innerHTML = `
@@ -2890,6 +2934,7 @@ _supabase.auth.onAuthStateChange(async (event, session) => {
 async function cambiarCuentaGoogle() {
   // Guardar el rol actual antes de redirigir
   localStorage.setItem('tpc360_role', currentRole || 'student');
+  localStorage.removeItem('tpc360_verified');
   await _supabase.auth.signOut();
   googleEmail = '';
   document.getElementById('login-step1').style.display = 'block';
@@ -2921,6 +2966,7 @@ async function iniciarLoginGoogle() {
 }
 
 async function doLogoutSupabase() {
+  localStorage.removeItem('tpc360_verified');
   await _supabase.auth.signOut();
 }
 
@@ -2971,7 +3017,19 @@ async function registrarAsistenciaPorToken(token) {
     showToast('No estás inscripto en esta comisión.', true);
     return;
   }
-  if (asistencia[comId]?.[fecha]?._cerrado) {
+  // Consultar el estado de cierre directamente en la base, no confiar en la copia local
+  // en memoria — puede estar desactualizada si el docente reabrió la clase después de
+  // que el alumno cargó la página.
+  const { data: cierreData } = await _supabase
+    .from('config_sistema')
+    .select('valor')
+    .eq('clave', `asistencia_cerrada_${comId}_${fecha}`)
+    .maybeSingle();
+  const estaCerrado = cierreData ? !!cierreData.valor?.cerrado : !!asistencia[comId]?.[fecha]?._cerrado;
+  if (!asistencia[comId]) asistencia[comId] = {};
+  if (!asistencia[comId][fecha]) asistencia[comId][fecha] = {};
+  asistencia[comId][fecha]._cerrado = estaCerrado; // sincronizar la copia local también
+  if (estaCerrado) {
     showToast('El registro de esta clase ya está cerrado. Avisale al docente.', true);
     return;
   }
@@ -3041,9 +3099,15 @@ async function abrirEscanerQr() {
   }
 
   try {
-    _escanerQrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const getUserMediaPromise = navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 8000)
+    );
+    _escanerQrStream = await Promise.race([getUserMediaPromise, timeoutPromise]);
   } catch (e) {
-    errEl.textContent = 'No se pudo acceder a la cámara. Revisá que le hayas dado permiso a esta página, o escaneá el código con la app de cámara del celular.';
+    errEl.textContent = e.message === 'timeout'
+      ? 'La cámara no respondió (algunos celulares bloquean el permiso sin avisar). Escaneá el código directamente con la app de Cámara del celular.'
+      : 'No se pudo acceder a la cámara. Revisá que le hayas dado permiso a esta página, o escaneá el código con la app de cámara del celular.';
     errEl.style.display = 'block';
     return;
   }
@@ -3163,6 +3227,7 @@ async function enterApp() {
 function doLogout() {
   stopQrIntervalsIfRunning();
   const rolAnterior = currentRole; // guardar antes de resetear
+  localStorage.removeItem('tpc360_verified');
   _supabase.auth.signOut(); // cerrar sesión en Supabase
   googleEmail          = '';
   currentUser          = null;
@@ -6875,7 +6940,25 @@ function exportFilename(base) {
   return `${base}_${f}`;
 }
 
-function triggerDownload(blob, filename) {
+// En iPhone/iPad (iOS 15+), usar el panel nativo de Compartir de iOS en vez del
+// mecanismo de descarga por click — en Safari normal y en la versión instalada en
+// pantalla de inicio, las descargas automáticas son poco confiables o pasan
+// desapercibidas. En el resto de los dispositivos (Android, PC) no cambia nada.
+async function triggerDownload(blob, filename) {
+  const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (esIOS && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    } catch (e) {
+      // Si el usuario cancela el panel de compartir, no hacer nada más (no es un error real)
+      if (e && e.name === 'AbortError') return;
+      // Cualquier otro problema: seguir con el mecanismo de descarga de siempre
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a   = document.createElement('a');
   a.href = url; a.download = filename;
@@ -12045,7 +12128,13 @@ function handleCudeFileSelected(input) {
   if (!input.files[0]) return;
   const archivo = input.files[0];
   const tiposPermitidos = ['application/pdf', 'image/jpeg', 'image/png'];
-  if (!tiposPermitidos.includes(archivo.type)) {
+  const extensionesPermitidas = ['pdf', 'jpg', 'jpeg', 'png'];
+  const ext = (archivo.name.split('.').pop() || '').toLowerCase();
+  // Algunos selectores de archivo de Android (ej. Infinix/XOS) no informan bien el
+  // tipo MIME — si viene vacío o no reconocido, validar por la extensión en su lugar,
+  // para no rechazar un PDF/imagen válido por un dato mal informado del celular.
+  const tipoValido = tiposPermitidos.includes(archivo.type) || (!archivo.type && extensionesPermitidas.includes(ext));
+  if (!tipoValido) {
     showToast('Formato no permitido. Usá PDF, JPG o PNG', true);
     input.value = '';
     return;
@@ -13540,12 +13629,7 @@ async function descargarPlanillaAula(id) {
     });
 
     // Descargar
-    const url = URL.createObjectURL(output);
-    const a   = document.createElement('a');
-    a.href    = url;
-    a.download = `Solicitud_Aula_${materia?.nombre || 'TPC'}_${new Date().toISOString().slice(0,10)}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(output, `Solicitud_Aula_${materia?.nombre || 'TPC'}_${new Date().toISOString().slice(0,10)}.docx`);
     showToast('Planilla descargada correctamente');
 
   } catch(e) {
@@ -14626,7 +14710,8 @@ async function guardarTextoBase(tab) {
 
 async function handleMembreteUpload(input, tab = 'parciales') {
   const file = input.files[0];
-  if (!file || file.type !== 'application/pdf') {
+  const esPdfValido = file && (file.type === 'application/pdf' || (!file.type && file.name.toLowerCase().endsWith('.pdf')));
+  if (!esPdfValido) {
     showToast('El archivo debe ser un PDF', true); return;
   }
 
@@ -14916,12 +15001,7 @@ async function generarCertificado(comId, parcial, fechaParcial, email) {
     // Guardar y descargar
     const pdfBytesOut = await pdfDoc.save();
     const blob = new Blob([pdfBytesOut], { type: 'application/pdf' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `Certificado_${datos.apellido}_${datos.nombre}_${materia?.nombre||''}_${parcial}_${fechaParcial}_TPC.pdf`.replace(/ /g,'_');
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(blob, `Certificado_${datos.apellido}_${datos.nombre}_${materia?.nombre||''}_${parcial}_${fechaParcial}_TPC.pdf`.replace(/ /g,'_'));
     showToast('✓ Certificado descargado');
 
   } catch(err) {
@@ -15950,12 +16030,7 @@ async function descargarCertFinal(id) {
     }
     const pdfBytesOut = await pdfDoc.save();
     const blob = new Blob([pdfBytesOut], { type: 'application/pdf' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `Certificado_${s.apellido}_${s.nombre}_${materia?.nombre||''}_Final_TPC.pdf`.replace(/ /g,'_');
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(blob, `Certificado_${s.apellido}_${s.nombre}_${materia?.nombre||''}_Final_TPC.pdf`.replace(/ /g,'_'));
     showToast('✓ Certificado descargado');
   } catch(err) {
     console.error(err);
