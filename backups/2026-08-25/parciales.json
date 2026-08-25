@@ -1,54 +1,10 @@
 [
   {
-    "id": 82,
+    "id": 86,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "69117/5",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 37,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66263/1",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 69,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "69036/5",
-    "nota": 4,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 68,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "48059/7",
-    "nota": 5,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 63,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "48798/8",
+    "legajo": "66571/2",
     "nota": 2,
     "estado": "desaprobado",
     "publicado": true,
@@ -66,213 +22,26 @@
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 122,
+    "id": 73,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "66477/5",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 108,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
-    "legajo": "63651/7",
-    "nota": null,
-    "estado": "ausente",
+    "legajo": "59532/2",
+    "nota": 2,
+    "estado": "desaprobado",
     "publicado": true,
     "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 87,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "54140/7",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 85,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "63654/1",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 80,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "69096/8",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 119,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63410/1",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 66,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "69024/1",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 38,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "48314/3",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 97,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "58000/2",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 89,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "49498/3",
-    "nota": 8,
-    "estado": "promocion",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 83,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "54677/8",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 3,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "63305/1",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 26,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66356/6",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 61,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "63532/1",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 25,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66355/5",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 74,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "63606/2",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 84,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "69122/2",
-    "nota": 10,
-    "estado": "promocion",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 92,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "49725/4",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 96,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "63572/9",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 71,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "63410/1",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
   },
   {
     "id": 79,
@@ -286,92 +55,15 @@
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 77,
+    "id": 15,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "63558/2",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 73,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66477/5",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 81,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "55854/0",
-    "nota": 5,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 60,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "63531/9",
-    "nota": 6,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 125,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63654/1",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 109,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "66355/5",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 113,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "66385/1",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 107,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
     "legajo": "63391/6",
-    "nota": 4,
-    "estado": "aprobado",
+    "nota": 2,
+    "estado": "desaprobado",
     "publicado": true,
-    "fecha_examen": "2026-06-29"
+    "fecha_examen": "2026-06-22"
   },
   {
     "id": 123,
@@ -385,22 +77,22 @@
     "fecha_examen": "2026-06-29"
   },
   {
-    "id": 93,
+    "id": 116,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66617/8",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "48798/8",
     "nota": 2,
     "estado": "desaprobado",
     "publicado": true,
-    "fecha_examen": "2026-06-22"
+    "fecha_examen": "2026-06-29"
   },
   {
-    "id": 24,
+    "id": 80,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "59532/2",
+    "legajo": "69096/8",
     "nota": 2,
     "estado": "desaprobado",
     "publicado": true,
@@ -418,17 +110,6 @@
     "fecha_examen": "2026-06-29"
   },
   {
-    "id": 120,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "66477/5",
-    "nota": 4,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
     "id": 121,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -440,24 +121,79 @@
     "fecha_examen": "2026-06-29"
   },
   {
-    "id": 116,
+    "id": 38,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "48798/8",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "48314/3",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 81,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "55854/0",
+    "nota": 5,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 85,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63654/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 84,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "69122/2",
+    "nota": 10,
+    "estado": "promocion",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 96,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63572/9",
     "nota": 2,
     "estado": "desaprobado",
     "publicado": true,
-    "fecha_examen": "2026-06-29"
+    "fecha_examen": "2026-06-22"
   },
   {
-    "id": 124,
+    "id": 89,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "49498/3",
+    "nota": 8,
+    "estado": "promocion",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 118,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
-    "legajo": "54677/8",
-    "nota": null,
-    "estado": "ausente",
+    "legajo": "50990/6",
+    "nota": 2,
+    "estado": "desaprobado",
     "publicado": true,
     "fecha_examen": "2026-06-29"
   },
@@ -473,13 +209,189 @@
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 35,
+    "id": 105,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "68858/4",
+    "nota": 7,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 109,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "66355/5",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 3,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
+    "legajo": "63305/1",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 68,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "48059/7",
+    "nota": 5,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 111,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
     "legajo": "63441/8",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 63,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "48798/8",
     "nota": 2,
     "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 14,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "68858/4",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 114,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "58000/2",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 60,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63531/9",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 113,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "66385/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 24,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "59532/2",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 112,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "66263/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 115,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63525/2",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 110,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "66356/6",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 61,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63532/1",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 125,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63654/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 66,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "69024/1",
+    "nota": 6,
+    "estado": "aprobado",
     "publicado": true,
     "fecha_examen": "2026-06-22"
   },
@@ -506,6 +418,138 @@
     "fecha_examen": "2026-06-22"
   },
   {
+    "id": 25,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "66355/5",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 124,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "54677/8",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 35,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63441/8",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 37,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "66263/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 122,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63651/7",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 91,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "66614/5",
+    "nota": 5,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 71,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63410/1",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 26,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "66356/6",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 82,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "69117/5",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 119,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63410/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 69,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "69036/5",
+    "nota": 4,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 74,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63606/2",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
     "id": 59,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -515,28 +559,6 @@
     "estado": "desaprobado",
     "publicado": true,
     "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 111,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63441/8",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 114,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "58000/2",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
   },
   {
     "id": 39,
@@ -561,103 +583,114 @@
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 15,
+    "id": 92,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "63391/6",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 86,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66571/2",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 14,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "68858/4",
+    "legajo": "49725/4",
     "nota": null,
     "estado": "ausente",
     "publicado": true,
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 110,
+    "id": 120,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
-    "legajo": "66356/6",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 105,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "68858/4",
-    "nota": 7,
+    "legajo": "66477/5",
+    "nota": 4,
     "estado": "aprobado",
     "publicado": true,
     "fecha_examen": "2026-06-29"
   },
   {
-    "id": 108,
+    "id": 107,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
-    "legajo": "59532/2",
-    "nota": 2,
-    "estado": "desaprobado",
+    "legajo": "63391/6",
+    "nota": 4,
+    "estado": "aprobado",
     "publicado": true,
     "fecha_examen": "2026-06-29"
   },
   {
-    "id": 118,
+    "id": 97,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "50990/6",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 112,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "66263/1",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "58000/2",
     "nota": null,
     "estado": "ausente",
     "publicado": true,
-    "fecha_examen": "2026-06-29"
+    "fecha_examen": "2026-06-22"
   },
   {
-    "id": 115,
+    "id": 87,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63525/2",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "54140/7",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 93,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "66617/8",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 77,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "63558/2",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 83,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "54677/8",
     "nota": null,
     "estado": "ausente",
     "publicado": true,
-    "fecha_examen": "2026-06-29"
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 910,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "67240/9",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
+    "id": 64,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "69015/0",
+    "nota": 7,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
   },
   {
     "id": 127,
@@ -682,6 +715,17 @@
     "fecha_examen": "2026-06-29"
   },
   {
+    "id": 130,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "66617/8",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
     "id": 129,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -693,13 +737,46 @@
     "fecha_examen": "2026-06-29"
   },
   {
-    "id": 130,
+    "id": 176,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
-    "legajo": "66617/8",
-    "nota": 2,
-    "estado": "desaprobado",
+    "legajo": "41184/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 6,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "68902/0",
+    "nota": 4,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 65,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "69023/0",
+    "nota": 8,
+    "estado": "promocion",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 233,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63305/1",
+    "nota": null,
+    "estado": null,
     "publicado": true,
     "fecha_examen": "2026-06-29"
   },
@@ -726,125 +803,59 @@
     "fecha_examen": "2026-07-06"
   },
   {
-    "id": 65,
+    "id": 88,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "69023/0",
-    "nota": 8,
+    "legajo": "66594/0",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 237,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "68902/0",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 67,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "47324/1",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 90,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "54454/3",
+    "nota": 9,
     "estado": "promocion",
     "publicado": true,
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 64,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "69015/0",
-    "nota": 7,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 131,
+    "id": 285,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
-    "legajo": "66619/0",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 269,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63537/7",
+    "legajo": "63532/1",
     "nota": null,
     "estado": null,
     "publicado": true,
     "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 132,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63572/9",
-    "nota": 4,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 145,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "3era Fecha",
-    "legajo": "47324/1",
-    "nota": 2,
-    "estado": "desaprobado",
-    "publicado": true,
-    "fecha_examen": "2026-07-06"
-  },
-  {
-    "id": 232,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63431/6",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 91,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66614/5",
-    "nota": 5,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 233,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63305/1",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 6,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "68902/0",
-    "nota": 4,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 48,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "68977/0",
-    "nota": 5,
-    "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
   },
   {
     "id": 40,
@@ -858,13 +869,79 @@
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 62,
+    "id": 145,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "3era Fecha",
+    "legajo": "47324/1",
+    "nota": 2,
+    "estado": "desaprobado",
+    "publicado": true,
+    "fecha_examen": "2026-07-06"
+  },
+  {
+    "id": 248,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "68990/7",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 238,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63531/9",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 241,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "69015/0",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 245,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "68965/6",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 243,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "66410/4",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 95,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "68990/7",
-    "nota": 7,
-    "estado": "aprobado",
+    "legajo": "66619/0",
+    "nota": 2,
+    "estado": "desaprobado",
     "publicado": true,
     "fecha_examen": "2026-06-22"
   },
@@ -880,11 +957,11 @@
     "fecha_examen": "2026-06-22"
   },
   {
-    "id": 285,
+    "id": 232,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
-    "legajo": "63532/1",
+    "legajo": "63431/6",
     "nota": null,
     "estado": null,
     "publicado": true,
@@ -924,81 +1001,15 @@
     "fecha_examen": "2026-07-06"
   },
   {
-    "id": 90,
+    "id": 48,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "54454/3",
-    "nota": 9,
-    "estado": "promocion",
+    "legajo": "68977/0",
+    "nota": 5,
+    "estado": "aprobado",
     "publicado": true,
     "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 176,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "41184/1",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 237,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "68902/0",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 238,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63531/9",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 239,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "63606/2",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 240,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "68977/0",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 241,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "69015/0",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
   },
   {
     "id": 242,
@@ -1006,39 +1017,6 @@
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
     "legajo": "69024/1",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 243,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "66410/4",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 245,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "68965/6",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 248,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "68990/7",
     "nota": null,
     "estado": null,
     "publicado": true,
@@ -1320,26 +1298,37 @@
     "fecha_examen": "2026-07-13"
   },
   {
-    "id": 67,
-    "comision_id": "c1784681924691",
+    "id": 913,
+    "comision_id": "c1786491480523",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "47324/1",
-    "nota": null,
-    "estado": "ausente",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
+    "legajo": "71614/9",
+    "nota": 4,
+    "estado": "aprobado",
+    "publicado": false,
+    "fecha_examen": null
   },
   {
-    "id": 58,
+    "id": 132,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "66410/4",
-    "nota": 6,
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63572/9",
+    "nota": 4,
     "estado": "aprobado",
     "publicado": true,
-    "fecha_examen": "2026-06-22"
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 269,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63537/7",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
   },
   {
     "id": 75,
@@ -1349,17 +1338,6 @@
     "legajo": "66500/5",
     "nota": 6,
     "estado": "aprobado",
-    "publicado": true,
-    "fecha_examen": "2026-06-22"
-  },
-  {
-    "id": 70,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "1era Fecha",
-    "legajo": "50990/6",
-    "nota": null,
-    "estado": "ausente",
     "publicado": true,
     "fecha_examen": "2026-06-22"
   },
@@ -1397,13 +1375,13 @@
     "fecha_examen": "2026-07-13"
   },
   {
-    "id": 88,
+    "id": 62,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
-    "legajo": "66594/0",
-    "nota": 2,
-    "estado": "desaprobado",
+    "legajo": "68990/7",
+    "nota": 7,
+    "estado": "aprobado",
     "publicado": true,
     "fecha_examen": "2026-06-22"
   },
@@ -1441,15 +1419,70 @@
     "fecha_examen": "2026-07-13"
   },
   {
-    "id": 95,
+    "id": 70,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
     "fecha_parcial": "1era Fecha",
+    "legajo": "50990/6",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 239,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "63606/2",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 58,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "66410/4",
+    "nota": 6,
+    "estado": "aprobado",
+    "publicado": true,
+    "fecha_examen": "2026-06-22"
+  },
+  {
+    "id": 240,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "68977/0",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 131,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
     "legajo": "66619/0",
     "nota": 2,
     "estado": "desaprobado",
     "publicado": true,
-    "fecha_examen": "2026-06-22"
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 918,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "62242/9",
+    "nota": null,
+    "estado": "aprobado",
+    "publicado": false,
+    "fecha_examen": null
   },
   {
     "id": 249,
@@ -1457,17 +1490,6 @@
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
     "legajo": "69117/5",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
-    "id": 272,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "54454/3",
     "nota": null,
     "estado": null,
     "publicado": true,
@@ -1485,6 +1507,28 @@
     "fecha_examen": "2026-06-29"
   },
   {
+    "id": 272,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "54454/3",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 919,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "59310/8",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
     "id": 253,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -1494,6 +1538,17 @@
     "estado": null,
     "publicado": true,
     "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 920,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "71607/0",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
   },
   {
     "id": 255,
@@ -1518,6 +1573,17 @@
     "fecha_examen": "2026-06-29"
   },
   {
+    "id": 921,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "71613/7",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
     "id": 260,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -1540,17 +1606,6 @@
     "fecha_examen": "2026-06-29"
   },
   {
-    "id": 261,
-    "comision_id": "c1784681924691",
-    "parcial": "1er Parcial",
-    "fecha_parcial": "2da Fecha",
-    "legajo": "48059/7",
-    "nota": null,
-    "estado": null,
-    "publicado": true,
-    "fecha_examen": "2026-06-29"
-  },
-  {
     "id": 270,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -1567,6 +1622,17 @@
     "parcial": "1er Parcial",
     "fecha_parcial": "2da Fecha",
     "legajo": "54140/7",
+    "nota": null,
+    "estado": null,
+    "publicado": true,
+    "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 261,
+    "comision_id": "c1784681924691",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "2da Fecha",
+    "legajo": "48059/7",
     "nota": null,
     "estado": null,
     "publicado": true,
