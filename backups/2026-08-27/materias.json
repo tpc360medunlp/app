@@ -1,18 +1,5 @@
 [
   {
-    "id": "m1784682584887",
-    "nombre": "Fundamentos de la Práctica Cardiológica",
-    "docente_dni": "",
-    "año_carrera": "1",
-    "regimen": "sin_promocion",
-    "nota_promocion": null,
-    "criterio_promocion": null,
-    "regimen_cursada": "anual",
-    "cronograma": null,
-    "created_at": "2026-07-22T01:09:45.118446+00:00",
-    "cantidad_parciales": null
-  },
-  {
     "id": "m1784682637922",
     "nombre": "Anatomía Cardiovascular",
     "docente_dni": "",
@@ -208,6 +195,19 @@
     "cantidad_parciales": null
   },
   {
+    "id": "m1784682584887",
+    "nombre": "Fundamentos de la Práctica Cardiológica",
+    "docente_dni": "33788328",
+    "año_carrera": "1",
+    "regimen": "promocion",
+    "nota_promocion": 7,
+    "criterio_promocion": "primera_presentacion",
+    "regimen_cursada": "anual",
+    "cronograma": null,
+    "created_at": "2026-07-22T01:09:45.118446+00:00",
+    "cantidad_parciales": 2
+  },
+  {
     "id": "m1784681884860",
     "nombre": "Electrocardiografía",
     "docente_dni": "32527404",
@@ -230,8 +230,8 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "14/02/2026",
@@ -244,22 +244,22 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "21/02/2026",
             "obs": "",
-            "final": "1° Mesa Febrero",
+            "final": "Febrero",
             "inicio": "16/02/2026",
             "semana": "46069",
             "parcial": "",
             "teorico": "",
             "practico": "",
-            "lugarFinal": "Anexo 7",
+            "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "28/02/2026",
@@ -272,8 +272,8 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "07/03/2026",
@@ -286,22 +286,22 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "14/03/2026",
             "obs": "",
-            "final": "1° Mesa Marzo",
+            "final": "Marzo 1era",
             "inicio": "09/03/2026",
             "semana": "46090",
             "parcial": "",
             "teorico": "",
             "practico": "",
-            "lugarFinal": "Anexo 7",
+            "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "21/03/2026",
@@ -314,36 +314,36 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "28/03/2026",
             "obs": "",
-            "final": "2° Mesa Marzo",
+            "final": "Marzo 2da",
             "inicio": "23/03/2026",
             "semana": "46104",
             "parcial": "",
             "teorico": "",
             "practico": "",
-            "lugarFinal": "Anexo 7",
+            "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "04/04/2026",
             "obs": "",
-            "final": "3° Mesa Marzo",
+            "final": "Marzo 3era",
             "inicio": "30/03/2026",
             "semana": "46111",
             "parcial": "",
             "teorico": "",
             "practico": "",
-            "lugarFinal": "Anexo 7",
+            "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "11/04/2026",
@@ -356,22 +356,22 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "18/04/2026",
             "obs": "",
-            "final": "1° Mesa Abril",
+            "final": "Abril",
             "inicio": "13/04/2026",
             "semana": "46125",
             "parcial": "",
             "teorico": "",
             "practico": "",
-            "lugarFinal": "Anexo 7",
+            "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "25/04/2026",
@@ -384,8 +384,8 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "02/05/2026",
@@ -398,8 +398,8 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "09/05/2026",
@@ -412,8 +412,8 @@
             "practico": "P1: Historia Clínica y Factores de Riesgo Cardiovacular",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "16/05/2026",
@@ -426,13 +426,13 @@
             "practico": "P2",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "23/05/2026",
             "obs": "",
-            "final": "1° Mesa Mayo",
+            "final": "Mayo",
             "inicio": "18/05/2026",
             "semana": "46160",
             "parcial": "",
@@ -440,8 +440,8 @@
             "practico": "P3",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "30/05/2026",
@@ -454,8 +454,8 @@
             "practico": "P4",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "06/06/2026",
@@ -468,13 +468,13 @@
             "practico": "P5",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "13/06/2026",
             "obs": "",
-            "final": "1° Mesa Junio",
+            "final": "Junio",
             "inicio": "08/06/2026",
             "semana": "46181",
             "parcial": "",
@@ -482,8 +482,8 @@
             "practico": "P6",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "20/06/2026",
@@ -496,8 +496,8 @@
             "practico": "P7",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "27/06/2026",
@@ -510,8 +510,8 @@
             "practico": "P8",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "04/07/2026",
@@ -523,23 +523,23 @@
             "teorico": "",
             "practico": "",
             "lugarFinal": "",
-            "lugarParcial": "Sede central",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarParcial": "",
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "11/07/2026",
             "obs": "",
-            "final": "1° Mesa Julio",
+            "final": "Julio 1era",
             "inicio": "06/07/2026",
             "semana": "46209",
             "parcial": "1P2F",
             "teorico": "",
             "practico": "",
             "lugarFinal": "",
-            "lugarParcial": "Sede central",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarParcial": "",
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "18/07/2026",
@@ -551,9 +551,9 @@
             "teorico": "",
             "practico": "",
             "lugarFinal": "",
-            "lugarParcial": "Sede central",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarParcial": "",
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "25/07/2026",
@@ -586,7 +586,7 @@
           {
             "fin": "08/08/2026",
             "obs": "",
-            "final": "1° Mesa Agosto",
+            "final": "Julio 2da",
             "inicio": "03/08/2026",
             "semana": "46237",
             "parcial": "1P4F",
@@ -594,8 +594,8 @@
             "practico": "",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "15/08/2026",
@@ -608,8 +608,8 @@
             "practico": "P9",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "22/08/2026",
@@ -622,13 +622,13 @@
             "practico": "P10",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "29/08/2026",
             "obs": "",
-            "final": "2° Mesa Agosto",
+            "final": "Agosto",
             "inicio": "24/08/2026",
             "semana": "46258",
             "parcial": "",
@@ -636,8 +636,8 @@
             "practico": "P11",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "05/09/2026",
@@ -650,8 +650,8 @@
             "practico": "P12",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "12/09/2026",
@@ -664,8 +664,8 @@
             "practico": "P13",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "19/09/2026",
@@ -678,13 +678,13 @@
             "practico": "P14",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "26/09/2026",
             "obs": "",
-            "final": "1° Mesa Septiembre",
+            "final": "Septiembre",
             "inicio": "21/09/2026",
             "semana": "46286",
             "parcial": "",
@@ -692,8 +692,8 @@
             "practico": "P15",
             "lugarFinal": "",
             "lugarParcial": "",
-            "lugarTeorico": "Lugar teo",
-            "lugarPractico": "Lugar TP"
+            "lugarTeorico": "",
+            "lugarPractico": ""
           },
           {
             "fin": "03/10/2026",
@@ -740,7 +740,7 @@
           {
             "fin": "24/10/2026",
             "obs": "",
-            "final": "1° Mesa Octubre",
+            "final": "Octubre",
             "inicio": "19/10/2026",
             "semana": "46314",
             "parcial": "2P2F",
@@ -796,7 +796,7 @@
           {
             "fin": "21/11/2026",
             "obs": "",
-            "final": "1° Mesa Noviembre",
+            "final": "Noviembre",
             "inicio": "16/11/2026",
             "semana": "46342",
             "parcial": "",
@@ -824,7 +824,7 @@
           {
             "fin": "05/12/2026",
             "obs": "",
-            "final": "1° Mesa Diciembre",
+            "final": "Diciembre 1era",
             "inicio": "30/11/2026",
             "semana": "46356",
             "parcial": "",
@@ -852,7 +852,7 @@
           {
             "fin": "19/12/2026",
             "obs": "",
-            "final": "2° Mesa Diciembre",
+            "final": "Diciembre 2da",
             "inicio": "14/12/2026",
             "semana": "46370",
             "parcial": "",
@@ -878,7 +878,7 @@
             "lugarPractico": ""
           }
         ],
-        "cargado": "27/7/2026"
+        "cargado": "3/8/2026"
       }
     },
     "created_at": "2026-07-22T00:58:05.284099+00:00",
