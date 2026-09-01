@@ -671,6 +671,17 @@
     "fecha_examen": "2026-06-22"
   },
   {
+    "id": 910,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "67240/9",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
     "id": 64,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -1287,6 +1298,17 @@
     "fecha_examen": "2026-07-13"
   },
   {
+    "id": 913,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "71614/9",
+    "nota": 4,
+    "estado": "aprobado",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
     "id": 132,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -1452,6 +1474,17 @@
     "fecha_examen": "2026-06-29"
   },
   {
+    "id": 918,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "62242/9",
+    "nota": null,
+    "estado": "aprobado",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
     "id": 249,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -1485,6 +1518,17 @@
     "fecha_examen": "2026-06-29"
   },
   {
+    "id": 919,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "59310/8",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
+  },
+  {
     "id": 253,
     "comision_id": "c1784681924691",
     "parcial": "1er Parcial",
@@ -1494,6 +1538,17 @@
     "estado": null,
     "publicado": true,
     "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 920,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "71607/0",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
   },
   {
     "id": 255,
@@ -1516,6 +1571,17 @@
     "estado": null,
     "publicado": true,
     "fecha_examen": "2026-06-29"
+  },
+  {
+    "id": 921,
+    "comision_id": "c1786491480523",
+    "parcial": "1er Parcial",
+    "fecha_parcial": "1era Fecha",
+    "legajo": "71613/7",
+    "nota": null,
+    "estado": "ausente",
+    "publicado": false,
+    "fecha_examen": null
   },
   {
     "id": 260,
