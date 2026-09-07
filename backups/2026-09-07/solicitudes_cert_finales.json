@@ -46,9 +46,9 @@
     "dni": "44839914",
     "materia_id": "m1784681884860",
     "fecha_examen": "07/08/2026",
-    "estado": "pendiente",
+    "estado": "rechazado",
     "docente_dni": "32527404",
-    "motivo": null,
+    "motivo": "",
     "created_at": "2026-08-07T20:34:26.338473+00:00"
   }
 ]
